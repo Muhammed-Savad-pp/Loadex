@@ -2,16 +2,22 @@ import "./Navbar.css";
 import { Link } from "react-router-dom";
 import { FaBell } from "react-icons/fa";
 import React from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { FaUserAlt } from "react-icons/fa";
 
 interface NavbarProps {
   onLoginClick: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({onLoginClick}) => {
+const Navbar: React.FC<NavbarProps> = ({ onLoginClick }) => {
 
-  
 
-  
+   const { isLoggedIn, role } = useSelector((state: any) => state.auth)
+   console.log(isLoggedIn);
+   console.log(role);
+
+
+
   return (
     <div className="bg-gradient-to-r from-[#E31937] to-[#FF9F1C]">
       <nav className=" text-white px-4 py-2">
@@ -26,12 +32,18 @@ const Navbar: React.FC<NavbarProps> = ({onLoginClick}) => {
             <Link to="/directory" className="hover:opacity-80">Directory</Link>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={onLoginClick} className="hover:opacity-80">Login</button>
+            {isLoggedIn ? (
+              <button><FaUserAlt size={20} /></button> 
+            ) : (
+              <button onClick={onLoginClick} className="hover:opacity-80">Login</button> 
+            )}
+             
             <FaBell size={20} className="cursor-pointer" />
           </div>
+
         </div>
       </nav>
-      
+
     </div>
 
 

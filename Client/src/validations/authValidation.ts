@@ -24,6 +24,8 @@ export const validateField = (name: string, value: string, isLogin: boolean = fa
             if(!isLogin){
                 const phoneRegex = /^\d{10}$/;
                 if(!value.trim()) return 'Phone number is required';
+                console.log('herre');
+                
                 if(!phoneRegex.test(value)) return 'Phone number must be 10 digits';
             }
             break;
