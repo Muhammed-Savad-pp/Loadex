@@ -34,7 +34,7 @@ export const transporterLoginRequest = async(email: string, password: string): P
 
 }
 
-export const resendOtp = async(email: string): Promise<IResponse> => {
+export const transporterResendOtp = async(email: string): Promise<IResponse> => {
 
     const respone = await api.post<IResponse>('/transporter/resendOtp', {email})
 

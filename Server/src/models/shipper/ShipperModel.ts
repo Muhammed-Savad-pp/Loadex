@@ -26,7 +26,7 @@ const shipperSchema: Schema = new Schema ({
         required: true
     },
 
-    passsword: {
+    password: {
         type:String,
     },
 

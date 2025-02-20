@@ -3,6 +3,7 @@ import mongoose from "mongoose";;
 import config from "./config";
 import cors from "cors";
 import transporterAuth_route from "./routes/transporter/auth";
+import shipperAuth_rote from "./routes/shipper/auth";
 
 const app = Express();
 
@@ -30,7 +31,8 @@ app.get('/' , (req, res) => {
     res.send("hello")
 }) 
 
-app.use('/', transporterAuth_route)
+app.use('/transporter', transporterAuth_route)
+app.use('/shipper', shipperAuth_rote)
 
 
 

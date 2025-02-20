@@ -33,7 +33,7 @@ export class AuthService {
 
     constructor() {
         this.transporterRepositories = new TransporterRepositories();
-        this.otpRepository = new OtpRepository;
+        this.otpRepository = new OtpRepository();
     }
 
     async transporterSignup(transporterName: string, email: string, phone: string, password: string, confirmPassword: string): Promise<{ success: boolean, message: string}> {
@@ -203,7 +203,7 @@ export class AuthService {
             return {success: true, message: "New Otp sended"}
             
         } catch (error) {
-            return {success: false, message:"faled to resend otp"}
+            return {success: false, message:"failed to resend otp"}
         }
 
         

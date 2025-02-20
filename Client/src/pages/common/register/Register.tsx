@@ -3,16 +3,15 @@ import truckImage from "../../../assets/2d21e558-ebd0-4a8f-9f25-b214ae94c82f.jpg
 import React, { useEffect, useRef, useState } from "react";
 import { formError, userSignUp } from "../../../interface/interface";
 import { validateForm } from "../../../validations/authValidation";
-import { resendOtp, transporterOtpVerify, transporterSignUp } from "../../../services/transporter/authService";
+import { transporterResendOtp, transporterOtpVerify, transporterSignUp } from "../../../services/transporter/authService";
 import toast from "react-hot-toast";
-import { shipperSignup } from "../../../services/shipper/authService";
+import { shipperOtpVerify, shipperResendOtp, shipperSignup } from "../../../services/shipper/authService";
 
 
 
 const RegisterPage: React.FC = () => {
 
   
-
   const [showOtpModal, setShowOtpModal] = useState<boolean>(false);
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [timer, setTimer] = useState(120);
@@ -36,9 +35,8 @@ const RegisterPage: React.FC = () => {
   })
 
   useEffect(() => {
-    setTimer(134
+    setTimer(134)
 
-    )
     const countDown = setInterval(() => {
       setTimer((prev) => {
         if (prev < 1) {
@@ -90,6 +88,7 @@ const RegisterPage: React.FC = () => {
 
 
   const handleSubmit = async (e: React.FormEvent) => {
+
     e.preventDefault();
 
     const { isValid, errors } = validateForm(formData, "register")
@@ -98,21 +97,34 @@ const RegisterPage: React.FC = () => {
     setIsLoading(true)
 
     if (isValid) {
+
       try {
+
         if (role === 'transporter') {
+
           const response = await transporterSignUp(formData)
-            console.log(response);
             
           if (response.success) {
            
             toast.success(response.message)
             setShowOtpModal(true)
             setIsLoading(false)
-          }
-        }else {
-          const response = await shipperSignup(formData);
-        }
 
+          }
+          
+        } else {
+
+          
+          const response = await shipperSignup(formData);
+
+          if(response.success){
+
+            toast.success(response.message)
+            setShowOtpModal(true);
+            setIsLoading(false)
+            
+          }
+        }
       } catch (error) {
         console.log(error)
       }
@@ -132,10 +144,17 @@ const RegisterPage: React.FC = () => {
         toast.success(response.message)
         navigate('/transporter/login')
 
+      } else {
+
+        const response = await shipperOtpVerify(otpData, email)
+        
+          toast.success(response.message);
+          navigate('/shipper/login')
       }
 
     } catch (error: any) {
-      toast.error(error.response.message.message)
+      console.log('OTP error', error.response.data.message)
+       toast.error(error.response.data.message)
     }
   }
 
@@ -145,13 +164,25 @@ const RegisterPage: React.FC = () => {
 
       const email = formData.email;
 
-      const response = await resendOtp(email);
+      if(role == 'transporter'){
 
-      if(response.success){
-        toast.success(response.message);
-      }
+        const response = await transporterResendOtp(email);
+
+        if(response.success){
+          toast.success(response.message);
+        }
+      } else {
+
+        const response = await shipperResendOtp(email)
+
+        if(response.success) {
+          toast.success(response.message)
+        }
+
+      }     
 
     } catch (error) {
+      console.log(error);
       
     }
 

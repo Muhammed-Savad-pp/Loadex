@@ -27,7 +27,7 @@ export class MailService {
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px; border: 1px solid #e0e0e0;">
                         <div style="text-align: center; padding-bottom: 20px;">
-                            <img src="https://example.com/logo.png" alt="Travel Easy Logo" style="width: 150px; height: auto;" />
+                            <h1>Loadex <h1/>
                         </div>
                         <div style="background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
                             <h1 style="color: #2c3e50; text-align: center; font-size: 24px;">Welcome to Loadex</h1>
