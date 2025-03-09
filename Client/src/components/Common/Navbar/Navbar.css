@@ -2,6 +2,6 @@
     font-family: "Irish Grover", cursive;
 }
 
-nav {
+nav:not(.sidebar-nav) {
     background: linear-gradient(to right, #E31937, #FF9F1C); /* Ensures gradient applies */
 }

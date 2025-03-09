@@ -23,9 +23,17 @@ const authSlice = createSlice({
             state.isLoggedIn = true;
             state.token = action.payload.token;
             state.role = action.payload.role;
+        },
+
+        logOut: (state) => {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('role')
+            state.isLoggedIn = false,
+            state.token = '';
+            state.role = '';
         }
     }
 })
 
-export const {loginSuccess} = authSlice.actions;
+export const {loginSuccess, logOut} = authSlice.actions;
 export default authSlice.reducer; 

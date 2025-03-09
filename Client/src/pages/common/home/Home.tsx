@@ -8,8 +8,11 @@ import Shield from "../../../assets/1000_F_422174099_tylMQs8FgMWwX8g48FxOemmZvXY
 import statusTruck from "../../../assets/istockphoto-520703835-612x612.jpg";
 import { useState } from "react";
 import SelectRolePage from "../../../components/Common/SelectRolePage.tsx";
+import { useSelector } from "react-redux";
 
 export default function Home() {
+
+  const { role } = useSelector((state: any) => state.auth)
 
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
@@ -31,6 +34,18 @@ export default function Home() {
             <p className="text-xl max-w-5xl">
               Empowering businesses to move loads efficiently and transport contractors to maximize their fleets.
             </p>
+            {
+              role === 'transporter' ? 
+                <button className="border-2 border-white text-white text-lg font-semibold px-4 py-1 rounded-lg mt-3 transition duration-300 hover:bg-white hover:text-black">
+                  Post Truck
+                </button>
+              :
+                <button className="border-2 border-white text-white text-lg font-semibold px-4 py-1 rounded-lg mt-3 transition duration-300 hover:bg-white hover:text-black">
+                  Post Load
+                 </button>
+            }
+            
+
           </div>
         </section>
       </div>

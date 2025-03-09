@@ -2,12 +2,18 @@ import mongoose, {Document, Schema} from "mongoose";
 
 
 export interface IShipper extends Document {
-    shipperName: string,
-    email: string,
-    phone: string,
-    password: string,
-    isBlocked: boolean,
-    isVerified: boolean
+    shipperName: string;
+    email: string;
+    phone: string;
+    password: string;
+    isBlocked: boolean;
+    isVerified: boolean;
+    verificationStatus?: 'pending'| 'requested'| 'approved'| 'rejected';
+    panNumber?:string;
+    aadhaarFront?: string;
+    aadhaarBack?: string;
+    companyName?: string;
+    gstNumber?: string;
 }
 
 const shipperSchema: Schema = new Schema ({
@@ -38,7 +44,34 @@ const shipperSchema: Schema = new Schema ({
     isVerified: {
         type: Boolean,
         default: false
+    },
+
+    verificationStatus: {
+        type: String,
+        enum: ['pending', 'requested', 'approved', 'rejected'],
+        default: 'pending'
+    },
+
+    panNumber: {
+        type: String
+    },
+
+    aadhaarFront: {
+        type: String
+    },
+
+    aadhaarBack: {
+        type: String
+    },
+
+    companyName: {
+        type: String
+    },
+
+    gstNumber: {
+        type: String
     }
+
 })
 
 

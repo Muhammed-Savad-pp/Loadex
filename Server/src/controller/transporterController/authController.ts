@@ -1,4 +1,4 @@
-import { Request,Response,NextFunction } from "express";
+import { Request,Response,NextFunction, response } from "express";
 import { AuthService } from "../../services/transporter/authService";
 import { HTTP_STATUS } from "../../enums/httpStatus";
 
@@ -76,7 +76,7 @@ class AuthController {
                         httpOnly: true,
                         secure: true,
                         sameSite: 'none',
-                        maxAge: 7 * 24 * 60 * 1000
+                        maxAge: 3 * 24 * 60 * 1000
                     }
                 )
                 .json({success: true, message: 'Logged in successfully', accessToken: respone.accessToken, role:'transporter', data:respone.data})
@@ -110,6 +110,71 @@ class AuthController {
                        
         } catch (error) {
             console.log(error);
+        }
+    }
+
+    async validateRefreshToken (req: Request, res: Response) {
+        try {
+            console.log('controller');
+            
+            console.log('req.cookies: ', req.cookies.refreshToken);
+
+            if(!req.cookies.refreshToken) {
+                console.log('er');
+                
+                res.status(HTTP_STATUS.BAD_REQUEST).json({
+                    success: false,
+                    message: 'Refresh token not found'
+                })
+                return;
+            }
+
+            console.log('here');
+            
+
+            const {accessToken, refreshToken} = await authService.validateRefreshToken(req.cookies.refreshToken); 
+
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                secure: true,
+                maxAge: 3 * 24 * 60 * 1000,
+                sameSite: 'none',
+            });
+
+            res.status(HTTP_STATUS.OK).json({
+                success: true,
+                message: 'token Created',
+                token: accessToken,
+                role: "transporter"
+            })
+            
+
+        } catch (error: any) {
+            
+            if(error.status === 401) {
+                res.status(HTTP_STATUS.UNAUTHORIZED).json({
+                    success: false,
+                    message: error.message
+                })
+                return;
+            }
+
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+                success: false,
+                message: error.message || 'An internal server error occurred'
+            })
+        }
+    }
+
+    async logout(req: Request, res: Response) {
+        try {
+            
+            res.clearCookie('refreshToken');
+            res.json({message: 'Logout successFully'})
+            return
+
+        } catch (error) {
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: 'controller error'})
         }
     }
 

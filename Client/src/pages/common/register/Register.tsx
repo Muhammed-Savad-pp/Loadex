@@ -3,9 +3,9 @@ import truckImage from "../../../assets/2d21e558-ebd0-4a8f-9f25-b214ae94c82f.jpg
 import React, { useEffect, useRef, useState } from "react";
 import { formError, userSignUp } from "../../../interface/interface";
 import { validateForm } from "../../../validations/authValidation";
-import { transporterResendOtp, transporterOtpVerify, transporterSignUp } from "../../../services/transporter/authService";
+import { transporterResendOtp, transporterOtpVerify, transporterSignUp } from "../../../services/transporter/transporterApi";
 import toast from "react-hot-toast";
-import { shipperOtpVerify, shipperResendOtp, shipperSignup } from "../../../services/shipper/authService";
+import { shipperOtpVerify, shipperResendOtp, shipperSignup } from "../../../services/shipper/shipperService";
 
 
 
@@ -60,7 +60,7 @@ const RegisterPage: React.FC = () => {
   let role = location.pathname.includes("transporter") ? "transporter" : "shipper";
 
   const navigateToLogin = () => {
-    navigate(role === "transporter" ? "/transporter/login" : "/shipper/login")
+    navigate(role === "transporter" ? "/login/transporter" : "/login/shipper")
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,7 +102,7 @@ const RegisterPage: React.FC = () => {
 
         if (role === 'transporter') {
 
-          const response = await transporterSignUp(formData)
+          const response:any = await transporterSignUp(formData)
             
           if (response.success) {
            
@@ -139,17 +139,17 @@ const RegisterPage: React.FC = () => {
       
       if(role === 'transporter'){
         
-        const response = await transporterOtpVerify(otpData, email)
+        const response: any = await transporterOtpVerify(otpData, email)
         
         toast.success(response.message)
-        navigate('/transporter/login')
+        navigate('/login/transporter')
 
       } else {
 
         const response = await shipperOtpVerify(otpData, email)
         
           toast.success(response.message);
-          navigate('/shipper/login')
+          navigate('/login/shipper')
       }
 
     } catch (error: any) {
@@ -166,7 +166,7 @@ const RegisterPage: React.FC = () => {
 
       if(role == 'transporter'){
 
-        const response = await transporterResendOtp(email);
+        const response: any = await transporterResendOtp(email);
 
         if(response.success){
           toast.success(response.message);

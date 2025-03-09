@@ -4,9 +4,9 @@ import { FcGoogle } from "react-icons/fc";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { loginSuccess } from "../../../redux/slice/authSlice";
-import { transporterLoginRequest } from "../../../services/transporter/authService";
+import { transporterLoginRequest } from "../../../services/transporter/transporterApi";
 import toast from "react-hot-toast";
-import { shipperLoginRequest } from "../../../services/shipper/authService";
+import { shipperLoginRequest } from "../../../services/shipper/shipperService";
 
 
 const SignUp = () => {
@@ -31,7 +31,7 @@ const SignUp = () => {
 
       if (role === 'transporter') {
 
-        const response = await transporterLoginRequest(email, password)
+        const response: any = await transporterLoginRequest(email, password)
         console.log('accessToken', response.accessToken);
 
         if (response.success) {
@@ -70,7 +70,7 @@ const SignUp = () => {
   };
 
   const navigateToRegister = () => {
-    navigate(role == "transporter" ? "/transporter/register" : "/shipper/register")
+    navigate(role == "transporter" ? "/register/transporter" : "/register/shipper")
   }
 
   return (

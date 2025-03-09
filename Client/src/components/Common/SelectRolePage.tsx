@@ -34,10 +34,10 @@ const SelectRolePage: React.FC<RoleModalProps> = ({ isOpen, onClose }) => {
           <h1 className="text-white text-3xl font-semibold mb-6">Start Your Journey</h1>
 
           <div className="space-y-4">
-            <button onClick={() => navigate('/transporter/login')} className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-lg">
+            <button onClick={() => navigate('/login/transporter')} className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-lg">
               🚛 Transporter
             </button>
-            <button onClick={() => navigate("/shipper/login")} className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-lg">
+            <button onClick={() => navigate("/login/shipper")} className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-lg">
               📦  Shipper
             </button>
           </div>

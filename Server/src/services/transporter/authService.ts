@@ -1,11 +1,13 @@
-import { TransporterRepositories } from "../../repositories/implementaion/transporter/transporterRepositories";
+import transporterRepositories from "../../repositories/implementaion/transporterRepository";
 import bcrypt from "bcryptjs";
 import { OtpRepository } from "../../repositories/implementaion/otpRepositories";
 import { IOtp } from "../../models/transporter/otpModel";
-import { generateAcessToken, generateRefreshToken } from "../../utils/transporterToken.utils";
+import { generateAcessToken, generateRefreshToken, verifyToken } from "../../utils/Token.utils";
 import { ITransporter } from "../../models/transporter/TransporterModel";
 import { MailService } from "../../utils/mail";
-
+import { decode } from "punycode";
+import { HTTP_STATUS } from "../../enums/httpStatus";
+import { ITransporterRepository } from "../../repositories/interface/ITransporterRepository";
 
 const mailService = new MailService()
 
@@ -28,11 +30,11 @@ interface TransporterData {
 
 export class AuthService {
     
-    private transporterRepositories: TransporterRepositories;
+    private transporterRepositories: ITransporterRepository;
     private otpRepository: OtpRepository;
 
     constructor() {
-        this.transporterRepositories = new TransporterRepositories();
+        this.transporterRepositories =transporterRepositories;
         this.otpRepository = new OtpRepository();
     }
 
@@ -205,7 +207,30 @@ export class AuthService {
         } catch (error) {
             return {success: false, message:"failed to resend otp"}
         }
+    }
 
-        
+    async validateRefreshToken(token: string) : Promise<{ accessToken?: string, refreshToken?: string}> {
+        try {
+            
+            const decoded = verifyToken(token);
+
+            const transporter = await this.transporterRepositories.findTransporterById(decoded.transporterId)
+            console.log(decoded);
+
+            if(!transporter) {
+                const error: any = new Error('transporter not found');
+                error.status = HTTP_STATUS.NOT_FOUND;
+                throw error;
+            }
+
+            const accessToken = await generateAcessToken(transporter._id as string, 'transporter');
+            const refreshToken = await generateRefreshToken(transporter._id as string, 'transporter');            
+
+            return { accessToken: accessToken, refreshToken: refreshToken}
+
+        } catch (error) {
+           console.error('error while storing refreshToken', error)
+           throw error
+        }
     }
 }

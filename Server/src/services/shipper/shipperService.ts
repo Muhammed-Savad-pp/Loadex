@@ -1,10 +1,14 @@
-import { ShipperRepositories } from "../../repositories/implementaion/shipper/shipperRepositories";
-import { OtpRepository } from "../../repositories/implementaion/otpRepositories";
 import bcrypt from "bcryptjs";
 import { generateOtp } from "../transporter/authService";
 import { IOtp } from "../../models/transporter/otpModel";
 import { MailService } from "../../utils/mail";
-import { generateAcessToken, generateRefreshToken } from "../../utils/transporterToken.utils";
+import { generateAcessToken, generateRefreshToken } from "../../utils/Token.utils";
+import { IShipper } from "../../models/shipper/ShipperModel";
+import { IShipperService } from "../../interface/shipper/IShipperService";
+import { IShipperRepository } from "../../repositories/interface/IShipperRepository";
+import { IOtpRepository } from "../../repositories/interface/IOtpRepository";
+import s3 from "../../config/s3Config";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 
 async function hashPassword(password: string): Promise<string> {
@@ -13,21 +17,21 @@ async function hashPassword(password: string): Promise<string> {
 
 const mailService = new MailService();
 
-interface ShipperData {
-    shipperName: string,
-    email: string
-}
 
+export class ShipperService implements IShipperService {
 
-export class AuthService {
+    // private shipperRepositories : ShipperRepositories;
+    // private otpRepositories : OtpRepository;
 
-    private shipperRepositories : ShipperRepositories;
-    private otpRepositories : OtpRepository;
+    // constructor(){
+    //     this.shipperRepositories = new ShipperRepositories();
+    //     this.otpRepositories = new OtpRepository();
+    // }
 
-    constructor(){
-        this.shipperRepositories = new ShipperRepositories();
-        this.otpRepositories = new OtpRepository();
-    }
+    constructor(
+        private shipperRepositories: IShipperRepository,
+        private otpRepositories: IOtpRepository
+    ) {}
 
     async shipperSignUp(shipperName: string, email: string, phone: string, password: string, confirmPassword: string): Promise<{success: boolean, message: string}> {
 
@@ -154,7 +158,7 @@ export class AuthService {
         }
     }
 
-    async shipperLogin(userData: {email: string, password: string}) : Promise<{success: boolean, message: string, data?: ShipperData, accessToken?: string, refreshToken?: string}> {
+    async shipperLogin(userData: {email: string, password: string}) : Promise<{success: boolean, message: string, data?: Partial<IShipper>, accessToken?: string, refreshToken?: string}> {
 
         const {email, password} = userData;
 
@@ -174,7 +178,7 @@ export class AuthService {
             return {success: false, message: "The Shipper is Blocked"}
         }
 
-        const shippperData: ShipperData = {
+        const shippperData: Partial<IShipper> = {
             shipperName: existingShipper.shipperName,
             email: existingShipper.email
         }
@@ -188,11 +192,84 @@ export class AuthService {
 
     }
 
+    async getShipperProfileData(id: string): Promise<{ success: boolean; message: string; shipperData?: Partial<IShipper>; }> {
+        try {
+            
+            const shipperData = await this.shipperRepositories.findById(id)
+
+            if(!shipperData){
+                return {success: false, message: 'Shipper not found'}
+            }
 
 
+            return {success : true, message: 'Shipper Find Successfully', shipperData: shipperData};
 
-    
+        } catch (error) {
+            console.error('error in shipperService ', error)
+            return {success: false, message: 'error in GetShipperProfiledData'}
+        }
+    }
 
+    async registerKyc(shipperId: string, companyName: string, panNumber: string, gstNumber: string, aadhaarFront?: Express.Multer.File, aadhaarBack?: Express.Multer.File): Promise<{ success: boolean; message: string; shipperData?: Partial<IShipper>; }> {
+        try {
 
+            let aadhaarFrontUrl: string | undefined;
+            let aadhaarBackUrl: string | undefined;
+
+            const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
+                const s3Params = {
+                    Bucket: process.env.AWS_BUCKET_NAME!,
+                    Key: `${folder}/shipper/${Date.now()}_${file.originalname}`,
+                    Body: file.buffer,
+                    ContentType: file.mimetype
+                };
+
+                const command = new PutObjectCommand(s3Params)
+                await s3.send(command)
+
+                return `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Params.Key}`;
+            }
+
+            if(aadhaarFront){
+                aadhaarFrontUrl = await uploadToS3(aadhaarFront, 'aadhaar-front');
+            }
+
+            if(aadhaarBack){
+                aadhaarBackUrl = await uploadToS3(aadhaarBack, 'aadhaar-back');
+            }
+
+            const updateShipper = await this.shipperRepositories.updateShipperById(
+                shipperId,
+                {
+                    companyName,
+                    panNumber,
+                    gstNumber,
+                    aadhaarFront: aadhaarFrontUrl,
+                    aadhaarBack: aadhaarBackUrl,
+                    verificationStatus: 'requested'
+                }
+            )
+
+            if(!updateShipper) {
+                return {success: false, message: 'Shipper not found'}
+            }
+
+            return {success: true, message: 'Kyc verification completed',
+                shipperData: {
+                    companyName: updateShipper.companyName,
+                    gstNumber: updateShipper.gstNumber,
+                    panNumber: updateShipper.panNumber,
+                    aadhaarFront: updateShipper.aadhaarFront,
+                    aadhaarBack: updateShipper.aadhaarBack,
+                    verificationStatus: updateShipper.verificationStatus
+                }
+            }
+            
+        } catch (error) {
+            console.error(error, 'error in service')
+            return {success: false, message: 'Kyc verification failed '}
+        }
+        
+    }
 
 }

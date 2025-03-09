@@ -1,12 +1,16 @@
 import mongoose, {Document, Schema} from "mongoose";
 
 export interface ITransporter extends Document {
-    transporterName: string,
-    email: string,
-    phone: string,
-    password: string,
-    isBlocked: boolean,
-    isVerified: boolean,
+    transporterName: string;
+    email: string;
+    phone: string;
+    password: string;
+    isBlocked: boolean;
+    isVerified: boolean;
+    verificationStatus?: 'pending'| 'requested'| 'approved'| 'rejected';
+    panNumber?:string;
+    aadhaarFront?: string;
+    aadhaarBack?: string;
 }
 
 const transporterSchema: Schema = new Schema ({
@@ -37,6 +41,24 @@ const transporterSchema: Schema = new Schema ({
     isVerified: {
         type: Boolean,
         default: false,
+    },
+
+    verificationStatus: {
+        type: String,
+        enum: ['pending', 'requested', 'approved', 'rejected'],
+        default: 'pending'
+    },
+
+    panNumber: {
+        type: String,
+    },
+
+    aadhaarFront: {
+        type: String
+    },
+
+    aadhaarBack: {
+        type: String
     }
 })
 
