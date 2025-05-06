@@ -7,7 +7,7 @@ import { Token } from "aws-sdk";
 
 
 export class AdminController implements IAdminController {
-    constructor(private adminService: IAdminService) { }
+    constructor(private _adminService: IAdminService) { }
 
 
     async login(req: CustomeRequest, res: Response): Promise<void> {
@@ -15,17 +15,22 @@ export class AdminController implements IAdminController {
 
             const { email, password } = req.body;
 
-            const { accessToken, refreshToken } = await this.adminService.login(email, password);
+            const { accessToken, refreshToken, success, message } = await this._adminService.login(email, password);
 
-            res.cookie('refreshToken', refreshToken, {
-                httpOnly: true,
-                secure: true,
-                maxAge: 3 * 24 * 60 * 1000,
-                sameSite: 'none'
-            })
+            if( success ) {
+                res.cookie('refreshToken', refreshToken, {
+                    httpOnly: true,
+                    secure: true,
+                    maxAge: 3 * 24 * 60 * 1000,
+                    sameSite: 'none'
+                })
+            }
+
+          
 
             res.status(HTTP_STATUS.OK).json({
-                success: true,
+                success: success,
+                message: message,
                 token: accessToken,
                 role: 'admin'
             })
@@ -39,7 +44,7 @@ export class AdminController implements IAdminController {
     async getTransporter(req: CustomeRequest, res: Response): Promise<void> {
         try {
 
-            const response = await this.adminService.getTransporter();
+            const response = await this._adminService.getTransporter();
             // console.log('response', response)
 
             res.status(HTTP_STATUS.OK).json(response)
@@ -70,7 +75,7 @@ export class AdminController implements IAdminController {
 
             const { id } = req.body;
 
-            const response = await this.adminService.updateTransporterBlockandUnblock(id)
+            const response = await this._adminService.updateTransporterBlockandUnblock(id)
 
             res.status(HTTP_STATUS.OK).json(response)
             
@@ -82,7 +87,7 @@ export class AdminController implements IAdminController {
     async getRequestedTransporters(req: CustomeRequest, res: Response): Promise<void> {
         try {
             
-            const transporters = await this.adminService.getRequestedTransporter();
+            const transporters = await this._adminService.getRequestedTransporter();
             res.status(HTTP_STATUS.OK).json({
                 transporters
             })
@@ -97,7 +102,7 @@ export class AdminController implements IAdminController {
         try {
 
             const { id , status } = req.body
-            const response = await this.adminService.changeVerificationStatus(id, status);
+            const response = await this._adminService.changeVerificationStatus(id, status);
 
             res.status(HTTP_STATUS.OK).json(response);
             
@@ -111,7 +116,7 @@ export class AdminController implements IAdminController {
     async getShipper(req: CustomeRequest, res: Response): Promise<void> {
         try {
             
-            const response = await this.adminService.getShipper();
+            const response = await this._adminService.getShipper();
             res.status(HTTP_STATUS.OK).json(response)
 
         } catch (error: any) {
@@ -125,7 +130,7 @@ export class AdminController implements IAdminController {
 
             const {id} = req.body;
             
-            const response = await this.adminService.changeShipperStatus(id);
+            const response = await this._adminService.changeShipperStatus(id);
 
             res.status(HTTP_STATUS.OK).json(response)
 
@@ -138,7 +143,7 @@ export class AdminController implements IAdminController {
     async getRequestedShipper(req: CustomeRequest, res: Response): Promise<void> {
         try {
             
-            const response = await this.adminService.getRequestedShipper();             
+            const response = await this._adminService.getRequestedShipper();             
             res.status(HTTP_STATUS.OK).json(response)
 
         } catch (error: any) {
@@ -151,9 +156,8 @@ export class AdminController implements IAdminController {
         try {
             
             const {id, status } = req.body;
-            console.log(id, status)
 
-            const response = await this.adminService.changeShipperVerificationStatus(id, status);
+            const response = await this._adminService.changeShipperVerificationStatus(id, status);
             res.status(HTTP_STATUS.OK).json(response)
 
             
@@ -163,8 +167,44 @@ export class AdminController implements IAdminController {
         }
     }
 
+    async getRequestedTrucks(req: CustomeRequest, res: Response): Promise<void> {
+        try {
 
+            const response = await this._adminService.getRequestedTrucks();
+            
+            res.status(HTTP_STATUS.OK).json(response);
+            
+        } catch (error: any) {
+            console.log(error);
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message:  error.message})
+        }
+    }
 
+    async changeTruckVerificationStatus(req: CustomeRequest, res: Response): Promise<void> {
+        try {
+            
+            const {id, status} = req.body;
+            console.log(id, status);
 
+            const response = await this._adminService.changeTruckVerificationStatus(id, status);
+            res.status(HTTP_STATUS.OK).json({response});
+
+        } catch (error: any) {
+            console.error(error);
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: error.message})
+        }
+    }
+
+    async getLoads(req: CustomeRequest, res: Response): Promise<void> {
+        try {
+            
+            const response = await this._adminService.getLoads();
+            res.status(HTTP_STATUS.OK).json(response);
+
+        } catch (error: any) {
+            console.log(error);
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: error.message})
+        }
+    }
 
 }

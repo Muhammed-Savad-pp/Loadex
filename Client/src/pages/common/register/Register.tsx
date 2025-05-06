@@ -57,7 +57,7 @@ const RegisterPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  let role = location.pathname.includes("transporter") ? "transporter" : "shipper";
+  const role = location.pathname.includes("transporter") ? "transporter" : "shipper";
 
   const navigateToLogin = () => {
     navigate(role === "transporter" ? "/login/transporter" : "/login/shipper")
@@ -102,7 +102,7 @@ const RegisterPage: React.FC = () => {
 
         if (role === 'transporter') {
 
-          const response:any = await transporterSignUp(formData)
+          const response: any = await transporterSignUp(formData)
             
           if (response.success) {
            

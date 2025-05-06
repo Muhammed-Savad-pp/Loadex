@@ -14,7 +14,7 @@ export interface ILoad extends Document {
     height?:string;
     breadth?: string;
     descriptions?: string;
-    status: 'active' | 'in-Transit';
+    status: 'active' | 'in-Transit' | 'completed';
     pickupCoordinates: {
         latitude: number,
         longitude: number,

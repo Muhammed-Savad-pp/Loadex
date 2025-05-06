@@ -43,7 +43,6 @@ interface IFormData {
 
 const LoadBoard: React.FC = () => {
 
-
     const [loads, setLoads] = useState<LoadItem[]>([]);
     const [selectedLoad, setSelectedLoad] = useState<LoadItem | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,8 +52,7 @@ const LoadBoard: React.FC = () => {
         rent: '',
         shipperId: '',
         loadId: ''
-    })
-
+    })    
 
     useEffect(() => {
         const findLoads = async () => {
@@ -81,8 +79,6 @@ const LoadBoard: React.FC = () => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }))
     }
-
-    console.log(formData);
 
     const validateForm = (formData: Partial<IFormData>) => {
         const errors: Partial<IFormData> = {}
@@ -116,21 +112,16 @@ const LoadBoard: React.FC = () => {
         formDataToSend.append('rent', formData.rent ?? '');
         formDataToSend.append('loadId', selectedLoad?._id ?? '');
         formDataToSend.append('shipperId', selectedLoad?.shipperId._id ?? '')
-        try {
-
+        try {            
             const  response: any = await sendBid(formDataToSend);
-
             if(!response.success){
                 toast.error(response.message)
             }else{
                 setIsModalOpen(false)
                 toast.success(response.message)
             }
-
-            
         } catch (error) {
             console.log(error);
-            
         }
     }
 
@@ -141,7 +132,7 @@ const LoadBoard: React.FC = () => {
                 <h1 className="text-2xl font-bold mb-6 text-gray-800">Load Board</h1>
 
                 <div className="grid grid-cols-1 gap-4">
-                    <div className="hidden md:grid md:grid-cols-8 bg-gray-200 rounded-t-lg p-3 font-medium font-semibold text-md text-gray-800">
+                    <div className="hidden md:grid md:grid-cols-8 bg-gray-200 rounded-t-lg p-3  font-semibold text-md text-gray-800">
                         <div className="px-2">Company Name</div>
                         <div className="px-2">Pickup Location</div>
                         <div className="px-2">Drop Location</div>
@@ -154,7 +145,6 @@ const LoadBoard: React.FC = () => {
 
                     {loads.map((load) => (
                         <div key={load._id} className="bg-white rounded-lg shadow overflow-hidden">
-                            {/* Desktop view - row format */}
                             <div className="hidden md:grid md:grid-cols-8 p-3 items-center hover:bg-gray-50">
                                 <div className="px-2 text-sm text-gray-900">{load.shipperId.companyName}</div>
                                 <div className="px-2 text-sm text-gray-900">{load.pickupLocation}</div>

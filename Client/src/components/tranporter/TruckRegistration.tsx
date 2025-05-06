@@ -1,9 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { FaLocationDot } from "react-icons/fa6";
 import { registerTruck } from '../../services/transporter/transporterApi';
 import toast from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import { validateTruckForm } from '../../validations/truckValidation';
+import { debounce } from 'lodash';
+const MAP_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY;
+
+
+
+interface GeoapifyProperties {
+    formatted: string;
+    country: string;
+    state?: string;
+    city?: string;
+    // Add other properties as needed
+}
+
+interface GeoapifyGeometry {
+    coordinates: [number, number]; // [longitude, latitude]
+}
+
+interface GeoapifySuggestion {
+    type: string;
+    properties: GeoapifyProperties;
+    geometry: GeoapifyGeometry;
+}
 
 interface FormDataType {
     vehicleNumber: string;
@@ -15,8 +37,20 @@ interface FormDataType {
     driverName: string;
     driverMobileNumber: string;
     currentLocation: string;
+    currentLocationCoords: {
+        lat: number;
+        lng: number;
+    };
     from: string;
+    fromCoords: {
+        lat: number;
+        lng: number;
+    };
     to: string;
+    toCoords: {
+        lat: number;
+        lng: number;
+    }
     selectedLocations: string[];
 }
 
@@ -24,7 +58,17 @@ interface FormDataType {
 
 const VehicleRegistration = () => {
 
-    const navigate = useNavigate()
+    // const navigate = useNavigate()
+    const [pickupLocation, setPickupLocation] = useState<string>('');
+    const [dropLocation, setDropLocation] = useState<string>('');
+    const [currentLocation, setCurrentLocation] = useState<string>('');
+
+
+    const [locationSuggestions, setLocationSuggestions] = useState<GeoapifySuggestion[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+    const [activeField, setActiveField] = useState<'current' | 'from' | 'to' | null>(null);
+
+
 
     const [formData, setFormData] = useState<FormDataType>({
         vehicleNumber: '',
@@ -36,15 +80,15 @@ const VehicleRegistration = () => {
         driverName: '',
         driverMobileNumber: '',
         currentLocation: '',
+        currentLocationCoords: { lat: 0, lng: 0 },
         from: '',
+        fromCoords: { lat: 0, lng: 0 },
         to: '',
+        toCoords: { lat: 0, lng: 0 },
         selectedLocations: [],
     });
 
     const [formError, setFormError] = useState<Partial<FormDataType>>({});
-
-
-
     const [uploadedDocuments, setUploadedDocuments] = useState({
         rcBook: null,
         driverLicense: null
@@ -55,7 +99,98 @@ const VehicleRegistration = () => {
         driverLicense: null,
     })
 
+    useEffect(() => {
+        const handleClickOutside = (event: any) => {
+            if (!event.target.closest('.location-input-container')) {
+                setShowSuggestions(false);
+            }
+        };
 
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    const debouncedSearch = useCallback(
+        debounce(async (searchTerm) => {
+            if (searchTerm.length > 2) {
+                try {
+                    const response = await fetch(`https://api.geoapify.com/v1/geocode/autocomplete?text=${searchTerm}&apiKey=${MAP_API_KEY}`);
+                    const result = await response.json();
+                    if (result.features && result.features.length > 0) {
+                        setLocationSuggestions(result.features as GeoapifySuggestion[]);
+                        setShowSuggestions(true);
+                    } else {
+                        setLocationSuggestions([]);
+                    }
+                } catch (error) {
+                    console.log('Error fetching location suggestions:', error);
+                    setLocationSuggestions([]);
+                }
+            } else {
+                setLocationSuggestions([]);
+                setShowSuggestions(false);
+            }
+        }, 2000),
+        []
+    );
+
+
+    const handleLocationSearch = (field: 'current' | 'from' | 'to', value: string) => {
+        setActiveField(field);
+
+        // Update the appropriate state based on the field
+        if (field === 'current') {
+            setCurrentLocation(value);
+        } else if (field === 'from') {
+            setPickupLocation(value);
+            setFormData(prev => ({ ...prev, from: value }));
+        } else if (field === 'to') {
+            setDropLocation(value);
+            setFormData(prev => ({ ...prev, to: value }));
+        }
+
+        debouncedSearch(value);
+    };
+
+    const handleLocationSelect = (suggestion: GeoapifySuggestion) => {
+        const properties = suggestion.properties;
+        const formattedAddress = properties.formatted;
+        const coordinates = {
+            lat: suggestion.geometry.coordinates[1],
+            lng: suggestion.geometry.coordinates[0]
+        };
+
+        // Update the appropriate fields based on which input is active
+        if (activeField === 'current') {
+            setCurrentLocation(formattedAddress);
+            setFormData(prev => ({
+                ...prev,
+                currentLocation: formattedAddress,
+                currentLocationCoords: coordinates
+            }));
+        } else if (activeField === 'from') {
+            setPickupLocation(formattedAddress);
+            setFormData(prev => ({
+                ...prev,
+                from: formattedAddress,
+                fromCoords: coordinates
+            }));
+        } else if (activeField === 'to') {
+            setDropLocation(formattedAddress);
+            setFormData(prev => ({
+                ...prev,
+                to: formattedAddress,
+                toCoords: coordinates
+            }));
+        }
+
+        setShowSuggestions(false);
+        setLocationSuggestions([]);
+    };
+
+    // console.log(locationSuggestions);
 
     const handleInputChange = (e: any) => {
         const { name, value } = e.target;
@@ -108,7 +243,6 @@ const VehicleRegistration = () => {
         });
     };
 
-
     const locations = [
         'All India permitted', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar',
         'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
@@ -119,9 +253,6 @@ const VehicleRegistration = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // console.log('Form Data:', formData);
-        // console.log('Uploaded Documents:', uploadedDocuments);
-        // // Submit logic here
 
         const validateErrors = validateTruckForm(formData);
         setFormError(validateErrors);
@@ -135,7 +266,14 @@ const VehicleRegistration = () => {
 
             const formDataToSend = new FormData();
 
-            Object.entries(formData).forEach(([key, value]) => {
+            const formDataWithStringCoords = {
+                ...formData,
+                currentLocationCoords: JSON.stringify(formData.currentLocationCoords),
+                fromCoords: JSON.stringify(formData.fromCoords),
+                toCoords: JSON.stringify(formData.toCoords)
+            };
+
+            Object.entries(formDataWithStringCoords).forEach(([key, value]) => {
                 if (Array.isArray(value)) {
                     if (key === 'selectedLocations') {
                         formDataToSend.append(key, JSON.stringify(value))
@@ -154,13 +292,15 @@ const VehicleRegistration = () => {
             if (uploadedDocuments.driverLicense) {
                 formDataToSend.append('driverLicense', uploadedDocuments.driverLicense)
             }
-
+            
+            formDataToSend.forEach((val) => {
+                console.log(val, typeof val)
+            })
+            
             const response: any = await registerTruck(formDataToSend)
 
             if (!response.success) {
-
                 toast.error(response.message)
-
             } else {
 
                 setFormData({
@@ -173,20 +313,24 @@ const VehicleRegistration = () => {
                     driverName: '',
                     driverMobileNumber: '',
                     currentLocation: '',
+                    currentLocationCoords: { lat: 0, lng: 0 },
                     from: '',
+                    fromCoords: { lat: 0, lng: 0 },
                     to: '',
+                    toCoords: { lat: 0, lng: 0 },
                     selectedLocations: []
-                })
+                });
+
+                setCurrentLocation('');
+                setPickupLocation('');
+                setDropLocation('');
 
                 setDisplayImage({
                     rcBook: null,
                     driverLicense: null
                 })
-
                 toast.success(response.message)
             }
-
-
         } catch (error) {
             console.log(error)
         }
@@ -309,53 +453,100 @@ const VehicleRegistration = () => {
                                     {formError.driverMobileNumber && <p className="text-red-500 text-sm mt-1">{formError.driverMobileNumber}</p>}
                                 </div>
 
-                                <div className="mb-3">
+                                <div className="mb-3 location-input-container">
                                     <label className="block text-sm mb-1">Current Location</label>
                                     <div className="relative">
                                         <FaLocationDot className="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400" />
                                         <input
                                             type="text"
                                             name="currentLocation"
-                                            value={formData.currentLocation}
-                                            onChange={handleInputChange}
+                                            value={currentLocation}
+                                            onChange={(e) => handleLocationSearch('current', e.target.value)}
+                                            onFocus={() => setActiveField('current')}
                                             className={`w-full border border-gray-400 shadow-md rounded p-2 text-sm bg-white pl-10 ${formError.currentLocation ? 'border-red-500' : ''}`}
                                             required
                                         />
                                         {formError.currentLocation && <p className="text-red-500 text-sm mt-1 absolute left-0 top-full">{formError.currentLocation}</p>}
+
+                                        {/* Location suggestions dropdown */}
+                                        {showSuggestions && activeField === 'current' && locationSuggestions.length > 0 && (
+                                            <div className="absolute left-0 right-0 bg-white mt-1 border border-gray-300 rounded shadow-lg z-10 max-h-60 overflow-y-auto">
+                                                {locationSuggestions.map((suggestion, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="p-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100"
+                                                        onClick={() => handleLocationSelect(suggestion)}
+                                                    >
+                                                        <p className="font-medium">{suggestion.properties.formatted}</p>
+                                                        <p className="text-gray-500 text-xs">{suggestion.properties.country}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
 
-                                <div className="mb-3">
+                                <div className="mb-3 location-input-container">
                                     <label className="block text-sm mb-1">From</label>
-                                    <div className='relative'>
+                                    <div className="relative">
                                         <FaLocationDot className="absolute top-1/2 left-3 transform -translate-y-1/2 text-green-500" />
                                         <input
                                             type="text"
                                             name="from"
-                                            value={formData.from}
-                                            onChange={handleInputChange}
+                                            value={pickupLocation || formData.from}
+                                            onChange={(e) => handleLocationSearch('from', e.target.value)}
+                                            onFocus={() => setActiveField('from')}
                                             className={`w-full border border-gray-400 shadow-md rounded p-2 text-sm bg-white pl-10 ${formError.from ? 'border-red-500' : ''}`}
                                             required
                                         />
                                         {formError.from && <p className="text-red-500 text-sm mt-1 absolute left-0 top-full">{formError.from}</p>}
+
+                                        {/* Location suggestions dropdown */}
+                                        {showSuggestions && activeField === 'from' && locationSuggestions.length > 0 && (
+                                            <div className="absolute left-0 right-0 bg-white mt-1 border border-gray-300 rounded shadow-lg z-10 max-h-60 overflow-y-auto">
+                                                {locationSuggestions.map((suggestion, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="p-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100"
+                                                        onClick={() => handleLocationSelect(suggestion)}
+                                                    >
+                                                        <p className="font-medium">{suggestion.properties.formatted}</p>
+                                                        <p className="text-gray-500 text-xs">{suggestion.properties.country}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-
                                 </div>
-
-                                <div className="mb-3">
+                                <div className="mb-3 location-input-container">
                                     <label className="block text-sm mb-1">To</label>
                                     <div className='relative'>
                                         <FaLocationDot className="absolute top-1/2 left-3 transform -translate-y-1/2 text-red-600" />
                                         <input
                                             type="text"
                                             name="to"
-                                            value={formData.to}
-                                            onChange={handleInputChange}
+                                            value={dropLocation || formData.to}
+                                            onChange={(e) => handleLocationSearch('to', e.target.value)}
+                                            onFocus={() => setActiveField('from')}
                                             className={`w-full border border-gray-400 shadow-md rounded p-2 text-sm bg-white pl-10 ${formError.to ? 'border-red-500' : ''}`}
                                             required
                                         />
                                         {formError.to && <p className="text-red-500 text-sm mt-1 absolute left-0 top-full">{formError.to}</p>}
+                                        {showSuggestions && activeField === 'to' && locationSuggestions.length > 0 && (
+                                            <div className="absolute left-0 right-0 bg-white mt-1 border border-gray-300 rounded shadow-lg z-10 max-h-60 overflow-y-auto">
+                                                {locationSuggestions.map((suggestion, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="p-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100"
+                                                        onClick={() => handleLocationSelect(suggestion)}
+                                                    >
+                                                        <p className="font-medium">{suggestion.properties.formatted}</p>
+                                                        <p className="text-gray-500 text-xs">{suggestion.properties.country}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
 
                                 </div>
@@ -459,7 +650,7 @@ const VehicleRegistration = () => {
                                         </label>
                                     </div>
                                 ))}
-                              
+
                             </div>
                         </div>
 

@@ -12,4 +12,7 @@ export interface IAdminController {
     changeShipperStatus(req: CustomeRequest, res: Response): Promise<void>;
     getRequestedShipper(req:CustomeRequest, res: Response) : Promise<void>;
     changeShipperVerificationStatus(req: CustomeRequest, res: Response): Promise<void>;
+    getRequestedTrucks(req: CustomeRequest, res: Response) : Promise<void>;
+    changeTruckVerificationStatus(req: CustomeRequest, res: Response): Promise<void>;
+    getLoads(req: CustomeRequest, res: Response) : Promise<void>;
 }

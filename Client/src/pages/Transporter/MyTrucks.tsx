@@ -149,28 +149,6 @@ const MyTrucks: React.FC = () => {
     }
   }
 
-  // const ChangeTruckActivation = async (id: string) => {
-  //     try {
-
-  //         const response: any = await activateTruck(id)
-
-  //         if (response.success) {
-  //             toast.success(response.message);
-
-  //             setTrucks((prev) =>
-  //                 prev.map((truck) =>
-  //                     truck._id === id ? { ...truck, available: !truck.available } : truck
-  //                 )
-  //             )
-  //         } else {
-  //             toast.error(response.message)
-  //         }
-
-  //     } catch (error) {
-  //         console.error(error)
-  //     }
-
-  // }
 
   const debouncedSearch = useCallback(
     debounce(async (search) => {

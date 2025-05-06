@@ -5,11 +5,12 @@ import { adminLogin } from "../../services/admin/adminapi";
 import { loginSuccess } from "../../redux/slice/authSlice";
 import { useDispatch } from "react-redux";
 import {  useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
-interface FormData {
-    email: string,
-    password: string
-}
+// interface FormData {
+//     email: string,
+//     password: string
+// }
 
 const LoginPage: React.FC = () => {
 
@@ -27,12 +28,17 @@ const LoginPage: React.FC = () => {
         try {
             
             console.log('here')
-            const response = await adminLogin(email, password);
+            const response: any = await adminLogin(email, password);
 
             if(response.success) {
 
+                console.log('success');
+                
+                toast.success(response.message)
                 dispatch(loginSuccess({token: response.token, role: response.role}))
                 navigate('/admin/dashboard')
+            } else {
+                toast.error(response.message)
             }
 
         } catch (error) {

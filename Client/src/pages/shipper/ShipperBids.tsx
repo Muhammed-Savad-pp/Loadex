@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../../components/Common/Navbar/Navbar";
 import ShipperProfileSidebar from "../../components/shipper/ShipperProfileSidebar";
-import { fetchBids, updateBidStatus } from "../../services/shipper/shipperService";
+import { checkoutSession, fetchBids, updateBidStatus } from "../../services/shipper/shipperService";
 import toast from "react-hot-toast";
 import Footer from "../../components/Common/footer/Footer";
-import {loadStripe} from "@stripe/stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLISHEBLE_KEY;
 
 
@@ -33,6 +33,8 @@ interface IBids {
     price: string;
     status: string;
     bidDate: Date;
+    shipperPayment: boolean;
+    transporterPayment: boolean;
 }
 
 const formatDate = (dateString: Date | string): string => {
@@ -76,35 +78,37 @@ const ShipperBids: React.FC = () => {
         };
 
         findBids();
-    }, []); 
+    }, []);
 
 
     const handleStatus = async (bidId: string, status: string) => {
         try {
 
-            const stripe = await loadStripe(stripePublicKey);
 
+            if (status == 'accepted') {
 
-            const response: any = await updateBidStatus(bidId, status);
-            if (response.success) {
-                toast.success(response.message);
-                // const bids = await fetchBids();
-                // setBids(bids as IBids[]);
+                const stripe = await loadStripe(stripePublicKey);
 
-                // const result = stripe?.redirectToCheckout({
-                    
-                // })
+                const response: any = await checkoutSession(bidId);
+
+                if (response.success && stripe) {
+
+                    await stripe.redirectToCheckout({ sessionId: response.sessionId })
+
+                } else {
+                    toast.error('Stripe session failed.')
+                }
             } else {
-                toast.error(response.message)
+
+                const response: any = await updateBidStatus(bidId, status);
+                if (response.success) {
+                    toast.success(response.message);
+                } else {
+                    toast.error(response.message)
+                }
             }
-
-
-           
-
-
         } catch (error) {
             console.log(error);
-
         }
     }
 
@@ -157,6 +161,13 @@ const ShipperBids: React.FC = () => {
                                                             <h3 className="font-semibold text-lg">{bid.transporterId.transporterName}</h3>
                                                         </div>
                                                     </div>
+                                                    {
+                                                        bid.shipperPayment && !bid.transporterPayment ? 
+                                                        <div className="text-yellow-600 font-semibold">
+                                                            Waiting for transporter to complete payment to confirm the trip.
+                                                        </div>
+                                                        : ''
+                                                    }
 
                                                     <div className={`px-2 py-0.5 ${statusStyle.bgColor} ${statusStyle.textColor} rounded-full text-xs font-medium`}>
                                                         {bid.status}
@@ -220,7 +231,7 @@ const ShipperBids: React.FC = () => {
                                                     </div>
 
                                                     {
-                                                        bid.status === 'requested' ?
+                                                        bid.status === 'requested' && !bid.shipperPayment ?
                                                             <div className="flex space-x-2">
                                                                 <button
                                                                     onClick={() => handleStatus(bid._id, 'accepted')}
@@ -249,7 +260,7 @@ const ShipperBids: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <Footer/>
+            <Footer />
         </>
     );
 };

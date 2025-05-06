@@ -9,6 +9,8 @@ import RequestTransporter from "../pages/admin/Request-Transporter";
 import Shipper from "../pages/admin/Shipper";
 import RequestShipper from "../pages/admin/Request-Shipper";
 import RequestTruck from "../pages/admin/Requested-Truck";
+import Load from "../pages/admin/Load";
+import NotFound from "../pages/common/NotFound";
 
 
 const AdminRoutes = () => {
@@ -26,6 +28,9 @@ const AdminRoutes = () => {
                 <Route path="/request/transporter" element={<RequestTransporter/>}/>
                 <Route path="/request/shipper" element={<RequestShipper/>}/>
                 <Route path="/request/truck" element={<RequestTruck />}/>
+                <Route path="/loads" element={<Load/>}/>
+                <Route path="*" element={<NotFound/>}/>
+                
             </Route>
         </Routes>
 

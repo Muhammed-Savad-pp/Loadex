@@ -11,6 +11,9 @@ export interface ITransporter extends Document {
     panNumber?:string;
     aadhaarFront?: string;
     aadhaarBack?: string;
+    profileImage?: string;
+    followers?: string[];
+    followings?: string[];
 }
 
 const transporterSchema: Schema = new Schema ({
@@ -59,7 +62,19 @@ const transporterSchema: Schema = new Schema ({
 
     aadhaarBack: {
         type: String
-    }
+    },
+    
+    profileImage: {
+        type: String,
+    },
+
+    followers: {
+        type: [String]
+    },
+
+    followings: {
+        type: [String],
+    },
 })
 
 export default mongoose.model<ITransporter>('Transporter', transporterSchema)

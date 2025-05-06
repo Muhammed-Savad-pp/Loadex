@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../../components/Common/Navbar/Navbar";
 import ProfileSidebar from "../../components/tranporter/ProfileSidebar";
-import { fetchBids } from "../../services/transporter/transporterApi";
+import { bidCheckoutSession, fetchBids } from "../../services/transporter/transporterApi";
+import { loadStripe } from "@stripe/stripe-js";
+import toast from "react-hot-toast";
+const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLISHEBLE_KEY;
 
 
 
@@ -31,28 +34,30 @@ interface IBids {
     price: string;
     status: string;
     createAt: Date;
+    shipperPayment: boolean;
+    transporterPayment: boolean;
 }
 
 
 const MyBids: React.FC = () => {
 
-    const [loading, setLoading ] = useState<boolean>(false);
-    const [bids , setBids] = useState<IBids[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [bids, setBids] = useState<IBids[]>([]);
 
 
     useEffect(() => {
 
-        const findAllBids = async() => {
+        const findAllBids = async () => {
             try {
 
                 setLoading(true)
                 const response = await fetchBids();
                 console.log(response)
                 setBids(response as IBids[])
-                
+
             } catch (error) {
                 console.log(error);
-            }finally {
+            } finally {
                 setLoading(false)
             }
         }
@@ -83,6 +88,28 @@ const MyBids: React.FC = () => {
         });
     };
 
+    const handlePayment = async (bidId: string) => {
+
+
+        try {
+
+            const stripe = await loadStripe(stripePublicKey);
+
+            const response: any = await bidCheckoutSession(bidId);
+
+            if(response.success && stripe) {
+                
+                await stripe.redirectToCheckout({sessionId: response.sessionId})
+            }else {
+                toast.error('Stripe session Failed')
+            }
+
+        } catch (error) {
+            console.log(error)
+        }
+
+    }
+
 
     return (
         <>
@@ -100,46 +127,57 @@ const MyBids: React.FC = () => {
                             </div>
                         )}
 
-                        {!loading && bids.length === 0 && 
-                         (
-                            <div className="text-center py-12 bg-gray-50 rounded-lg">
-                                <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                                <p className="mt-2 text-lg font-medium text-gray-600">No bids found</p>
-                                <p className="text-gray-500">No transporters have placed bids on your loads yet.</p>
-                            </div>
-                        )}
+                        {!loading && bids.length === 0 &&
+                            (
+                                <div className="text-center py-12 bg-gray-50 rounded-lg">
+                                    <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <p className="mt-2 text-lg font-medium text-gray-600">No bids found</p>
+                                    <p className="text-gray-500">No transporters have placed bids on your loads yet.</p>
+                                </div>
+                            )}
 
                         <div className="space-y-4">
-                             {!loading && bids.map(bid => {
-                                const statusStyle = getStatusStyle(bid.status); 
+                            {!loading && bids.map(bid => {
+                                const statusStyle = getStatusStyle(bid.status);
 
-                                 return (
+                                return (
                                     <div key={bid._id} className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 hover:shadow-md transition-shadow">
                                         <div className="flex flex-col md:flex-row justify-between gap-3">
                                             <div className="flex-1 space-y-3 w-full">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center">
-                                                         <div className="h-10 w-10 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
+                                                        <div className="h-10 w-10 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
                                                             <img
                                                                 src={bid.shipperId.profilePicture || "/api/placeholder/48/48"}
                                                                 alt="Profile"
                                                                 className="h-full w-full object-cover"
                                                             />
-                                                        </div> 
-                                                         <div className="ml-3">
-                                                            <h3 className="font-semibold text-lg">{bid.shipperId.shipperName}</h3>
-                                                          
                                                         </div>
-                                                    </div> 
 
-                                                 <div className={`px-2 py-0.5 ${statusStyle.bgColor} ${statusStyle.textColor} rounded-full text-xs font-medium`}>
+                                                        <div className="ml-3">
+                                                            <h3 className="font-semibold text-lg">{bid.shipperId.shipperName}</h3>
+
+                                                        </div>
+
+                                                    </div>
+                                                    {
+                                                        bid.shipperPayment && !bid.transporterPayment && (
+                                                            <div className="bg-gray-100 text-red-500 text-sm p-2 rounded-lg shadow-sm font-medium">
+                                                                {bid.shipperId?.shipperName} has accepted your bid and paid the commission.
+                                                                <br />
+                                                                Please pay the commission to confirm and start the trip.
+                                                            </div>
+                                                        )
+                                                    }
+
+                                                    <div className={`px-2 py-0.5 ${statusStyle.bgColor} ${statusStyle.textColor} rounded-full text-xs font-medium`}>
                                                         {bid.status}
                                                     </div>
-                                                </div> 
+                                                </div>
 
-                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 py-2 border-t border-b border-gray-100 text-sm">
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 py-2 border-t border-b border-gray-100 text-sm">
                                                     <div>
                                                         <span className="text-xs text-gray-500">Bid Amount</span>
                                                         <p className="font-bold text-green-700">₹{bid.price}</p>
@@ -151,32 +189,32 @@ const MyBids: React.FC = () => {
                                                     <div>
                                                         <span className="text-xs text-gray-500">Capacity</span>
                                                         <p className="font-medium">{bid.truckId.capacity}</p>
-                                                    </div> 
+                                                    </div>
                                                     <div className="text-right md:text-left">
                                                         <span className="text-xs text-gray-500">Bid Date</span>
                                                         <p className="font-medium">{formatDate(bid.createAt || new Date())}</p>
                                                     </div>
-                                                </div> 
+                                                </div>
 
-                                                 <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-3"> 
+                                                <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-3">
                                                     {/* From-To Location */}
-                                                     <div className="flex items-start space-x-2"> 
-                                                         <div className="flex flex-col items-center"> 
-                                                             <div className="w-2 h-2 rounded-full bg-green-500"></div> 
-                                                             <div className="w-0.5 h-10 bg-gray-300 my-1"></div> 
-                                                             <div className="w-2 h-2 rounded-full bg-red-500"></div> 
-                                                        </div> 
-                                                     <div className="space-y-2 text-sm"> 
-                                                             <div> 
-                                                                <p className="text-xs text-gray-500">From</p> 
-                                                                <p className="font-medium">{bid.loadId.pickupLocation}</p> 
-                                                            </div> 
+                                                    <div className="flex items-start space-x-2">
+                                                        <div className="flex flex-col items-center">
+                                                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                                            <div className="w-0.5 h-10 bg-gray-300 my-1"></div>
+                                                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                                        </div>
+                                                        <div className="space-y-2 text-sm">
                                                             <div>
-                                                                <p className="text-xs text-gray-500">To</p> 
-                                                                 <p className="font-medium">{bid.loadId.dropLocation}</p> 
-                                                             </div> 
-                                                         </div> 
-                                                     </div> 
+                                                                <p className="text-xs text-gray-500">From</p>
+                                                                <p className="font-medium">{bid.loadId.pickupLocation}</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs text-gray-500">To</p>
+                                                                <p className="font-medium">{bid.loadId.dropLocation}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
                                                     {/* Material Details */}
                                                     <div className="flex gap-3 md:gap-6 text-sm w-full justify-start ml-33">
@@ -192,13 +230,22 @@ const MyBids: React.FC = () => {
                                                             <p className="text-xs text-gray-500">Delivery Date</p>
                                                             <p className="font-medium">{formatDate(bid.loadId.scheduledDate)}</p>
                                                         </div>
-                                                    </div> 
-                                                </div> 
+                                                    </div>
+
+                                                    {
+                                                        bid.shipperPayment && !bid.transporterPayment && (
+                                                            <div className="flex gap-3 md:gap-6  w-full justify-start ml-33" onClick={() => handlePayment(bid._id)}>
+                                                                <button className="px-4 py-1.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors ">Pay</button>
+                                                            </div>
+                                                        )
+                                                    }
+
+                                                </div>
                                             </div>
+                                        </div>
                                     </div>
-                                    </div> 
-                                ); 
-                             })} 
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

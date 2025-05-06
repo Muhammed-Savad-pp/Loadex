@@ -17,7 +17,7 @@ const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
-        loginSuccess: (state, action: PayloadAction<{token: any, role: any}> ) => {
+        loginSuccess: (state, action: PayloadAction<{token: string, role: string}> ) => {
             localStorage.setItem('accessToken', action.payload.token);
             localStorage.setItem('role', action.payload.role);
             state.isLoggedIn = true;

@@ -5,6 +5,7 @@ import React, { useState, } from "react";
 import { useSelector } from "react-redux";
 import { FaUserAlt } from "react-icons/fa";
 import { getTransporterVerificationStatus } from "../../../services/transporter/transporterApi";
+import { getShipperVerificatinStatus } from "../../../services/shipper/shipperService";
 import toast from "react-hot-toast";
 
 interface NavbarProps {
@@ -22,8 +23,6 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick }) => {
 
   const handleRegisterTruck = async () => {
     try {
-
-      console.log('erre');
 
       const response: any = await getTransporterVerificationStatus();
 
@@ -55,6 +54,35 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick }) => {
     }
   }
 
+  const handlePostLoad = async () => {
+    try {
+
+      const response: any = await getShipperVerificatinStatus();
+      console.log(response);
+
+      if(response.success) {
+
+        if(response.shipperData == 'approved') {
+
+          navigate('/shipper/postLoad');
+
+        } else if( response.shipperData == 'requested') {
+
+          toast.error('Awaiting admin approval.');
+
+        } else {
+
+          toast.error('Verification incomplete.');
+          navigate('/shipper/profile');
+
+        }
+      }
+
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
   const handleProfileClick = () => {
     
     if(isLoggedIn && role === 'transporter'){
@@ -62,10 +90,7 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick }) => {
     } else if(isLoggedIn && role === 'shipper') {
       navigate('/shipper/profile')
     }
-
   }
-
-
 
   return (
     <div className="bg-gradient-to-r from-[#E31937] to-[#FF9F1C]">
@@ -76,13 +101,13 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick }) => {
           </Link>
           <div className="flex items-center gap-6">
             <Link to="/" className="hover:opacity-80 text-xl">Home</Link>
-            <Link to="/board" className="hover:opacity-80 text-xl">Board</Link>
-            {/* {
+            {
               role === 'transporter' ? 
-              // <button onClick={handlePostTruck} className="hover:opacity-80 text-xl">Post Truck</button> 
-              : <button  className="hover:opacity-80 text-xl">Post Load</button>
+                <Link to="/transporter/loadBoard" className="hover:opacity-80 text-xl">Board</Link>
+              : 
+                <Link to="/shipper/truckBoard" className="hover:opacity-80 text-xl">Board</Link>
             }
-             */}
+            
             <div className="relative" onMouseEnter={() => setIsDropdownOpen(true)} onMouseLeave={() => setIsDropdownOpen(false)}>
               <button className="hover:opacity-80 text-xl">
                 Service
@@ -97,18 +122,17 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick }) => {
                       </ul>
                       :
                       <ul className="py-2">
-                        <li  className="px-4 py-2 hover:bg-gray-200 cursor-pointer">Post Load </li>
+                        <li onClick={handlePostLoad}  className="px-4 py-2 hover:bg-gray-200 hover:text-black cursor-pointer">Post Load </li>
                       </ul>
                   }
                 </div>
               )}
             </div>
-
-
-
-
-
-            <Link to="/directory" className="hover:opacity-80 text-xl">Directory</Link>
+            {
+              role === 'transporter' ? 
+                <Link to="/transporter/directory" className="hover:opacity-80 text-xl">Directory</Link> : 
+                <Link to="/shipper/directory" className="hover:opacity-80 text-xl">Directory</Link>
+            } 
           </div>
           <div className="flex items-center gap-4">
             {isLoggedIn ? (

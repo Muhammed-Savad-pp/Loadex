@@ -3,25 +3,25 @@ import React from 'react';
 
 const DashboardContent = () => {
   // Sample data for charts
-  const revenueData = [
-    { name: 'Jan', value: 200 },
-    { name: 'Feb', value: 300 },
-    { name: 'Mar', value: 250 },
-    { name: 'Apr', value: 350 },
-    { name: 'May', value: 320 },
-    { name: 'Jun', value: 400 },
-    { name: 'Jul', value: 380 },
-  ];
+  // const revenueData = [
+  //   { name: 'Jan', value: 200 },
+  //   { name: 'Feb', value: 300 },
+  //   { name: 'Mar', value: 250 },
+  //   { name: 'Apr', value: 350 },
+  //   { name: 'May', value: 320 },
+  //   { name: 'Jun', value: 400 },
+  //   { name: 'Jul', value: 380 },
+  // ];
   
-  const tripsData = [
-    { name: 'Jan', value: 50 },
-    { name: 'Feb', value: 70 },
-    { name: 'Mar', value: 60 },
-    { name: 'Apr', value: 90 },
-    { name: 'May', value: 100 },
-    { name: 'Jun', value: 85 },
-    { name: 'Jul', value: 110 },
-  ];
+  // const tripsData = [
+  //   { name: 'Jan', value: 50 },
+  //   { name: 'Feb', value: 70 },
+  //   { name: 'Mar', value: 60 },
+  //   { name: 'Apr', value: 90 },
+  //   { name: 'May', value: 100 },
+  //   { name: 'Jun', value: 85 },
+  //   { name: 'Jul', value: 110 },
+  // ];
 
   return (
     <div className="flex-1 p-6 bg-gray-50">

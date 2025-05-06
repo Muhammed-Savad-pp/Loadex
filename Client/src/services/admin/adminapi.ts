@@ -14,7 +14,7 @@ export const adminLogin = async (email: string, password: string) => {
 
 export const getTransporter = async () => {
     
-    const response = await apiClient.get('/admin/getTransporter')
+    const response = await apiClient.get('/admin/transporters')
     return response.data
 
 }
@@ -35,7 +35,7 @@ export const updateTransporterBlockandUnblock = async (id: string) => {
 
 export const getRequestTransporter = async () => {
 
-    const response = await apiClient.get('/admin/getrequestTransporter');
+    const response = await apiClient.get('/admin/fetchRequestTransporter');
     return response.data;
 
 }
@@ -49,7 +49,7 @@ export const changeVerificationStatus = async (id: string,status: string) =>{
 
 export const getShipper = async () => {
 
-    const response = await apiClient.get('/admin/getShipper');
+    const response = await apiClient.get('/admin/fetchShipper');
     return response.data;
 }
 
@@ -61,7 +61,7 @@ export const updateSipperStatus = async (id: string) =>{
 
 export const getRequestedShipper = async () => {
 
-    const response = await apiClient.get('/admin/getRequestedShipper');
+    const response = await apiClient.get('/admin/fetchRequestShipper');
     return response.data;
 
 }
@@ -73,3 +73,24 @@ export const changeShipperVerificationStatus = async (id: string, status: string
     
 }
 
+export const getRequestedTrucks = async () => {
+
+    const response = await apiClient.get('/admin/fetchRequestTrucks');
+    return response.data;
+
+}
+
+export const changeTruckVerificationStatus = async (id: string, status: string) => {
+
+    const response = await apiClient.patch('/admin/changeTruckVerificationStatus', { id, status});
+    return response.data;
+
+}
+
+
+export const getLoads = async () => {
+    
+    const response = await apiClient.get('/admin/fetchLoads');
+    return response.data;
+    
+}

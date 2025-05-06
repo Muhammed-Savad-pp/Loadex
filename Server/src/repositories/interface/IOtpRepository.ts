@@ -1,4 +1,4 @@
-import { IOtp } from "../../models/transporter/otpModel";
+import { IOtp } from "../../models/otpModel";
 import { IBaseRepository } from "./IBaseRepository";
 
 export interface IOtpRepository extends IBaseRepository<IOtp> {

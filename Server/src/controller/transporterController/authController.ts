@@ -1,17 +1,20 @@
 import { Request,Response,NextFunction, response } from "express";
 import { AuthService } from "../../services/transporter/authService";
 import { HTTP_STATUS } from "../../enums/httpStatus";
+import { ITransporterAuthController } from "../../interface/transporter/ITransporterAuthController";
+import { ITransporterAuthService } from "../../interface/transporter/ITransporterAuthService";
 
-const authService = new AuthService()
 
-class AuthController {
+class AuthController implements ITransporterAuthController {
+
+    constructor ( private _transporterAuthService: ITransporterAuthService ) {}
 
     async signUp(req:Request, res:Response){
         try {
             
             const {name, email, phone, password, confirmPassword} = req.body;
 
-            const respone = await authService.transporterSignup(
+            const respone = await this._transporterAuthService.transporterSignup(
                 name,
                 email,
                 phone, 
@@ -40,7 +43,7 @@ class AuthController {
 
             const otp = req.body;
 
-            const response = await authService.verifyTransporterOtp(otp)
+            const response = await this._transporterAuthService.verifyTransporterOtp(otp)
             
             if(typeof response === "string"){
 
@@ -67,7 +70,7 @@ class AuthController {
         const formData = req.body;
         try {
             
-            const respone = await authService.transporterLogin(formData)
+            const respone = await this._transporterAuthService.transporterLogin(formData)
 
             if(respone.success){
                 res.status(HTTP_STATUS.CREATED)
@@ -96,7 +99,7 @@ class AuthController {
         
         try {
 
-            const response = await authService.resendOtp(email)
+            const response = await this._transporterAuthService.resendOtp(email)
 
             if(typeof response === 'string') {
                 res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
@@ -132,7 +135,7 @@ class AuthController {
             console.log('here');
             
 
-            const {accessToken, refreshToken} = await authService.validateRefreshToken(req.cookies.refreshToken); 
+            const {accessToken, refreshToken} = await this._transporterAuthService.validateRefreshToken(req.cookies.refreshToken); 
 
             res.cookie('refreshToken', refreshToken, {
                 httpOnly: true,
@@ -178,6 +181,63 @@ class AuthController {
         }
     }
 
+    async forgotPassword (req: Request, res: Response) {
+        try {
+            
+            const {email} = req.body;
+            const response = await this._transporterAuthService.forgotPassword(email);
+
+            res.status(HTTP_STATUS.OK).json(response);
+
+        } catch (error : any) {
+            console.log(error)
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: error.message})
+        }
+    }
+
+    async changeNewPassword(req: Request, res: Response) {
+        try {
+            
+            const {email, password} = req.body;
+            console.log(email, password, 'asfagh');
+
+            const response = await this._transporterAuthService.setNewPassword(email, password);
+
+            res.status(HTTP_STATUS.OK).json(response);
+
+        } catch (error: any) {
+            console.log(error);
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: error.message})
+        }
+    }
+
+
+    async googleLogin(req: Request, res: Response): Promise<void> {
+        try {
+            
+            const {name, email} = req.body;
+
+            const response = await this._transporterAuthService.googleLogin(name, email);
+
+            if(response.success){
+                res.status(HTTP_STATUS.CREATED)
+                .cookie('refreshToken',response.refreshToken,
+                    { 
+                        httpOnly: true,
+                        secure: true,
+                        sameSite: 'none',
+                        maxAge: 3 * 24 * 60 * 1000
+                    }
+                )
+                .json({success: true, message: 'Logged in successfully', accessToken: response.accessToken, role:'transporter', data:response.transporterData})
+            } else {
+                res.status(HTTP_STATUS.BAD_REQUEST).json(response)
+            }
+        } catch (error) {
+            console.log(error);
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(error)
+        }
+    }
     
 }
 

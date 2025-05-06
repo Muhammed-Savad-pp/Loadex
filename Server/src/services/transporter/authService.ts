@@ -1,13 +1,15 @@
 import transporterRepositories from "../../repositories/implementaion/transporterRepository";
 import bcrypt from "bcryptjs";
 import { OtpRepository } from "../../repositories/implementaion/otpRepositories";
-import { IOtp } from "../../models/transporter/otpModel";
+import { IOtp } from "../../models/otpModel";
 import { generateAcessToken, generateRefreshToken, verifyToken } from "../../utils/Token.utils";
-import { ITransporter } from "../../models/transporter/TransporterModel";
+import { ITransporter } from "../../models/TransporterModel";
 import { MailService } from "../../utils/mail";
 import { decode } from "punycode";
 import { HTTP_STATUS } from "../../enums/httpStatus";
 import { ITransporterRepository } from "../../repositories/interface/ITransporterRepository";
+import { ITransporterAuthService } from "../../interface/transporter/ITransporterAuthService";
+import { IOtpRepository } from "../../repositories/interface/IOtpRepository";
 
 const mailService = new MailService()
 
@@ -18,25 +20,15 @@ async function hashPassword(password: string): Promise<string> {
 export const generateOtp = () => {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
     return otp;
 }
 
-interface TransporterData {
-    transporterName : string;
-    email: string
-}
+export class AuthService implements ITransporterAuthService {
 
-
-export class AuthService {
-    
-    private transporterRepositories: ITransporterRepository;
-    private otpRepository: OtpRepository;
-
-    constructor() {
-        this.transporterRepositories =transporterRepositories;
-        this.otpRepository = new OtpRepository();
-    }
+    constructor (
+        private _transporterRepository: ITransporterRepository,
+        private _otpRepository: IOtpRepository
+    ) { }
 
     async transporterSignup(transporterName: string, email: string, phone: string, password: string, confirmPassword: string): Promise<{ success: boolean, message: string}> {
             
@@ -44,7 +36,7 @@ export class AuthService {
             return {success:false, message:"Password and confirmPassword do not match"}
         }
 
-        const existingTransporter = await this.transporterRepositories.findTransporterByEmail(email)
+        const existingTransporter = await this._transporterRepository.findTransporterByEmail(email)
 
         if(existingTransporter && existingTransporter.isVerified){
 
@@ -54,7 +46,7 @@ export class AuthService {
 
         if(existingTransporter && !existingTransporter.isVerified) {
 
-            const getOtp = await this.otpRepository.findOtpByEmail(email);
+            const getOtp = await this._otpRepository.findOtpByEmail(email);
             
             if(getOtp) {
 
@@ -71,7 +63,7 @@ export class AuthService {
 
                     const newOtp = generateOtp();
 
-                    await this.otpRepository.createOtp({email, otp:newOtp} as unknown as IOtp)
+                    await this._otpRepository.createOtp({email, otp:newOtp} as unknown as IOtp)
 
                     await mailService.sendOtpEmail(email, newOtp)
 
@@ -83,7 +75,7 @@ export class AuthService {
 
                 const newOtp = generateOtp();
 
-                await this.otpRepository.createOtp({email, otp: newOtp} as unknown as IOtp);
+                await this._otpRepository.createOtp({email, otp: newOtp} as unknown as IOtp);
 
                 await mailService.sendOtpEmail(email, newOtp);
                 
@@ -94,7 +86,7 @@ export class AuthService {
 
         const hashedPassword = await hashPassword(password)
 
-        const savedTransporter = await this.transporterRepositories.createTransporter({
+        const savedTransporter = await this._transporterRepository.createTransporter({
             transporterName:transporterName,
             email: email,
             phone: phone,
@@ -104,7 +96,7 @@ export class AuthService {
         const newOtp = generateOtp();
         console.log(newOtp)
 
-        await this.otpRepository.createOtp({email, otp:newOtp} as unknown as IOtp)
+        await this._otpRepository.createOtp({email, otp:newOtp} as unknown as IOtp)
         
         await mailService.sendOtpEmail(email, newOtp)
 
@@ -116,21 +108,21 @@ export class AuthService {
 
         const {otpData, email } = otpdata;
 
-        const validUser = await this.transporterRepositories.findTransporterByEmail(email)
+        const validUser = await this._transporterRepository.findTransporterByEmail(email)
 
         if(!validUser) {
             return {success: false, message: "This email is not registered"}
         }
 
-        const currentOtp = await this.otpRepository.findOtpByEmail(email);
+        const currentOtp = await this._otpRepository.findOtpByEmail(email);
 
         if(!currentOtp?.otp) return {success: false, message: "Resend the otp"};
 
         if(currentOtp.otp === otpData) {
 
-            await this.transporterRepositories.verifyTransporter(email, true);
+            await this._transporterRepository.verifyTransporter(email, true);
 
-            await this.otpRepository.deleteOtpByEmail(email);
+            await this._otpRepository.deleteOtpByEmail(email);
 
             return {success: true, message: "Otp verification completed"}
             
@@ -140,11 +132,11 @@ export class AuthService {
         } 
     }
 
-    async transporterLogin(userData:{email: string, password: string}): Promise<{success: boolean, message: string, data?:TransporterData,   accessToken?: string, refreshToken?: string}> {
+    async transporterLogin(userData:{email: string, password: string}): Promise<{success: boolean, message: string, data?:Partial<ITransporter>,   accessToken?: string, refreshToken?: string}> {
 
         const {email, password} = userData;
 
-        const existingTransporter = await this.transporterRepositories.findTransporterByEmail(email);
+        const existingTransporter = await this._transporterRepository.findTransporterByEmail(email);
 
         if(!existingTransporter){
 
@@ -163,7 +155,7 @@ export class AuthService {
 
         
 
-        const transporterData :  TransporterData = {
+        const transporterData :  Partial<ITransporter> = {
             transporterName: existingTransporter.transporterName,
             email:existingTransporter.email
         }
@@ -188,15 +180,15 @@ export class AuthService {
 
         try {
 
-            const existingEmail = await this.otpRepository.findOtpByEmail(email);
+            const existingEmail = await this._otpRepository.findOtpByEmail(email);
 
             if(existingEmail) {
                 
-                await this.otpRepository.updateOtpByEmail(email, otp)
+                await this._otpRepository.updateOtpByEmail(email, otp)
             
             } else {
 
-                await this.otpRepository.createOtp({email, otp:otp} as unknown as IOtp)
+                await this._otpRepository.createOtp({email, otp:otp} as unknown as IOtp)
 
             }
 
@@ -214,7 +206,7 @@ export class AuthService {
             
             const decoded = verifyToken(token);
 
-            const transporter = await this.transporterRepositories.findTransporterById(decoded.transporterId)
+            const transporter = await this._transporterRepository.findTransporterById(decoded.transporterId)
             console.log(decoded);
 
             if(!transporter) {
@@ -231,6 +223,88 @@ export class AuthService {
         } catch (error) {
            console.error('error while storing refreshToken', error)
            throw error
+        }
+    }
+
+    async forgotPassword (email: string): Promise<{success: boolean, message: string}> {
+        try {
+            
+            const transporter = await this._transporterRepository.findTransporterByEmail(email);
+            console.log(transporter);
+
+            if(!transporter){
+                return {success: false, message:'Transporter Not Registered'}
+            }
+
+            const newOtp = generateOtp();
+
+            await this._otpRepository.createOtp({email, otp:newOtp} as unknown as IOtp)
+        
+            await mailService.sendOtpEmail(email, newOtp)
+
+            return {success: true, message: 'Otp send successfully'}
+
+        } catch (error) {
+            console.log(error);
+            return {success: false, message: 'Error in service'}
+        }
+    }
+
+    async setNewPassword(email: string, password: string): Promise<{success: boolean, message: string}> {
+        try {
+            
+            const transporter = await this._transporterRepository.findTransporterByEmail(email);
+
+            const hashedPassword = await hashPassword(password);
+            const id = String(transporter?._id);
+
+            await this._transporterRepository.updateTransporterById(id, {password: hashedPassword})
+            
+
+            return {success: true, message: 'Password Changed SuccessFully'}
+
+
+        } catch (error) {
+            console.log(error);
+            return {success: false, message:'New Password Change is failed'}
+        }
+    }
+
+    async googleLogin(name: string, email: string): Promise<{ success: boolean; message: string; transporterData?: Partial<ITransporter> | null; accessToken?: string; refreshToken?: string; }> {
+        try {
+
+            const existingTransporter = await this._transporterRepository.findTransporterByEmail(email);
+            console.log(existingTransporter);
+
+            if(!existingTransporter) {
+
+                const savedTransporter = await this._transporterRepository.createTransporter({
+                    transporterName:name,
+                    email: email,
+                    phone: 'Not Provided',
+                    password: '',
+                    isVerified: true
+                })    
+
+            }
+
+
+            if(existingTransporter  && existingTransporter.isBlocked) {
+                return {success: false, message: 'The Transporter is blocked'}
+            }
+
+           
+            const { ...data } = existingTransporter
+
+            const accessToken = await generateAcessToken(data._id as string, 'transporter');
+            const refreshToken = await generateRefreshToken(data._id as string, 'transporter');
+
+            
+            return {success: true, message:"Logged SuccessFully",transporterData: existingTransporter, accessToken, refreshToken}
+            
+        } catch (error) {
+            console.log(error);
+            return {success: false, message: 'Login failed'}
         }
     }
 }

@@ -42,25 +42,14 @@ const RequestShipper: React.FC = () => {
     console.log(shippers);
 
 
-    const getStatusBadge = (status: string) => {
-        switch (status.toLowerCase()) {
-            case "approved":
-                return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Approved</span>;
-            case "rejected":
-                return <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">Rejected</span>;
-            case "pending":
-                return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">Pending</span>;
-            default:
-                return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">{status}</span>;
-        }
-    };
+   
 
-    const handleVerificationStatusChange  = async (id: string, status: string) => {
+    const handleVerificationStatusChange = async (id: string, status: string) => {
         try {
 
 
-            const response: any = await changeShipperVerificationStatus(id, status);
-            toast.success(response);
+            const response = await changeShipperVerificationStatus(id, status);
+            toast.success(response as string);
 
 
             const shippers: any = await getRequestedShipper()
@@ -110,7 +99,8 @@ const RequestShipper: React.FC = () => {
                                                 <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium inline-block">
                                                     {shipper.verificationStatus}
                                                 </span>
-                                            </div>                                           <div className="col-span-1 text-center">
+                                            </div>                                           
+                                            <div className="col-span-1 text-center">
                                                 <button
                                                     onClick={() => setSelectedShiper(shipper)}
                                                     className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150"
@@ -230,14 +220,14 @@ const RequestShipper: React.FC = () => {
 
                             <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                                 <button
-                                     onClick={() => handleVerificationStatusChange(selectedShipper._id, 'approved')}
+                                    onClick={() => handleVerificationStatusChange(selectedShipper._id, 'approved')}
                                     type="button"
                                     className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
                                 >
                                     <FiCheck className="mr-2 mt-1" /> Approve
                                 </button>
                                 <button
-                                     onClick={() => handleVerificationStatusChange(selectedShipper._id, 'rejected')}
+                                    onClick={() => handleVerificationStatusChange(selectedShipper._id, 'rejected')}
                                     type="button"
                                     className="mt-3 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                                 >

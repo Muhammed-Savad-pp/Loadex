@@ -1,8 +1,11 @@
-import { IShipper } from "../../models/shipper/ShipperModel";
+import { IBid } from "../../models/BidModel";
+import { ILoad } from "../../models/LoadModel";
+import { IShipper } from "../../models/ShipperModel";
 import { IBaseRepository } from "./IBaseRepository";
 
 
 export interface IShipperRepository extends IBaseRepository<IShipper>{
+
     createShipper(data: any): Promise<IShipper | null>;
     findShipperByEmail(email: string): Promise<IShipper | null>;
     verifyShipper(email: string, isVerified:boolean): Promise<IShipper | null>
@@ -10,5 +13,6 @@ export interface IShipperRepository extends IBaseRepository<IShipper>{
     getShipper(): Promise<IShipper[]>;
     findShipperById(id: string): Promise<IShipper | null>;
     updateShipperStatus(id: string, isBlocked: boolean): Promise<IShipper | null>;
-    getRequestedShipper() : Promise<IShipper[]>
+    getRequestedShipper() : Promise<IShipper[]>;
+    
 }

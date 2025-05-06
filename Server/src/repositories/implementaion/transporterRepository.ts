@@ -1,7 +1,9 @@
-import Transporter,{ITransporter} from "../../models/transporter/TransporterModel"
+import Transporter,{ITransporter} from "../../models/TransporterModel"
 import { BaseRepositories } from "./baseRepositories";
-import Truck, {ITruck} from '../../models/transporter/TruckModel';
+import Truck, {ITruck} from '../../models/TruckModel';
 import { ITransporterRepository } from "../interface/ITransporterRepository";
+import Load, { ILoad } from "../../models/LoadModel";
+import Bid, { IBid } from "../../models/BidModel";
 
  class TransporterRepository extends BaseRepositories<ITransporter> implements ITransporterRepository {
 
@@ -10,23 +12,47 @@ import { ITransporterRepository } from "../interface/ITransporterRepository";
     }
 
     async createTransporter(data: Partial<ITransporter> ): Promise <ITransporter | null> {
-        return await Transporter.create(data)
+        try {
+
+            return await Transporter.create(data);
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error));
+        }
     }
 
     async findTransporterByEmail(email: string): Promise<ITransporter | null> {
-        const data = await Transporter.findOne({email})
-        const userData = data?.toObject();
-        return userData as ITransporter
-        
+        try {
+
+            const data = await Transporter.findOne({email})
+            const userData = data?.toObject();
+            return userData as ITransporter
+            
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
     }
 
     async verifyTransporter(email: string, isVerified: boolean): Promise<ITransporter | null> {
-        await Transporter.updateOne({email}, {isVerified});
-        return await Transporter.findOne({email})
+        try {
+            
+            await Transporter.updateOne({email}, {isVerified});
+            return await Transporter.findOne({email});
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
     }
 
     async findTransporterById(id: string): Promise<ITransporter | null>  {
-        return await this.model.findById(id).exec();
+        try {
+
+            return await this.model.findById(id).exec();
+            
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+        
     }
 
     async updateTransporterById(transporterId: string, transporterData: Partial<ITransporter>) : Promise<ITransporter | null> {
@@ -38,15 +64,7 @@ import { ITransporterRepository } from "../interface/ITransporterRepository";
             throw new Error(String(error))
         }
     }
-
-    async createTruck(truckData: Partial<ITruck>) : Promise<ITruck | null> {
-        return await Truck.create(truckData)
-    }
-
-    async FindTruckByRcno(RcNo: string) : Promise <ITruck | null> {
-        return await Truck.findOne({truckNo: RcNo})
-    }
-
+    
     async getTransporter(): Promise<ITransporter[]> {
         try {
             
@@ -94,6 +112,7 @@ import { ITransporterRepository } from "../interface/ITransporterRepository";
         }
     }
  
+   
 }
 
 export default new TransporterRepository();

@@ -24,12 +24,14 @@ export interface ITruck extends Document {
     driverLicense?: string, 
     available?: boolean,
     createdAt?: Date;
+    status?: 'active' | 'in-active' | 'in-transit'
 }
 
 const truckSchema: Schema = new Schema({
     
     transporterId: {
         type:String,
+        ref: 'Transporter',
         required: true,
     },
 
@@ -149,7 +151,13 @@ const truckSchema: Schema = new Schema({
             type: Number,
             required: true,
         }
-    }
+    },
+
+    status:{
+        type: String,
+        enum: ['active', 'in-active', 'in-transit'],
+        default: 'in-active'
+    },
 
 
 });

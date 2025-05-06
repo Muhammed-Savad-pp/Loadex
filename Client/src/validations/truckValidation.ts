@@ -18,7 +18,7 @@ interface TruckFormData {
 
 export const validateTruckForm = (formData: TruckFormData) => {
 
-    let errors: Partial<TruckFormData> = {};
+    const errors: Partial<TruckFormData> = {};
 
     if(!formData.vehicleNumber.trim()) errors.vehicleNumber = 'Vehicle number is required';
     if(!formData.ownerName.trim()) errors.ownerName = 'Owner name is required';

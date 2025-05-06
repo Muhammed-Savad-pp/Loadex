@@ -1,4 +1,4 @@
-import Otp, { IOtp } from "../../models/transporter/otpModel";
+import Otp, { IOtp } from "../../models/otpModel";
 import { IOtpRepository } from "../interface/IOtpRepository";
 
 import { BaseRepositories } from "./baseRepositories";
@@ -15,10 +15,16 @@ export class OtpRepository extends BaseRepositories<IOtp> implements IOtpReposit
     }
 
     async createOtp(otpData: IOtp): Promise<IOtp> {
-        console.log("here 2");
+        try {
 
-        const newOtp = new this.model(otpData);
-        return await newOtp.save();
+            const newOtp = new this.model(otpData);
+            return await newOtp.save();
+            
+        } catch (error) {
+            console.log(error)
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+        
     }
 
     async findOtpByEmail(email: string): Promise<IOtp | null> {
@@ -29,16 +35,28 @@ export class OtpRepository extends BaseRepositories<IOtp> implements IOtpReposit
         } catch (error) {
             console.log(error);
             return null;
-
         }
     }
 
     async updateOtpByEmail(email: string, otp: string): Promise<void> {
-        await Otp.updateOne({ email }, { otp, createdAt: new Date() })
+        try {
+
+            await Otp.updateOne({ email }, { otp, createdAt: new Date() })
+            
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error));
+        }
+        
     }
 
     async deleteOtpByEmail(email: string): Promise<void> {
-        await Otp.deleteOne({ email })
+        try {
+            
+            await Otp.deleteOne({ email })
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
     }
 } 
 

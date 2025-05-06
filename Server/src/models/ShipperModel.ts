@@ -14,6 +14,9 @@ export interface IShipper extends Document {
     aadhaarBack?: string;
     companyName?: string;
     gstNumber?: string;
+    profileImage?: string;
+    followers?: string[];
+    followings?: string[];  
 }
 
 const shipperSchema: Schema = new Schema ({
@@ -70,7 +73,19 @@ const shipperSchema: Schema = new Schema ({
 
     gstNumber: {
         type: String
-    }
+    },
+
+    profileImage: {
+        type: String,
+    },
+
+    followers: {
+        type: [String]
+    },
+
+    followings: {
+        type: [String],
+    }, 
 
 })
 

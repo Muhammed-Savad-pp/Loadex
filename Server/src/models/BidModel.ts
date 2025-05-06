@@ -7,6 +7,8 @@ export interface IBid extends Document {
     truckId: Types.ObjectId;
     price: string;
     status: 'requested' | 'accepted' | 'rejected'; 
+    shipperPayment: boolean;
+    transporterPayment: boolean;
     createAt: Date;
 }
 
@@ -47,10 +49,20 @@ const bidSchema: Schema = new Schema ({
         default: 'requested'
     },
 
+    shipperPayment: {
+        type: Boolean,
+        default: false,
+    },
+
+    transporterPayment: {
+        type: Boolean,
+        default: false,
+    },
+
     createAt: {
         type: Date,
         default: Date.now,
-    }
+    },
 
 })
 

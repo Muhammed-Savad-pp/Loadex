@@ -5,6 +5,7 @@ import Login from "../pages/common/login/Login";
 import Register from "../pages/common/register/Register";
 import TransporterLoginProtector from "../ProtectedRoutes/TransporterLoginProtector";
 import ShipperLoginProtector from "../ProtectedRoutes/ShipperLoginProtector";
+import NotFound from "../pages/common/NotFound";
 
 
 const CommonRoutes: React.FC = () => {
@@ -14,17 +15,12 @@ const CommonRoutes: React.FC = () => {
                 <Route path="/login/transporter" element={<Login />} />
                 <Route path="/register/transporter" element={<Register />} />
             </Route>
-
             <Route element={<ShipperLoginProtector />}>
-
                 <Route path="/login/shipper" element={<Login />} />
                 <Route path="/register/shipper" element={<Register />} />
-
             </Route>
-
             <Route path="/" element={<Home />} />
-
-
+            <Route path="*" element={<NotFound/>}/>
 
         </Routes>
     )

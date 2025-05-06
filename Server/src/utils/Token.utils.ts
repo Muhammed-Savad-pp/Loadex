@@ -1,5 +1,5 @@
 import  jwt, { JwtPayload }  from "jsonwebtoken";
-import { ITransporter } from "../models/transporter/TransporterModel";
+import { ITransporter } from "../models/TransporterModel";
 import exp from "constants";
 import { HTTP_STATUS } from "../enums/httpStatus";
 
@@ -11,7 +11,6 @@ export const generateAcessToken = async (id: string, role: string) => {
     }
 
     const respone = await jwt.sign( {id, role}, secret, {expiresIn: '2h'})
-    console.log('acessToken', respone)
 
     return respone
 }

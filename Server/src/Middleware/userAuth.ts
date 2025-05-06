@@ -21,7 +21,7 @@ const authenticateToken = (req: CustomeRequest, res: Response, next: NextFunctio
             return
         }
 
-        const newToken = token.split(' ')[1]
+        const newToken = token.split(' ')[1];
         const secret = process.env.JWT_ACESSTOKEN
 
         if (!secret) {

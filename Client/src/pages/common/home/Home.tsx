@@ -64,7 +64,7 @@ export default function Home() {
             <div className="flex justify-center mb-6 ">
               <img src={mapPin} alt="Map Pin" className="w-20 h-20" />
             </div>
-            <p className="text-lg font-semibold mb-4 leading-relaxed w-3/4 mx-auto">Discover high-demand loads and optimize your fleet's operations.</p>
+            <p className="text-lg font-semibold mb-4 leading-relaxed w-3/4 mx-auto">Discover high-demand loads and optimize your fleet operations.</p>
           </div>
           <div className="text-center border-2 border-gray-300 shadow-lg hover:shadow-2xl p-6 rounded-lg">
             <div className="flex justify-center mb-6">

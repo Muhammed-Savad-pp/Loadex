@@ -7,7 +7,25 @@ export interface IShipperController {
     verifyOtp (req: Request, res: Response): Promise<void>;
     resendOtp (req: Request, res: Response): Promise<void>;
     signIn(req: Request, res: Response): Promise<void>;
+    GoogleLogin(req: Request, res: Response): Promise<void>;
+    forgotPassword(req: Request, res: Response) : Promise<void>;
     Logout(req: Request, res: Response): Promise<void>;
     getProfileData(req: CustomeRequest, res: Response): Promise<void>;
     registerKyc(req: CustomeRequest, res: Response): Promise<void>;
+    postLoad(req: CustomeRequest, res: Response): Promise<void>;
+    getVerificationstatus(req: CustomeRequest, res: Response) : Promise<void>;
+    changePassword(req: Request, res: Response) : Promise<void>;
+    fetchBids(req: CustomeRequest, res: Response): Promise<void>;
+    updateBidStatus(req: CustomeRequest, res: Response): Promise<void>;
+    fetchLoads(req: CustomeRequest, res: Response): Promise<void>;
+    checkoutSession(req: CustomeRequest, res: Response): Promise<void>;
+    verifyPayment(req: CustomeRequest, res: Response): Promise<void>;
+    fetchTrips(req: CustomeRequest, res: Response): Promise<void>;
+    updateProfile(req: CustomeRequest, res: Response): Promise<void>;
+    fetchTransporterDetails(req: CustomeRequest, res: Response): Promise<void>;
+    followTransporter(req: CustomeRequest, res: Response): Promise<void>;
+    unFollowTransporter(req: CustomeRequest, res: Response): Promise<void>;
+    postReview(req: CustomeRequest, res: Response): Promise<void>;
+    fetchTransportes(req: CustomeRequest, res: Response): Promise<void>
+    fetchTrucks(req: CustomeRequest, res: Response): Promise<void>;
 }

@@ -3,6 +3,7 @@ import Sidebar from "../../components/admin/Sidebar";
 import { getShipper } from "../../services/admin/adminapi";
 import { updateSipperStatus } from "../../services/admin/adminapi";
 import toast from "react-hot-toast";
+import DataTable from "../../components/admin/DataTable";
 
 export interface IShipper {
     _id: string
@@ -15,20 +16,19 @@ export interface IShipper {
 
 const Shipper: React.FC = () => {
 
-    const [shipperData , setShipperData ] = useState<IShipper[]>([])
+    const [shipperData, setShipperData] = useState<IShipper[]>([])
 
     useEffect(() => {
-        const Shipper = async () => {
+        const fetchShipper = async () => {
 
-            const response: any = await getShipper();
-            setShipperData(response);
+            const response = await getShipper();
+            setShipperData(response as IShipper[]);
         }
+        
 
-        Shipper()
+        fetchShipper()
 
     }, [])
-
-    console.log(shipperData)
 
     const handleBlockUnBlock = async (id: string) => {
         try {
@@ -36,32 +36,36 @@ const Shipper: React.FC = () => {
             const response: any = await updateSipperStatus(id);
             toast.success(response);
 
-            setShipperData((prev) => 
-                prev.map((shipper) => 
-                    shipper._id === id ? {...shipper, isBlocked: !shipper.isBlocked } : shipper
-            ))
-            
+            setShipperData((prev) =>
+                prev.map((shipper) =>
+                    shipper._id === id ? { ...shipper, isBlocked: !shipper.isBlocked } : shipper
+                ))
+
         } catch (error) {
             console.error(error);
             toast.error('Something went wrong')
         }
     }
 
+    const columns = [
+        { header: "Name", key: "shipperName" as keyof IShipper },
+        { header: "Email", key: "email" as keyof IShipper},
+        { header: "Mobile", key: "phone" as keyof IShipper },
+    ];
+
     return (
         <><div className="flex min-h-screen bg-gray-50">
             <Sidebar />
-            <div className="min-h-screen w-full bg-blue-50 flex justify-center  p-6 pt-10">
-                <div className="w-full h-fit  bg-white rounded-lg shadow-md p-4">
-                    {/* Header Row */}
-                    <div className="flex items-center justify-between bg-gray-100 text-lg p-3 rounded-md text-gray-600 font-bold">
+                {/* <div className="w-full h-fit  bg-white rounded-lg shadow-md p-4"> */}
+                {/* <div className="flex items-center justify-between bg-gray-100 text-lg p-3 rounded-md text-gray-600 font-bold">
                         <div className="w-1/5">Name</div>
                         <div className="w-1/4">Email</div>
                         <div className="w-1/5">Mobile</div>
                         <div className="w-1/6 text-center">Action</div>
                         <div className="w-1/6 text-center">Details</div>
-                    </div>
+                    </div> */}
 
-                    {shipperData.map((shipper, index) => (
+                {/* {shipperData.map((shipper, index) => (
                         <div key={index} className="flex items-center justify-between bg-white p-3 my-2 font-semibold rounded-md shadow-sm">
                             <div className="w-1/5 flex items-center">
                                 <img
@@ -85,9 +89,12 @@ const Shipper: React.FC = () => {
                                 <button className="px-4 py-1 bg-blue-500 text-white rounded-full">Details</button>
                             </div>
                         </div>
-                    ))}
+                    ))} */}
+                {/* </div> */}
+
+                <div className="min-h-screen w-full bg-blue-50 flex justify-center p-6 pt-10">
+                    <DataTable data={shipperData} columns={columns} handleBlockUnBlock={handleBlockUnBlock} />
                 </div>
-            </div>
         </div >
 
         </>

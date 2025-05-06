@@ -3,6 +3,7 @@ import Sidebar from "../../components/admin/Sidebar";
 import { useEffect } from "react";
 import { getTransporter, updateTransporterBlockandUnblock} from "../../services/admin/adminapi";
 import toast from "react-hot-toast";
+import DataTable from "../../components/admin/DataTable";
 
 export interface ITransporter {
     _id: string
@@ -17,14 +18,14 @@ const Transporter: React.FC = () => {
 
     useEffect(() => {
 
-        const gettransporter = async () => {
+        const fetchTransporter = async () => {
 
             const response: any = await getTransporter()
             setTransporter(response)
 
         }
 
-        gettransporter()
+        fetchTransporter()
 
     }, [])
 
@@ -46,23 +47,32 @@ const Transporter: React.FC = () => {
         }
     }
 
+    const columns = [
+        { header: "Name", key: "transporterName" as keyof ITransporter },
+        { header: "Email", key: "email" as keyof ITransporter },
+        { header: "Mobile", key: "phone" as keyof ITransporter  },
+    ];
+
 
     return (
         <>
             <div className="flex min-h-screen bg-gray-50">
                 <Sidebar />
+
                 <div className="min-h-screen w-full bg-blue-50 flex justify-center  p-6 pt-10">
-                    <div className="w-full h-fit  bg-white rounded-lg shadow-md p-4">
+                    < DataTable data={transporter} columns={columns} handleBlockUnBlock={handleBlockUnBlock}/>
+
+                    {/* <div className="w-full h-fit  bg-white rounded-lg shadow-md p-4"> */}
                         {/* Header Row */}
-                        <div className="flex items-center justify-between bg-gray-100 text-lg p-3 rounded-md text-gray-600 font-bold">
+                        {/* <div className="flex items-center justify-between bg-gray-100 text-lg p-3 rounded-md text-gray-600 font-bold">
                             <div className="w-1/5">Name</div>
                             <div className="w-1/4">Email</div>
                             <div className="w-1/5">Mobile</div>
                             <div className="w-1/6 text-center">Action</div>
                             <div className="w-1/6 text-center">Details</div>
-                        </div>
+                        </div> */}
 
-                        {transporter.map((transporter, index) => (
+                        {/* {transporter.map((transporter, index) => (
                             <div key={index} className="flex items-center justify-between bg-white p-3 my-2 font-semibold rounded-md shadow-sm">
                                 <div className="w-1/5 flex items-center">
                                     <img
@@ -86,9 +96,11 @@ const Transporter: React.FC = () => {
                                     <button className="px-4 py-1 bg-blue-500 text-white rounded-full">Details</button>
                                 </div>
                             </div>
-                        ))}
-                </div>
+                        ))} */}
+                {/* </div> */}
             </div>
+
+
         </div >
         </>
     )

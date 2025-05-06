@@ -1,6 +1,9 @@
-import Shipper, {IShipper} from '../../models/shipper/ShipperModel';
+import Shipper, {IShipper} from '../../models/ShipperModel';
 import { BaseRepositories } from './baseRepositories';
 import { IShipperRepository } from '../interface/IShipperRepository';
+import Load, { ILoad } from '../../models/LoadModel';
+import Bid, { IBid } from '../../models/BidModel';
+import { ProjectionType, FilterQuery } from "mongoose";
 
  class ShipperRepositories extends BaseRepositories<IShipper> implements IShipperRepository  {
 
@@ -9,23 +12,50 @@ import { IShipperRepository } from '../interface/IShipperRepository';
     }
 
     async createShipper(data: any): Promise<IShipper | null> {
-        return await Shipper.create(data)
+        try {
+
+            return await Shipper.create(data)
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+        
     }
 
     async findShipperByEmail(email: string): Promise<IShipper | null> {
-        const data  = await Shipper.findOne({email});
-        const userData = data?.toObject();
+        try {
 
-        return userData as IShipper
+            const data  = await Shipper.findOne({email});
+            const userData = data?.toObject();
+
+            return userData as IShipper
+            
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+        
     }
 
     async findShipperById(id: string): Promise<IShipper | null> {
-        return await this.model.findById(id).exec()
+        try {
+
+            return await this.model.findById(id).exec()
+            
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+        
     }
 
     async verifyShipper(email: string, isVerified:boolean): Promise<IShipper | null> {
-        await Shipper.updateOne({email}, {isVerified});
-        return await Shipper.findOne({email})
+        try {
+            
+            await Shipper.updateOne({email}, {isVerified});
+            return await Shipper.findOne({email})
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
     }
 
     async updateShipperById(shipperId: string, shipperData: Partial<IShipper>): Promise<IShipper | null> {
@@ -88,6 +118,7 @@ import { IShipperRepository } from '../interface/IShipperRepository';
         }
         
     }
+
 }
 
 export  default new ShipperRepositories()
