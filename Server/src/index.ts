@@ -27,7 +27,7 @@ app.use(morgan("combined", { stream: morganStream}));
 app.use(Express.json())
 
 app.use(cors({
-    origin:'http://localhost:5173',
+    origin: process.env.FRONT_END_URL,
     credentials:true
 }))
 
