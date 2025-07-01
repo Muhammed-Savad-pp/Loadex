@@ -26,6 +26,23 @@ export interface IShipperController {
     followTransporter(req: CustomeRequest, res: Response): Promise<void>;
     unFollowTransporter(req: CustomeRequest, res: Response): Promise<void>;
     postReview(req: CustomeRequest, res: Response): Promise<void>;
-    fetchTransportes(req: CustomeRequest, res: Response): Promise<void>
+    fetchTransportes(req: CustomeRequest, res: Response): Promise<void>;
     fetchTrucks(req: CustomeRequest, res: Response): Promise<void>;
+    getShipperSubscriptionPlan(req: CustomeRequest, res: Response): Promise<void>;
+    subscriptionCheckoutSession(req: CustomeRequest, res: Response): Promise<void>;
+    handleSubscriptionSuccess(req: CustomeRequest , res: Response): Promise<void>;
+    updateLoad(req: CustomeRequest, res: Response): Promise<void>;
+    deleteLoad(req: CustomeRequest, res: Response): Promise<void>;
+    createChat(req: CustomeRequest, res: Response): Promise<void>;
+    fetchChats(req: CustomeRequest, res: Response): Promise<void>;
+    fetchMessages(req: CustomeRequest, res: Response): Promise<void>;
+    sendMessage(req: CustomeRequest, res: Response): Promise<void>;
+    getCurrentShipperId(req: CustomeRequest, res: Response): Promise<void>;
+    upateMessageAsRead(req: CustomeRequest, res: Response): Promise<void>;
+    fetchNotifications(req: CustomeRequest, res: Response): Promise<void>;
+    updateNotificationAsRead(req: CustomeRequest, res: Response): Promise<void>;
+    deleteNotification(req: CustomeRequest, res: Response): Promise<void>;
+    fetchpaymentHistory(req: CustomeRequest, res: Response): Promise<void>;
+    findUnReadNotificationCount(req: CustomeRequest, res: Response): Promise<void>;
+
 }

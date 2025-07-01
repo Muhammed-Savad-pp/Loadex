@@ -1,4 +1,4 @@
-import mongoose, {Document, Schema} from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
 export interface ITransporter extends Document {
     transporterName: string;
@@ -7,29 +7,40 @@ export interface ITransporter extends Document {
     password: string;
     isBlocked: boolean;
     isVerified: boolean;
-    verificationStatus?: 'pending'| 'requested'| 'approved'| 'rejected';
-    panNumber?:string;
+    verificationStatus?: 'pending' | 'requested' | 'approved' | 'rejected';
+    panNumber?: string;
     aadhaarFront?: string;
     aadhaarBack?: string;
     profileImage?: string;
     followers?: string[];
     followings?: string[];
+    subscription?: {
+        planId: string;
+        planName: string;
+        status: 'active' | 'canceled' | 'expired' | 'pending';
+        startDate: Date;
+        endDate: Date;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt?: Date;
+        paidAmount: number;
+    }
 }
 
-const transporterSchema: Schema = new Schema ({
+const transporterSchema: Schema = new Schema({
     transporterName: {
         type: String,
-        required:true
+        required: true
     },
 
     email: {
-        type: String, 
-        required:true
+        type: String,
+        required: true
     },
 
     phone: {
         type: String,
-        required:true
+        required: true
     },
 
     password: {
@@ -63,7 +74,7 @@ const transporterSchema: Schema = new Schema ({
     aadhaarBack: {
         type: String
     },
-    
+
     profileImage: {
         type: String,
     },
@@ -74,6 +85,18 @@ const transporterSchema: Schema = new Schema ({
 
     followings: {
         type: [String],
+    },
+
+    subscription: {
+        planId: {type: String},
+        planName: {type: String},
+        status: { type: String, enum: ['active', 'canceled', 'expired', 'pending'], default: 'pending' },
+        startDate: { type: Date},
+        endDate: {type: Date },
+        isActive: {type: Boolean, default: false},
+        createdAt: {type: Date, default: Date.now},
+        updatedAt: {type: Date},
+        paidAmount: {type: Number},
     },
 })
 

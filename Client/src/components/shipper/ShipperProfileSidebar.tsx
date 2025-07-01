@@ -3,13 +3,41 @@ import { logOut } from "../../redux/slice/authSlice";
 import { shipperLogout } from "../../services/shipper/shipperService";
 import toast from "react-hot-toast";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getShipperProfile } from "../../services/shipper/shipperService";
+import { Crown } from 'lucide-react';
+
+interface IShipper {
+  _id: string;
+  shipperName: string;
+  profileImage: string;
+  followers: string[];
+  followings: string[];
+  subscription: {
+    status: string;
+    isActive: boolean;
+  }
+}
 
 
 const ShipperProfileSidebar = () => {
 
+  const [shipper, setShipper] = useState<IShipper>()  
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const fetchShipper = async() => {
+      const response: any = await getShipperProfile();
+      if(response.success) {
+        setShipper(response.shipperData)
+      }
+    }
+
+    fetchShipper()
+  }, [])
 
 
   const handleLogout = async () => {
@@ -31,21 +59,25 @@ const ShipperProfileSidebar = () => {
 
   return (
     <div className="w-75 bg-zinc-900 text-white min-h-screen p-4">
-      {/* Profile Card */}
       <div className="bg-zinc-800 rounded-lg p-4 mb-4 mt-5 text-center">
         <div className="flex justify-center">
           <img
-            src="/api/placeholder/70/70"
+            src={shipper?.profileImage}
             alt="Profile"
             className="w-16 h-16 rounded-full bg-sky-200 mx-auto"
           />
         </div>
-        <h2 className="text-lg font-bold mt-2">Jacobs</h2>
+        <div className="flex gap-0.5 justify-center">
+          <h2 className="text-lg font-bold mt-2">{shipper?.shipperName}</h2>
+          { shipper?.subscription.isActive && shipper.subscription.status === 'active' && (
+            <Crown className="text-yellow-500 mt-3 w-7 h-5"/>
+          )}
+        </div>
         <p className="text-xs text-gray-400">Shipper</p>
         <div className="flex justify-center text-xs mt-1 text-gray-400">
-          <span>5 Followers</span>
+          <span>{shipper?.followers.length} Followers</span>
           <span className="mx-1">•</span>
-          <span>4 Following</span>
+          <span>{shipper?.followings.length} Following</span>
         </div>
       </div>
 
@@ -53,10 +85,9 @@ const ShipperProfileSidebar = () => {
       <div className="grid grid-cols-1 gap-2">
         {[
           {label: "My Loads", path: "/shipper/myLoads" }, 
-          {label:"Load History", path: "/shipper/loadHistory"}, 
           {label: "Trips", path: "/shipper/trips"},
-          {label:"My Network", path:"/shipper/myNetwork"}, 
-          {label: "Membership", path: "/shipper/memberShip"}, 
+          // {label:"My Network", path:"/shipper/myNetwork"}, 
+          {label: "Subscription", path: "/shipper/subscription"}, 
           {label:"Payment History", path: "/shipper/paymentHistory"}, 
           {label:"My Bids", path:"/shipper/bids"}].
           map((item, index) => (

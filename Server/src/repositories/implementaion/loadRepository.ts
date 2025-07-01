@@ -2,8 +2,7 @@ import { ILoad } from "../../models/LoadModel";
 import { ILoadRepository } from "../interface/ILoadRepository";
 import { BaseRepositories } from "./baseRepositories";
 import Load from "../../models/LoadModel";
-import { FilterQuery, ProjectionType } from "mongoose";
-import { IBid } from "../../models/BidModel";
+import { FilterQuery, SortOrder } from "mongoose";
 
 
 class LoadRepository extends BaseRepositories<ILoad> implements ILoadRepository {
@@ -22,10 +21,10 @@ class LoadRepository extends BaseRepositories<ILoad> implements ILoadRepository 
         }
     }
 
-    async getLoads(filter: FilterQuery<ILoad>, populateOptions: {path: string, select?: string}[]): Promise<ILoad[] | null> {
+    async getLoads(filter: FilterQuery<ILoad>, populateOptions: {path: string, select?: string}[], skip?: number, limit?: number, sort?: Record<string, SortOrder>): Promise<ILoad[] | null> {
         try {
 
-            return await this.findWithPopulate(filter, populateOptions);
+            return await this.findWithPopulate(filter, populateOptions, skip, limit, sort);
 
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))

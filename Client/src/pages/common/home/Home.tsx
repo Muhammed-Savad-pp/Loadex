@@ -19,7 +19,7 @@ export default function Home() {
   return (
     <>
       <Navbar onLoginClick={() => setIsLoginOpen(true)} />
-      <div className={`transition-all duration-300 ${isLoginOpen ? "blur-sm" : ""}`}>
+      <div className={`mt-10 transition-all duration-300 ${isLoginOpen ? "blur-sm" : ""}`}>
         <section className="relative h-[500px] flex items-center">
           <div className="absolute inset-0 z-0"
             style={{

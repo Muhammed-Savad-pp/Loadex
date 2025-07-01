@@ -100,6 +100,8 @@ export const transporterKYCSubmit = async (formData: FormData) => {
 
 export const registerTruck = async (formDataToSend: FormData) => {
 
+    
+
     const response = await apiClient.post('/transporter/registerTruck', formDataToSend, {
         headers: {
             'Content-type': 'multipart/form-data',
@@ -109,16 +111,18 @@ export const registerTruck = async (formDataToSend: FormData) => {
     return response.data
 }
 
-export const fetchLoads = async () => {
+export const fetchLoads = async (page: number , limit: number) => {
 
-    const response = await apiClient.get('/transporter/fetchLoads');
+    const response = await apiClient.get(`/transporter/fetchLoads?page=${page}&limit=${limit}`);
     return response.data;
 
 }
 
-export const fetchTrucks = async () => {
+export const fetchTrucks = async (status: string, page: number, limit: number) => {
 
-    const response = await apiClient.get('/transporter/fetchTrucks');
+    console.log(limit, 'asdfa');
+    
+    const response = await apiClient.get(`/transporter/fetchTrucks?status=${status}&page=${page}&limit=${limit}`);
     return response.data;
 }
 
@@ -152,9 +156,9 @@ export const sendBid = async (formData: FormData) => {
 
 }
 
-export const fetchBids = async () => {
+export const fetchBids = async (page: number, limit: number, status: string) => {
 
-    const response = await apiClient.get('/transporter/fetchBids');
+    const response = await apiClient.get(`/transporter/fetchBids?page=${page}&limit=${limit}&status=${status}`);
     return response.data;
 
 }
@@ -173,9 +177,9 @@ export const bidVerifyPayment = async (transactionId: string | null, status: str
 
 }
 
-export const fetchTrips = async () => {
+export const fetchTrips = async (status: string, page: number, limit: number) => {
 
-    const response = await apiClient.get('/transporter/trips');
+    const response = await apiClient.get(`/transporter/trips?status=${status}&page=${page}&limit=${limit}`);
     return response.data;
 
 }
@@ -226,9 +230,147 @@ export const postReview = async (shipperId: string, rating: number, comment: str
     
 }
 
-export const listShipper = async () => {
+export const listShipper = async (page: number, limit: number) => {
 
-    const response = await apiClient.get('/transporter/fetchShippers');
+    const response = await apiClient.get(`/transporter/fetchShippers?page=${page}&limit=${limit}`);
     return response.data;
 
 }
+
+export const fetchFollowerAndFollowingDetails = async (status: string, search: string, page: number, limit: number) => {
+
+    const response = await apiClient.get(`/transporter/fetchFollowersDetails?status=${status}&search=${search}&page=${page}&limit=${limit}`);
+    return response.data;
+    
+}
+
+export const fetchTransporterPlans = async () => {
+
+    const response = await apiClient.get('/transporter/subscriptionPlans');
+    return response.data;
+
+}
+
+export const createCheckoutSubscription = async (planId: string) => {
+
+    const response = await apiClient.post('/transporter/subscription/create-checkout-session', {planId});
+    return response.data
+
+}
+
+export const subscriptionSuccess = async (sessionId: string, planId: string) => {
+
+    const response = await apiClient.put('/transporter/subscription-success', { sessionId, planId });
+    return response.data;
+
+}
+
+export const fetchActiveTruck = async () => {
+
+    const response = await apiClient.get('/transporter/activeTruck');
+    return response.data
+    
+}
+
+export const updateBid = async (bidId: string, truckId: string, price: string) => {
+
+    const response = await apiClient.put('/transporter/updateBid', { bidId, truckId, price })
+    return response.data;    
+}
+
+export const deleteBid = async (bidId: string) => {
+    
+    const response = await apiClient.delete(`/transporter/bid?bidId=${bidId}`);
+    return response.data;
+}
+
+export const fetchPaymentHistory = async (statusFilter: string, typeFilter: string, dateFilter: string, page: number, limit: number) => {
+    
+    const response = await apiClient.get(`/transporter/paymentHistory?status=${statusFilter}&type=${typeFilter}&date=${dateFilter}&page=${page}&limit=${limit}`);
+    return response.data;
+}
+
+export const createChat = async (shipperId: string) => {
+
+    const response = await apiClient.post('/transporter/create-chat', { shipperId });
+    return response.data;
+}
+
+export const fetchChats = async () => {
+
+    const response = await apiClient.get('/transporter/fetch-chats');
+    return response.data;
+}
+
+export const sendMessages = async (chatId: string, shipperId: string, message: string) => {
+
+    const response = await apiClient.post('/transporter/create-message', {chatId, shipperId, message});
+    return response.data;
+}
+
+export const fetchMessages = async (chatId: string) => {
+
+    const response = await apiClient.get(`/transporter/messages/${chatId}`);
+    return response.data;
+}
+
+export const fetchCurrentTransporterId = async () => {
+
+    const response = await apiClient.get('/transporter/me');
+    return response.data;
+}
+
+export const updateMessageAsRead = async (chatId: string) => {
+
+    const response = await apiClient.patch(`/transporter/mark-messsage-as-read/${chatId}`); 
+    return response.data
+}
+
+export const fetchNotifcations = async (filter: string) => {
+
+    const response = await apiClient.get(`/transporter/notifications?filter=${filter}`);
+    return response.data;
+}
+
+export const updateNotificationAsRead = async (notificationId: string) => {
+
+    const response = await apiClient.patch('/transporter/notification-mark-as-read', {notificationId});
+    return response.data;
+}
+
+export const deleteNotification = async (notificationId: string) => {
+
+    const response = await apiClient.delete(`/transporter/notification/${notificationId}`);    
+    return response.data;
+}
+
+export const fetchWalletData = async () => {
+
+    const response = await apiClient.get('/transporter/wallet'); 
+    return response.data;   
+}
+
+export const bidPaymentByWallet = async (bidId: string) => {
+
+    const response = await apiClient.post('/transporter/bidPaymentByWallet', { bidId });
+    return response.data;
+}
+
+export const findTransporterUnreadNotificationCount = async () => {
+
+    const response = await apiClient.get('/transporter/unreadNotificationCount');
+    return response.data;
+
+}
+
+export const updateTruck = async (updateData: FormData) => {
+
+    console.log(updateData)
+    const response = await apiClient.put('/transporter/truck', updateData, {
+        headers: {
+            'Content-type': 'multipart/form-data',
+        }
+    });
+
+    return response.data;
+} 

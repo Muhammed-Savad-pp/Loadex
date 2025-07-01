@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { FaLocationDot } from "react-icons/fa6";
 import { registerTruck } from '../../services/transporter/transporterApi';
 import toast from 'react-hot-toast';
-// import { useNavigate } from 'react-router-dom';
 import { validateTruckForm } from '../../validations/truckValidation';
 import { debounce } from 'lodash';
 const MAP_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY;
@@ -14,11 +13,10 @@ interface GeoapifyProperties {
     country: string;
     state?: string;
     city?: string;
-    // Add other properties as needed
 }
 
 interface GeoapifyGeometry {
-    coordinates: [number, number]; // [longitude, latitude]
+    coordinates: [number, number]; 
 }
 
 interface GeoapifySuggestion {
@@ -52,6 +50,7 @@ interface FormDataType {
         lng: number;
     }
     selectedLocations: string[];
+    rcValidity: string;
 }
 
 
@@ -62,14 +61,9 @@ const VehicleRegistration = () => {
     const [pickupLocation, setPickupLocation] = useState<string>('');
     const [dropLocation, setDropLocation] = useState<string>('');
     const [currentLocation, setCurrentLocation] = useState<string>('');
-
-
     const [locationSuggestions, setLocationSuggestions] = useState<GeoapifySuggestion[]>([]);
     const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
     const [activeField, setActiveField] = useState<'current' | 'from' | 'to' | null>(null);
-
-
-
     const [formData, setFormData] = useState<FormDataType>({
         vehicleNumber: '',
         ownerName: '',
@@ -86,17 +80,18 @@ const VehicleRegistration = () => {
         to: '',
         toCoords: { lat: 0, lng: 0 },
         selectedLocations: [],
-    });
-
+        rcValidity: ''
+    });    
     const [formError, setFormError] = useState<Partial<FormDataType>>({});
     const [uploadedDocuments, setUploadedDocuments] = useState({
         rcBook: null,
-        driverLicense: null
+        driverLicense: null,
+        truckImage: null
     });
-
     const [displayImage, setDisplayImage] = useState({
         rcBook: null,
         driverLicense: null,
+        truckImage: null
     })
 
     useEffect(() => {
@@ -292,11 +287,15 @@ const VehicleRegistration = () => {
             if (uploadedDocuments.driverLicense) {
                 formDataToSend.append('driverLicense', uploadedDocuments.driverLicense)
             }
-            
+
+            if (uploadedDocuments.truckImage) {
+                formDataToSend.append('truckImage', uploadedDocuments.truckImage)
+            }
+
             formDataToSend.forEach((val) => {
                 console.log(val, typeof val)
             })
-            
+
             const response: any = await registerTruck(formDataToSend)
 
             if (!response.success) {
@@ -318,7 +317,8 @@ const VehicleRegistration = () => {
                     fromCoords: { lat: 0, lng: 0 },
                     to: '',
                     toCoords: { lat: 0, lng: 0 },
-                    selectedLocations: []
+                    selectedLocations: [],
+                    rcValidity: ''
                 });
 
                 setCurrentLocation('');
@@ -327,7 +327,8 @@ const VehicleRegistration = () => {
 
                 setDisplayImage({
                     rcBook: null,
-                    driverLicense: null
+                    driverLicense: null,
+                    truckImage: null,
                 })
                 toast.success(response.message)
             }
@@ -487,6 +488,8 @@ const VehicleRegistration = () => {
                                 </div>
 
 
+
+
                                 <div className="mb-3 location-input-container">
                                     <label className="block text-sm mb-1">From</label>
                                     <div className="relative">
@@ -548,7 +551,26 @@ const VehicleRegistration = () => {
                                             </div>
                                         )}
                                     </div>
+                                </div>
+                                <div className='mb-3'>
+                                    <label className='block text-sm mb-1'>RC validity Date</label>
+                                    <div className='relative'>
+                                        <input
+                                            type="date"
+                                            name='rcValidity'
+                                            value={formData.rcValidity}
+                                            onChange={handleInputChange}
+                                            className={`w-full border border-gray-400 shadow-md rounded p-2 text-sm bg-white ${formError.rcValidity ? 'border-red-500' : ''}`}
+                                            min={new Date().toISOString().split('T')[0]}
+                                            required
+                                        />
+                                        {formError.rcValidity && (
+                                            <p className="text-red-500 text-sm mt-1 absolute left-0 top-full">
+                                                {formError.rcValidity}
+                                            </p>
+                                        )}
 
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -557,7 +579,7 @@ const VehicleRegistration = () => {
                         <div className="mb-6">
                             <h2 className="text-lg font-semibold border-b border-gray-300 pb-2 mb-4">Manage Document</h2>
 
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="grid grid-cols-3 gap-6">
                                 {/* RC Book Upload */}
                                 <div className="border-dashed border-2 border-gray-500 p-4 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-400">
                                     <p className="text-black text-md mb-2">Upload RC Book</p>
@@ -572,6 +594,26 @@ const VehicleRegistration = () => {
                                         <div className="w-full h-48 bg-gray-100 flex items-center justify-center rounded-md shadow overflow-hidden">
                                             {displayImage.rcBook ? (
                                                 <img src={displayImage.rcBook} alt="RC Book" className="w-full h-full object-contain" />
+                                            ) : (
+                                                <span className="text-gray-400 text-3xl">+</span>
+                                            )}
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <div className="border-dashed border-2 border-gray-500 p-4 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-400">
+                                    <p className="text-black text-md mb-2">Upload Truck Image</p>
+                                    <label className="cursor-pointer w-full">
+                                        <input
+                                            type="file"
+                                            id="truckImage"
+                                            className="hidden"
+                                            onChange={(e) => handleDocumentUpload('truckImage', e)}
+                                            accept="image/*"
+                                        />
+                                        <div className="w-full h-48 bg-gray-100 flex items-center justify-center rounded-md shadow overflow-hidden">
+                                            {displayImage.truckImage ? (
+                                                <img src={displayImage.truckImage} alt="RC Book" className="w-full h-full object-contain" />
                                             ) : (
                                                 <span className="text-gray-400 text-3xl">+</span>
                                             )}

@@ -3,7 +3,6 @@ import { IAdminController } from "../../interface/admin/IAdminController";
 import { CustomeRequest } from "../../Middleware/userAuth";
 import { IAdminService } from "../../interface/admin/IAdminService";
 import { HTTP_STATUS } from "../../enums/httpStatus";
-import { Token } from "aws-sdk";
 
 
 export class AdminController implements IAdminController {
@@ -44,7 +43,10 @@ export class AdminController implements IAdminController {
     async getTransporter(req: CustomeRequest, res: Response): Promise<void> {
         try {
 
-            const response = await this._adminService.getTransporter();
+            const search = req.query.search as string;
+            const page = parseInt(req.query.page as string);
+            const limit = parseInt(req.query.limit as string)
+            const response = await this._adminService.getTransporter(search, page, limit);
             // console.log('response', response)
 
             res.status(HTTP_STATUS.OK).json(response)
@@ -116,7 +118,11 @@ export class AdminController implements IAdminController {
     async getShipper(req: CustomeRequest, res: Response): Promise<void> {
         try {
             
-            const response = await this._adminService.getShipper();
+            const search = req.query.search as string;
+            const page = parseInt(req.query.page as string);
+            const limit = parseInt(req.query.limit as string);
+
+            const response = await this._adminService.getShipper(search, page, limit);
             res.status(HTTP_STATUS.OK).json(response)
 
         } catch (error: any) {
@@ -197,13 +203,80 @@ export class AdminController implements IAdminController {
 
     async getLoads(req: CustomeRequest, res: Response): Promise<void> {
         try {
+
+            const page = parseInt(req.query.page as string);
+            const limit = parseInt(req.query.limit as string);
             
-            const response = await this._adminService.getLoads();
+            const response = await this._adminService.getLoads(page, limit);
             res.status(HTTP_STATUS.OK).json(response);
 
         } catch (error: any) {
             console.log(error);
             res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: error.message})
+        }
+    }
+
+    async fetchDashboardDatas(req: CustomeRequest, res: Response): Promise<void> {
+        try {
+
+            const response = await this._adminService.fetchDashboardDatas();
+            res.status(HTTP_STATUS.OK).json(response)
+            
+        } catch (error) {
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(error)
+        }
+    }
+
+    async fetchTrips(req: CustomeRequest, res: Response): Promise<void> {
+        try {
+
+            const page = parseInt(req.query.page as string);
+            const limit = parseInt(req.query.limit as string)
+
+            const response = await this._adminService.fetchTrips(page, limit);
+
+            res.status(HTTP_STATUS.OK).json(response)
+            
+        } catch (error) {
+            console.error(error)
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(error)
+        }
+    }
+
+    async sendTripAmountToTransporter(req: CustomeRequest, res: Response): Promise<void> {
+        try {
+            
+            const { tripId } = req.body;
+            console.log(tripId)
+            const response = await this._adminService.sendTripAmountToTransporter(tripId)
+
+            res.status(HTTP_STATUS.OK).json(response)
+
+        } catch (error) {
+            console.error(error);
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(error)
+        }
+    }
+
+    async fetchPaymentHistory(req: CustomeRequest, res: Response): Promise<void> {
+        try {
+            
+            const searchTerm = req.query.searchTerm as string;
+            const paymentStatus = req.query.paymentStatus as string;
+            const userType = req.query.userType as string;
+            const paymentfor = req.query.paymentfor as string;
+            const page = parseInt(req.query.page as string);
+            const limit = parseInt(req.query.limit as string);
+
+
+            const response = await this._adminService.fetchPaymentHistory(searchTerm,paymentStatus, userType, paymentfor, page, limit);
+            console.log(response, 'res');
+            
+            res.status(HTTP_STATUS.OK).json(response)
+
+        } catch (error) {
+            console.error(error);
+            res.status(HTTP_STATUS.OK).json(error)
         }
     }
 

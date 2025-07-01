@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ProfileSidebar from "../../components/tranporter/ProfileSidebar";
-import { getTransporterProfile, transporterKYCSubmit, transporterResendOtp, updateProfile } from "../../services/transporter/transporterApi";
+import { getTransporterProfile, transporterKYCSubmit, updateProfile } from "../../services/transporter/transporterApi";
 import Navbar from "../../components/Common/Navbar/Navbar";
 import { FaUser, FaEnvelope, FaPhone, FaLock } from "react-icons/fa";
 import toast from "react-hot-toast";
@@ -40,7 +40,7 @@ const statusStyles: Record<string, string> = {
 const Profile = () => {
 
     const [transporterData, setTransporterData] = useState<TransporterData | null>(null)
-    const [panError, setPanError] = useState({panNumber: ''}) 
+    const [panError, setPanError] = useState({ panNumber: '' })
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<IFormData>({
         name: "",
@@ -62,9 +62,16 @@ const Profile = () => {
         phone: '',
     })
 
-    console.log(transporterData, 'transporterData');
-    console.log(formData, 'formdata');
-    
+    useEffect(() => {
+        if (transporterData) {
+            setKycData({
+                panNumber: transporterData.panNumber || '',
+                aadhaarFront: null,
+                aadhaarBack: null
+            })
+        }
+
+    }, [transporterData])
 
     useEffect(() => {
         const getProfileData = async () => {
@@ -80,7 +87,7 @@ const Profile = () => {
 
     useEffect(() => {
 
-        if(transporterData) {
+        if (transporterData) {
             setFormData({
                 name: transporterData.transporterName || "",
                 phone: transporterData.phone || "",
@@ -99,14 +106,14 @@ const Profile = () => {
 
     useEffect(() => {
         return () => {
-            if(profileImagePreview) URL.revokeObjectURL(profileImagePreview);
+            if (profileImagePreview) URL.revokeObjectURL(profileImagePreview);
         }
     }, [profileImagePreview])
 
-   
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const {name, value } = e.target;
+        const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
             [name]: value
@@ -117,7 +124,7 @@ const Profile = () => {
         setIsEditing(!isEditing);
     };
 
-   
+
 
     const handlePanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setKycData({ ...kycData, panNumber: e.target.value });
@@ -126,7 +133,7 @@ const Profile = () => {
     const handleProfileFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
 
-        if(file) {
+        if (file) {
             const previewProfileImageURl = URL.createObjectURL(file);
             setProfileImagePreview(previewProfileImageURl);
 
@@ -135,10 +142,14 @@ const Profile = () => {
                 profileImage: file
             }))
         }
-        
+
     }
 
+
+
     const handleFileChange = (type: 'front' | 'back') => (e: React.ChangeEvent<HTMLInputElement>) => {
+        console.log('adfsdf');
+
         const file = e.target.files?.[0] || null;
         if (file) {
             // Create preview URL for the image
@@ -155,8 +166,13 @@ const Profile = () => {
         }));
     };
 
+    console.log(kycData, 'kyc data');
+    console.log(previews, 'preview image');
+
+
+
     // Cleanup preview URLs when component unmounts
-    
+
 
     const validation = (panNumber: string) => {
 
@@ -167,7 +183,7 @@ const Profile = () => {
         const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
         const panErrors: string[] = [];
 
-        if(!panNumber?.trim()) errors.panNumber = 'PanCard is required';
+        if (!panNumber?.trim()) errors.panNumber = 'PanCard is required';
 
         if (!panRegex.test(panNumber ?? '')) {
             panErrors.push("First 5 characters must be uppercase letters (A-Z).");
@@ -176,9 +192,9 @@ const Profile = () => {
         }
 
         if (panErrors.length > 0) {
-            errors.panNumber = panErrors.join('|'); 
+            errors.panNumber = panErrors.join('|');
         }
-        
+
         return errors;
     };
 
@@ -207,9 +223,9 @@ const Profile = () => {
             formData.append('aadhaarBack', kycData.aadhaarBack);
         }
 
-        for (const pair of formData.entries()) {
-            console.log(pair[0], pair[1]);
-        }
+        // for (const pair of formData.entries()) {
+        //     console.log(pair[0], pair[1]);
+        // }
 
         try {
             const response: any = await transporterKYCSubmit(formData);
@@ -225,6 +241,10 @@ const Profile = () => {
                     email: prev?.email ?? '',
                     phone: prev?.phone ?? ''
                 }))
+                toast.success(response.message);
+                
+            } else {
+                toast.error(response.message)
             }
 
         } catch (error) {
@@ -239,25 +259,22 @@ const Profile = () => {
         }
 
         const phoneRegex = /^\d{10}$/;
-        
-        if(!formData.phone?.trim()) errors.phone = 'Phone Number is Required.'
-        if(!formData.name?.trim()) errors.name = 'Transporter Name is Required.'
 
-        if(formData.phone && !phoneRegex.test(formData.phone)) errors.phone = 'Phone Number is 10 digits.';
+        if (!formData.phone?.trim()) errors.phone = 'Phone Number is Required.'
+        if (!formData.name?.trim()) errors.name = 'Transporter Name is Required.'
+        if (formData.phone && !phoneRegex.test(formData.phone)) errors.phone = 'Phone Number is 10 digits.';
 
         return errors;
     }
 
-    const handleProfileUpdate = async(e: React.FormEvent) => {
+    const handleProfileUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
 
         const validationError = validationForProfileData(formData);
-
         setProfileDataError(validationError);
 
         const hasError = Object.values(validationError).some(error => error.trim() !== '');
-
-        if(hasError) {
+        if (hasError) {
             toast.error('Please Fix Error')
             return;
         }
@@ -266,24 +283,16 @@ const Profile = () => {
 
         formDataForSend.append('name', formData.name);
         formDataForSend.append('phone', formData.phone);
-        if(formData.profileImage) {
+        if (formData.profileImage) {
             formDataForSend.append('profileImage', formData.profileImage);
         };
 
-
-        formDataForSend.forEach((val, key) => {
-            console.log(key, val);
-            
-        })
-
         try {
-            
-            const response: any = await updateProfile(formDataForSend);
 
-            if(response.success) {
+            const response: any = await updateProfile(formDataForSend);
+            if (response.success) {
 
                 setIsEditing(!isEditing)
-
                 toast.success(response.message)
 
                 setTransporterData((prev) => ({
@@ -300,13 +309,12 @@ const Profile = () => {
         } catch (error) {
             console.error(error)
         }
-        
     }
 
     return (
         <>
             <Navbar />
-            <div className="flex min-h-screen bg-gray-100">
+            <div className="flex min-h-screen bg-gray-100 mt-10">
                 <ProfileSidebar />
                 <div className="flex-grow flex flex-col justify-center p-10 space-y-6">
                     <div className="bg-white p-8 rounded-lg shadow-md w-full h-100">
@@ -325,9 +333,9 @@ const Profile = () => {
                                             className="w-24 h-24 rounded-full bg-sky-200 mb-4"
                                         />
                                 }
-                               
+
                             </label>
-                            
+
                         </div>
 
                         <div className="space-y-4">
@@ -387,20 +395,20 @@ const Profile = () => {
 
                             <div className="flex justify-between mt-4">
                                 {
-                                    isEditing ? 
-                                        <button 
+                                    isEditing ?
+                                        <button
                                             onClick={handleProfileUpdate}
                                             className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 rounded-md hover:bg-green-700 shadow-md transition">
-                                                Save
+                                            Save
                                         </button>
-                                    :
-                                        <button 
+                                        :
+                                        <button
                                             onClick={toggleEdit}
                                             className="flex items-center gap-2 bg-blue-600 text-white px-5 p-2 rounded-md hover:bg-blue-700 shadow-md transition">
                                             Edit
                                         </button>
                                 }
-                               
+
 
                                 {/* Change Password Button */}
                                 <button className="flex items-center gap-2 bg-gray-700 text-white px-5 py-2 rounded-md hover:bg-gray-800 shadow-md transition">
@@ -411,6 +419,8 @@ const Profile = () => {
                         </div>
 
                     </div>
+
+
 
                     <div className="bg-white p-6 rounded-lg shadow-md w-full">
                         <form onSubmit={handleKYCSubmit}>
@@ -434,20 +444,20 @@ const Profile = () => {
                                 <input
                                     type="text"
                                     placeholder="Ex:- PQRSX5678K"
-                                    value={transporterData?.panNumber || kycData.panNumber}
+                                    value={kycData.panNumber}
                                     onChange={handlePanChange}
-                                    readOnly={!!transporterData?.panNumber}
+                                    readOnly={!['pending', 'rejected'].includes(transporterData?.verificationStatus || '')}
                                     className="w-full shadow-lg  px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 outline-none bg-gray-100 text-gray-700 placeholder-gray-400"
                                 />
-                                 {panError.panNumber && (
-                                        <div className="bg-red-50 border-l-4 border-red-600 p-2 mt-1 rounded-md">
-                                            <ul className="text-red-600 text-xs list-disc pl-5 space-y-1">
-                                                {panError.panNumber.split('|').map((error, index) => (
-                                                    <li key={index}>{error}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
+                                {panError.panNumber && (
+                                    <div className="bg-red-50 border-l-4 border-red-600 p-2 mt-1 rounded-md">
+                                        <ul className="text-red-600 text-xs list-disc pl-5 space-y-1">
+                                            {panError.panNumber.split('|').map((error, index) => (
+                                                <li key={index}>{error}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-6 mb-4">
@@ -462,13 +472,14 @@ const Profile = () => {
                                             key={kycData.aadhaarFront ? 'front-with-file' : 'front-empty'}
                                         />
                                         <div className="w-full h-48 bg-gray-100 flex items-center justify-center rounded-md shadow overflow-hidden">
-                                            {transporterData?.aadhaarFront ? (
-                                                <img src={transporterData.aadhaarFront} alt="Aadhaar Front" className="w-full h-full object-contain" />
-                                            ) : previews.aadhaarFront ? (
-                                                <img src={previews.aadhaarFront} alt="Aadhaar Front Preview" className="w-full h-full object-contain" />
+                                            {previews.aadhaarFront ? (
+                                                <img src={previews.aadhaarFront} alt="Preview Aadhaar Front" className="..." />
+                                            ) : transporterData?.aadhaarFront ? (
+                                                <img src={transporterData.aadhaarFront} alt="Aadhaar Front" className="..." />
                                             ) : (
                                                 <span className="text-gray-400 text-3xl">+</span>
                                             )}
+
                                         </div>
                                     </label>
                                 </div>
@@ -484,10 +495,10 @@ const Profile = () => {
                                             key={kycData.aadhaarBack ? 'back-with-file' : 'back-empty'}
                                         />
                                         <div className="w-full h-48 bg-gray-100 flex items-center justify-center rounded-md shadow overflow-hidden">
-                                            {transporterData?.aadhaarBack ? (
-                                                <img src={transporterData.aadhaarBack} alt="Aadhaar Back" className="w-full h-full object-contain" />
-                                            ) : previews.aadhaarBack ? (
-                                                <img src={previews.aadhaarBack} alt="Aadhaar Back Preview" className="w-full h-full object-contain" />
+                                            {previews?.aadhaarBack ? (
+                                                <img src={previews.aadhaarBack} alt="Aadhaar Back" className="w-full h-full object-contain" />
+                                            ) : transporterData?.aadhaarBack ? (
+                                                <img src={transporterData?.aadhaarBack} alt="Aadhaar Back Preview" className="w-full h-full object-contain" />
                                             ) : (
                                                 <span className="text-gray-400 text-3xl">+</span>
                                             )}
@@ -496,7 +507,7 @@ const Profile = () => {
                                 </div>
                             </div>
                             {
-                                transporterData?.verificationStatus === 'pending' ? <button
+                                transporterData?.verificationStatus === 'pending' || transporterData?.verificationStatus === 'rejected' ? <button
                                     type="submit"
                                     className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
                                 >

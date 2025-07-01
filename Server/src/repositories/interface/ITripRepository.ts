@@ -5,7 +5,7 @@ import { IBaseRepository } from "./IBaseRepository";
 export interface ITripRepository extends IBaseRepository<ITrip> {
 
     createTrip(tripData: Partial<ITrip>): Promise<ITrip | null>;
-    findTrips(filter: FilterQuery<ITrip>, populateOptions: {path: string, select?: string}[] ): Promise<ITrip[] | null>
+    findTrips(filter: FilterQuery<ITrip>, populateOptions: { path: string; select?: string; }[], skip?: number, limit?: number): Promise<ITrip[] | null>
     findByIdAndUpdate(tripId: string, updateData: Partial<ITrip>): Promise<ITrip| null>
 
 }

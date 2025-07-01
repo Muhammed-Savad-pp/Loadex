@@ -19,7 +19,6 @@ export const generateSignedUrl = async (url : string | undefined ) => {
 
         let key = url;
 
-
         const expiresIn = 3600;
         const command = new GetObjectCommand({
             Bucket: process.env.AWS_BUCKET_NAME,
@@ -27,7 +26,6 @@ export const generateSignedUrl = async (url : string | undefined ) => {
         })
 
         return await getSignedUrl(s3, command, {expiresIn})
-
         
     } catch (error) {
         console.log(`error in generateSignedUrl ${error}`);

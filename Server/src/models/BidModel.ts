@@ -6,7 +6,7 @@ export interface IBid extends Document {
     loadId: Types.ObjectId;
     truckId: Types.ObjectId;
     price: string;
-    status: 'requested' | 'accepted' | 'rejected'; 
+    status: 'requested' | 'accepted' | 'rejected' | 'expired'; 
     shipperPayment: boolean;
     transporterPayment: boolean;
     createAt: Date;
@@ -45,7 +45,7 @@ const bidSchema: Schema = new Schema ({
 
     status: {
         type: String,
-        enum: ['requested' , 'accepted' , 'rejected'],
+        enum: ['requested' , 'accepted' , 'rejected', 'expired'],
         default: 'requested'
     },
 
@@ -63,7 +63,6 @@ const bidSchema: Schema = new Schema ({
         type: Date,
         default: Date.now,
     },
-
 })
 
 export default mongoose.model<IBid>('Bid', bidSchema)

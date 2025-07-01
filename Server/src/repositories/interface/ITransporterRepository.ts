@@ -1,3 +1,4 @@
+import { UpdateResult } from "mongoose";
 import { IBid } from "../../models/BidModel";
 import { ILoad } from "../../models/LoadModel";
 import { ITransporter } from "../../models/TransporterModel";
@@ -12,8 +13,8 @@ export interface ITransporterRepository extends IBaseRepository<ITransporter>  {
     verifyTransporter(email: string, isVerified: boolean): Promise<ITransporter | null>;
     findTransporterById(id: string): Promise<ITransporter | null>;
     updateTransporterById(transporterId: string, transporterData: Partial<ITransporter>) : Promise<ITransporter | null>;
-    getTransporter(): Promise<ITransporter[]>;
+    getTransporter():Promise<ITransporter[]>;
     updateTransporterStatus(id: string, isBlocked: boolean) : Promise<ITransporter | null >;
     getRequestedTransporter(): Promise<ITransporter[]>;
-
+    subscriptionExpiredUpdate(today: Date): Promise<UpdateResult>; 
 }

@@ -20,10 +20,10 @@ class TripRepository extends BaseRepositories<ITrip> implements ITripRepository 
         }
     }
 
-    async findTrips(filter: FilterQuery<ITrip>, populateOptions: { path: string; select?: string; }[]): Promise<ITrip[] | null> {
+    async findTrips(filter: FilterQuery<ITrip>, populateOptions: { path: string; select?: string; }[], skip?: number, limit?: number): Promise<ITrip[] | null> {
         try {
 
-            return await this.findWithPopulate(filter, populateOptions)
+            return await this.findWithPopulate(filter, populateOptions, skip, limit)
             
         } catch (error) {
             throw new Error( error instanceof Error ? error.message : String(error))

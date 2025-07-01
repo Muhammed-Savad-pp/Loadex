@@ -50,7 +50,9 @@ class TruckRepository extends BaseRepositories<ITruck> implements ITruckReposito
                 rcBook: 1,
                 driverLicense: 1,
                 available: 1,
-                createdAt: 1
+                createdAt: 1,
+                rcValidity: 1,
+                truckImage: 1
             }
 
             return await this.model.find({ verificationStatus: 'requested' }, projection)
@@ -74,8 +76,6 @@ class TruckRepository extends BaseRepositories<ITruck> implements ITruckReposito
     async findTrucks(id: string): Promise<ITruck[] | null> {
         try {
 
-            console.log(id);
-
             const projection = {
                 truckOwnerName: 1,
                 truckOwnerMobileNo: 1,
@@ -91,7 +91,8 @@ class TruckRepository extends BaseRepositories<ITruck> implements ITruckReposito
                 verificationStatus: 1,
                 operatingStates: 1,
                 available: 1,
-                driverLicense: 1
+                driverLicense: 1,
+                status: 1,
             }
 
             return await this.find({ transporterId: id }, projection);

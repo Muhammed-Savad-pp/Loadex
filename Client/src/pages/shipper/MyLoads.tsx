@@ -1,38 +1,35 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../../components/Common/Navbar/Navbar";
 import ShipperProfileSidebar from "../../components/shipper/ShipperProfileSidebar";
-import { Truck, Package, MapPin, Calendar, ChevronDown, Ruler, Box, Weight, Expand } from 'lucide-react';
-import { fetchLoads } from "../../services/shipper/shipperService";
+import { Truck, Package, MapPin, Calendar, ChevronDown, Ruler, Box, AlertTriangle, Weight, 
+        Expand, FileText, Trash2, Pencil, X } from 'lucide-react';
+import { fetchLoads, updateLoad, deleteLoad } from "../../services/shipper/shipperService";
+import UpdateLoadModal from "../../components/shipper/UpdateLoadModal";
+import { LoadData, LoadFormData } from "../../interface/interface";
+import toast from "react-hot-toast";
 
-interface LoadData {
-    _id: string;
-    pickupLocation: string;
-    dropLocation: string;
-    material: string;
-    quantity: string;
-    length: string;
-    truckType: string;
-    transportationRent: string;
-    height: string;
-    breadth: string;
-    status: 'active' | 'in-Transit';
-    scheduledDate: Date;
-    createdAt: Date;
-}
 
 const MyLoads: React.FC = () => {
     const [loads, setLoads] = useState<LoadData[]>([]);
     const [activeFilter, setActiveFilter] = useState<'All' | 'active' | 'in-Transit'>('All');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [page, setPage] = useState<number>(1);
+    const [totalPages, setTotalPages] = useState<number>(10);
+    const [updateModal, setUpdateModal] = useState<boolean>(false);
+    const [selectedUpdateLoad, setSelectedUpdateLoad] = useState<LoadData | null>(null);
+    const [isDeleteModal, setIsDeleteModal] = useState<boolean>(false);
+    const [selectedDeletedLoadId, setSelectedDetedLoadId] = useState<string | null>(null)
+    const limit = 3;
+    
 
     useEffect(() => {
         const getLoads = async () => {
-            const response = await fetchLoads();
-            console.log(response);
-            setLoads(response as LoadData[])
+            const response: any = await fetchLoads(page, limit);
+            setLoads(response.loads as LoadData[])
+            setTotalPages(response.totalPages);
         }
         getLoads()
-    }, [])
+    }, [page])
 
     const filteredLoads = loads.filter(load =>
         activeFilter === 'All' || load.status === activeFilter
@@ -43,15 +40,74 @@ const MyLoads: React.FC = () => {
         setIsDropdownOpen(false);
     };
 
+    const handleUpdateModalClose = () => {
+        setUpdateModal(false);
+    };
+
+    const handleUpdateSubmit = async (updatedData: LoadFormData) => {
+        const finalData: LoadData = {
+            ...updatedData,
+            _id: updatedData._id ?? '',
+            createdAt: updatedData.createdAt ?? new Date(),
+            status: updatedData.status ?? 'active'
+        };
+
+        try {
+
+            const response: any = await updateLoad(finalData);
+            if (response.success) {
+                toast.success(response.message);
+                setLoads(prevLoads =>
+                    prevLoads.map(load =>
+                        load._id === response.updateData?._id ? response.updateData : load
+                    )
+                )
+            } else {
+                toast.error(response.message)
+            }
+            handleUpdateModalClose()
+
+        } catch (error) {
+            console.error(error)
+        }
+    };
+
+    const handleDeleteModalClose = () => {
+        setIsDeleteModal(false)
+    }
+
+    const handleDelete = async () => {
+        try {
+            
+            const response: any = await deleteLoad(selectedDeletedLoadId as string);
+            if(response.success) {
+                toast.success(response.message)
+                setLoads(prevLoads => 
+                    prevLoads.filter(load => load._id !== response.loadData._id)
+                )
+            }
+
+            setSelectedDetedLoadId(null)
+            handleDeleteModalClose()
+
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const hanldeDeleteConformation = (loadId: string) => {
+        setIsDeleteModal(true),
+        setSelectedDetedLoadId(loadId)
+    }
+
     return (
         <>
             <Navbar />
-            <div className="flex min-h-screen bg-gray-100">
+            <div className="flex min-h-screen bg-gray-100 mt-10">
                 <ShipperProfileSidebar />
                 <div className="container mx-auto px-4 py-8">
                     <div className="flex-grow">
                         <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                            {/* Filter Dropdown */}
                             <div className="relative p-4 border-b flex justify-between items-center">
                                 <h2 className="text-xl font-bold flex items-center">
                                     <Truck className="mr-2" /> My Loads
@@ -69,11 +125,10 @@ const MyLoads: React.FC = () => {
                                             {['All', 'active', 'in-Transit'].map(filter => (
                                                 <button
                                                     key={filter}
-                                                    className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
-                                                        activeFilter === filter 
-                                                            ? 'bg-blue-50 text-blue-600' 
-                                                            : ''
-                                                    }`}
+                                                    className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${activeFilter === filter
+                                                        ? 'bg-blue-50 text-blue-600'
+                                                        : ''
+                                                        }`}
                                                     onClick={() => handleFilterChange(filter as any)}
                                                 >
                                                     {filter} Loads
@@ -96,8 +151,15 @@ const MyLoads: React.FC = () => {
                                         className="p-4 border-b last:border-b-0 hover:bg-gray-50 transition-colors"
                                     >
                                         <div className="bg-gray-100 rounded-lg shadow-md p-2">
-                                            <div className="grid grid-cols-12 gap-4">
-                                                {/* Location and Basic Info */}
+                                            <div className="flex justify-end">
+                                                {load.status === 'active' && (
+                                                    <div className="flex row-auto gap-5">
+                                                        <Pencil className="mt-1 h-6 w-6 text-gray-800 cursor-pointer" onClick={() => { setUpdateModal(true), setSelectedUpdateLoad(load) }} />
+                                                        <Trash2 className="mt-1 mr-3 text-red-500 cursor-pointer" onClick={() => hanldeDeleteConformation(load._id)} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-12 gap-4 mt-2">
                                                 <div className="col-span-4 bg-white shadow rounded-md p-4">
                                                     <div className="flex items-center mb-3">
                                                         <MapPin className="mr-2 text-blue-500" />
@@ -121,14 +183,13 @@ const MyLoads: React.FC = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Dimensions */}
                                                 <div className="col-span-4 bg-white shadow rounded-md p-4">
                                                     <h3 className="text-md font-semibold mb-3 flex items-center">
                                                         <Ruler className="mr-2 text-blue-500" /> Load Dimensions</h3>
                                                     <div className="space-y-2">
                                                         <div className="flex items-center text-sm text-gray-600">
                                                             <Expand className="mr-2 text-gray-400" />
-                                                            <span>Length: {load.length ? load.length  : 'NIL'} </span>
+                                                            <span>Length: {load.length ? load.length : 'NIL'} </span>
                                                         </div>
                                                         <div className="flex items-center text-sm text-gray-600">
                                                             <Box className="mr-2 text-gray-400" />
@@ -149,11 +210,14 @@ const MyLoads: React.FC = () => {
                                                                 ₹{load.transportationRent.toLocaleString()}
                                                             </span>
                                                         </div>
-                                                        <div className={`px-3 py-1 rounded-full text-xs ${
-                                                            load.status === 'active'
+                                                        <div
+                                                            className={`px-3 py-1 rounded-full text-xs ${load.status === 'active'
                                                                 ? 'bg-green-100 text-green-800'
-                                                                : 'bg-yellow-100 text-yellow-800'
-                                                        }`}>
+                                                                : load.status === 'completed'
+                                                                    ? 'bg-blue-500 text-white'
+                                                                    : 'bg-yellow-200 text-yellow-800'
+                                                                }`}
+                                                        >
                                                             {load.status}
                                                         </div>
                                                     </div>
@@ -166,6 +230,10 @@ const MyLoads: React.FC = () => {
                                                             <Calendar className="mr-2" />
                                                             Created At: {new Date(load.createdAt).toLocaleDateString()}
                                                         </div>
+                                                        <div className="flex items-center text-sm text-gray-500">
+                                                            <FileText className="mr-2" />
+                                                            Description: {load.descriptions}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -173,10 +241,90 @@ const MyLoads: React.FC = () => {
                                     </div>
                                 ))
                             )}
+                            <div className="flex justify-center mt-6">
+                                <div className="inline-flex rounded-md shadow-sm">
+                                    <button
+                                        onClick={() => setPage(page - 1)}
+                                        disabled={page === 1}
+                                        className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                                    ${page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                                        Prev
+                                    </button>
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                        .slice(Math.max(0, page - 3), Math.min(totalPages, page + 2))
+                                        .map((p) => (
+                                            <button className={`px-3 py-2 ml-1  mr-1 text-sm rounded-md font-medium border-t border-b border-gray-300 cursor-pointer
+                                            ${p === page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                                                {p}
+                                            </button>
+                                        ))
+                                    }
+                                    <button
+                                        onClick={() => setPage(page + 1)}
+                                        disabled={page === totalPages}
+                                        className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                                        ${page === totalPages ? 'bg-gray-100 text-gray-400 not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}'}`}>
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                {isDeleteModal && (
+                    <div className="fixed inset-0  bg-opacity-50  backdrop-blur-xs flex items-center justify-center z-50">
+                        <div className="bg-gray-700 rounded-lg shadow-2xl max-w-md w-full mx-4">
+                            <div className="flex items-center justify-between p-4 ">
+                                <div className="flex items-center">
+                                    <AlertTriangle className="w-5 h-5 text-red-600 mr-2" />
+                                    <h3 className="text-lg font-semibold text-white">
+                                        Confirm Deletion
+                                    </h3>
+                                </div>
+                                <button
+                                    onClick={handleDeleteModalClose}
+                                    className="text-white hover:text-gray-600 transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="p-4">
+                                <p className="text-white">
+                                    Are you sure you want to delete this item? This action cannot be undone.
+                                </p>
+                            </div>
+                            <div className="flex justify-end space-x-3 p-4 rounded-b-lg  bg-gray-700">
+                                <button
+                                    onClick={handleDeleteModalClose}
+                                    className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleDelete}
+                                    className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+
+                {updateModal && selectedUpdateLoad && (
+                    <UpdateLoadModal
+                        isOpen={updateModal}
+                        onClose={handleUpdateModalClose}
+                        selectedLoad={selectedUpdateLoad}
+                        onSubmit={handleUpdateSubmit}
+                    />
+                )}
+
             </div>
+
+
         </>
     )
 }

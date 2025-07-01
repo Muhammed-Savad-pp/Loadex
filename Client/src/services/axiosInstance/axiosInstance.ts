@@ -1,18 +1,18 @@
-import axios, { InternalAxiosRequestConfig, AxiosResponse, AxiosError, AxiosRequestConfig } from "axios";
+import axios from "axios";
 import store from "../../redux/store";
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 import { loginSuccess, logOut } from "../../redux/slice/authSlice";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
- const axiosInstance = axios.create({
+const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true,
 });
 
 // Correctly type the request interceptor
 axiosInstance.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => {
+    (config) => {
         const state = store.getState();
         const token = state.auth.token;
 
@@ -23,16 +23,16 @@ axiosInstance.interceptors.request.use(
 
         return config;
     },
-    (error: AxiosError) => {
+    (error) => {
         console.error("Request Error", error);
         return Promise.reject(error);
     }
 );
 
 axiosInstance.interceptors.response.use(
-    (response: AxiosResponse) => response,
-    async (error: AxiosError) => {
-        const originalRequest = error.config as AxiosRequestConfig & {_retry?: boolean};
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
         if(originalRequest && error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 

@@ -36,7 +36,7 @@ function TruckBoard() {
     return (
         <div>
             <Navbar />
-            <div className='max-w-7xl mx-auto mt-8 mb-8 p-4 h-[80vh] rounded-md bg-gray-50'>
+            <div className='max-w-7xl mx-auto mt-20 mb-8 p-4 h-[80vh] rounded-md bg-gray-50 '>
                 <h1 className='text-2xl font-bold mb-6 text-gray-800'>Truck Board</h1>
                 <div className='grid grid-cols-1 gap-4'>
                     <div className='hidden md:grid md:grid-cols-7 bg-gray-200 rounded-t-lg p-3 font-semibold text-md text-gray-800'>

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { fetchDashBoardDatas } from '../../services/admin/adminapi';
 // import { LineChart, Line, ResponsiveContainer } from 'recharts';
 
-const DashboardContent = () => {
+const DashboardContent: React.FC = () => {
   // Sample data for charts
   // const revenueData = [
   //   { name: 'Jan', value: 200 },
@@ -23,6 +24,25 @@ const DashboardContent = () => {
   //   { name: 'Jul', value: 110 },
   // ];
 
+  const [users, setUsers] = useState<number>(0); 
+  const [loads, setLoads] = useState<number>(0);
+  const [trips, setTrips ] = useState<number>(0);
+  const [revenueData, setRevenueData] = useState<number>(0)
+
+  useEffect(() => {
+    const getDashboardData = async () => {
+      const response: any = await fetchDashBoardDatas();
+      setUsers(response.userCount);
+      setLoads(response.loadCount);
+      setTrips(response.tripCount);
+      setRevenueData(response.totalEarning)
+
+    }
+
+    getDashboardData()
+
+  }, [])
+
   return (
     <div className="flex-1 p-6 bg-gray-50">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -35,7 +55,7 @@ const DashboardContent = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500">Users</p>
-            <h2 className="text-2xl font-bold">321</h2>
+            <h2 className="text-2xl font-bold">{users}</h2>
           </div>
           <div className="ml-auto h-12 w-24">
             {/* <ResponsiveContainer width="100%" height="100%">
@@ -50,7 +70,7 @@ const DashboardContent = () => {
         <div className="bg-white p-6 rounded-lg shadow-sm flex items-center">
           <div>
             <p className="text-sm text-gray-500">Loads</p>
-            <h2 className="text-2xl font-bold">682</h2>
+            <h2 className="text-2xl font-bold">{loads}</h2>
           </div>
           <div className="ml-auto h-12 w-24">
             {/* <ResponsiveContainer width="100%" height="100%">
@@ -65,7 +85,7 @@ const DashboardContent = () => {
         <div className="bg-indigo-500 p-6 rounded-lg shadow-sm flex items-center">
           <div>
             <p className="text-sm text-indigo-100">Completed Trips</p>
-            <h2 className="text-2xl font-bold text-white">540</h2>
+            <h2 className="text-2xl font-bold text-white">{trips}</h2>
           </div>
           <div className="ml-auto h-12 w-24">
             {/* <ResponsiveContainer width="100%" height="100%">
@@ -85,7 +105,7 @@ const DashboardContent = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500">Revenue</p>
-            <h2 className="text-2xl font-bold">$350.40</h2>
+            <h2 className="text-2xl font-bold">{revenueData}</h2>
           </div>
         </div>
       </div>

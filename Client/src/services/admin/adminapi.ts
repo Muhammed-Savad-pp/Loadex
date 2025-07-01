@@ -12,9 +12,9 @@ export const adminLogin = async (email: string, password: string) => {
 
 }
 
-export const getTransporter = async () => {
+export const getTransporter = async (search: string,page: number, limit: number) => {
     
-    const response = await apiClient.get('/admin/transporters')
+    const response = await apiClient.get(`/admin/transporters?search=${search}&page=${page}&limit=${limit}`);
     return response.data
 
 }
@@ -47,9 +47,9 @@ export const changeVerificationStatus = async (id: string,status: string) =>{
 
 }
 
-export const getShipper = async () => {
+export const getShipper = async (search: string, page: number, limit: number) => {
 
-    const response = await apiClient.get('/admin/fetchShipper');
+    const response = await apiClient.get(`/admin/fetchShipper?search=${search}&page=${page}&limit=${limit}`);
     return response.data;
 }
 
@@ -88,9 +88,35 @@ export const changeTruckVerificationStatus = async (id: string, status: string) 
 }
 
 
-export const getLoads = async () => {
+export const getLoads = async (page: number, limit: number) => {
     
-    const response = await apiClient.get('/admin/fetchLoads');
+    const response = await apiClient.get(`/admin/fetchLoads?page=${page}&limit=${limit}`);
     return response.data;
     
+}
+
+export const fetchDashBoardDatas = async () => {
+
+    const response = await apiClient.get('/admin/fetchDashboardDatas');    
+    return response.data;
+}
+
+export const fetchTrips = async(page: number, limit: number) => {
+
+    const response = await apiClient.get(`/admin/trips?page=${page}&limit=${limit}`);
+    return response.data;
+};
+
+export const sendTripAmountToTransporter = async(tripId: string, amount: string) => {
+
+    const response = await apiClient.post('/admin/sendTripAmountToTransporter', { tripId, amount});
+    return response.data
+}
+
+export const fetchPaymentHistory = async (searchTerm: string, paymentStatus: string, userType: string, paymentfor: string, page: number, limit: number) => {
+
+    const response = await apiClient.get(`/admin/paymentHistory?searchTerm=${searchTerm}&paymentStatus=${paymentStatus}&userType=${userType}&paymentfor=${paymentfor}&page=${page}&limit=${limit}`);
+    console.log(response, 'resposne in serve');
+    
+    return response.data;
 }

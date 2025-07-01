@@ -18,14 +18,17 @@ const Directory: React.FC = () => {
     const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [filteredShippers, setFilteredShippers] = useState<IShipper[]>(shippers);
-    const [selectShipperId, setSelectedShipperId] = useState<string | null>(null)
-    console.log(shippers);
+    const [selectShipperId, setSelectedShipperId] = useState<string | null>(null);
+    const [page, setPage] = useState<number>(1);
+    const [totalPages, setTotalPages] = useState<number>(10)
 
+    const limit = 6;
 
     useEffect(() => {
         const getShippers = async () => {
-            const response = await listShipper();
-            setShippers(response as IShipper[])
+            const response: any = await listShipper(page, limit);
+            setShippers(response.shipper);
+            setTotalPages(response.totalPages)
         }
         getShippers()
     }, [])
@@ -44,7 +47,7 @@ const Directory: React.FC = () => {
     return (
         <>
             <Navbar />
-            <div className="bg-gray-50 min-h-screen">
+            <div className="bg-gray-50 min-h-screen mt-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="bg-white rounded-lg shadow overflow-hidden">
                         {/* Header */}
@@ -100,19 +103,19 @@ const Directory: React.FC = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">{shipper.companyName}</div>
+                                                    <div className="text-sm text-gray-900">{shipper.companyName ? shipper.companyName : 'Not Provide'} </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <a href={`mailto:${shipper.email}`} className="text-sm text-blue-600 hover:text-blue-800">{shipper.email}</a>
+                                                    <p className="text-sm">{shipper.email}</p>
                                                 </td>
                                                 <td>
-                                                    <button onClick={() => {setShowProfileModal(true); setSelectedShipperId(shipper._id)}} className='bg-green-600 px-3 py-1 text-white rounded-lg'>View</button>
+                                                    <button onClick={() => { setShowProfileModal(true); setSelectedShipperId(shipper._id) }} className='bg-green-600 px-3 py-1 text-white rounded-lg'>View</button>
                                                     {showProfileModal && selectShipperId && (
                                                         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-xs backdrop-brightness-75 bg-opacity-50">
                                                             <div className="relative bg-white rounded-lg w-full max-w-md mx-4 md:mx-auto overflow-auto max-h-[90vh]">
                                                                 <button
                                                                     className="absolute top-4 right-4 text-gray-600 hover:text-gray-700"
-                                                                    onClick={() =>{ setShowProfileModal(false) ; setSelectedShipperId(null)}}
+                                                                    onClick={() => { setShowProfileModal(false); setSelectedShipperId(null) }}
                                                                 >
                                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -127,8 +130,6 @@ const Directory: React.FC = () => {
                                                         </div>
                                                     )}
                                                 </td>
-
-
                                             </tr>
                                         ))
                                     ) : (
@@ -144,13 +145,32 @@ const Directory: React.FC = () => {
                                 </tbody>
                             </table>
                         </div>
-
-                        {/* Pagination/Info Footer */}
-                        <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-500 flex justify-between items-center">
-                            <div>
-                                Showing {filteredShippers.length} of {shippers.length} shippers
+                        <div className="flex justify-center mt-6">
+                            <div className="inline-flex rounded-md shadow-sm">
+                                <button
+                                    onClick={() => setPage(page - 1)}
+                                    disabled={page === 1}
+                                    className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                                    ${page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                                        Prev
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .slice(Math.max(0, page - 3), Math.min(totalPages, page + 2))
+                                    .map((p) => (
+                                        <button className={`px-3 py-2 ml-1  mr-1 text-sm rounded-md font-medium border-t border-b border-gray-300 cursor-pointer
+                                            ${p === page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                                                {p}
+                                        </button>
+                                    ))
+                                }
+                                <button
+                                    onClick={() => setPage(page + 1)}
+                                    disabled={page === totalPages}
+                                    className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                                        ${page === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}'}`}>
+                                            Next
+                                </button>
                             </div>
-                            {/* Pagination could be added here in the future */}
                         </div>
                     </div>
                 </div>

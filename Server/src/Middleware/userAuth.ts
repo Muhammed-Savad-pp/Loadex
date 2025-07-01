@@ -14,7 +14,6 @@ const authenticateToken = (req: CustomeRequest, res: Response, next: NextFunctio
         const token = req.headers['authorization'];
 
         console.log(token);
-        
 
         if (!token) {
             res.status(HTTP_STATUS.UNAUTHORIZED).json({ message: 'Access denied. No token' })
@@ -33,7 +32,6 @@ const authenticateToken = (req: CustomeRequest, res: Response, next: NextFunctio
             console.log('verify done', payload);
 
             if (err) {
-
                 res.status(HTTP_STATUS.UNAUTHORIZED).json({ message: 'Invalid token' })
                 return
             }
@@ -42,14 +40,12 @@ const authenticateToken = (req: CustomeRequest, res: Response, next: NextFunctio
             req.user = user as JwtPayload;
 
             next()
-
         })
 
     } catch (error) {
 
         console.error('error occured in authenticateToken middleware', error);
         res.status(HTTP_STATUS.UNAUTHORIZED).json({ message: 'An error occured while authenticating' })
-
     }
 }
 

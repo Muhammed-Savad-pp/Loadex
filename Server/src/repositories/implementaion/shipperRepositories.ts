@@ -1,9 +1,7 @@
 import Shipper, {IShipper} from '../../models/ShipperModel';
 import { BaseRepositories } from './baseRepositories';
 import { IShipperRepository } from '../interface/IShipperRepository';
-import Load, { ILoad } from '../../models/LoadModel';
-import Bid, { IBid } from '../../models/BidModel';
-import { ProjectionType, FilterQuery } from "mongoose";
+import { UpdateResult } from "mongoose";
 
  class ShipperRepositories extends BaseRepositories<IShipper> implements IShipperRepository  {
 
@@ -117,6 +115,29 @@ import { ProjectionType, FilterQuery } from "mongoose";
             throw new Error(error instanceof Error ? error.message : String(error))
         }
         
+    }
+
+    async findByCustomerId(customerId: string): Promise<IShipper | null> {
+        try {
+            
+            return await this.model.findOne({'subscription.stripeCustomerId': customerId});
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async expiredSubscriptionUpdate(today: Date): Promise<UpdateResult> {
+        try {
+            
+            return await this.model.updateMany(
+                {'subscription.endDate': {$lt: today}, 'subscription.status': 'active'},
+                {$set: {'subscription.status': 'expired', 'subscription.isActive': false}}
+            )
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
     }
 
 }

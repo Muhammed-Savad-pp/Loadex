@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import Navbar from '../../components/Common/Navbar/Navbar';
 import ProfileSidebar from '../../components/tranporter/ProfileSidebar';
-import { fetchTrips, updateTripStatus } from '../../services/transporter/transporterApi';
+import { fetchTrips, createChat, updateTripStatus } from '../../services/transporter/transporterApi';
 import { ChevronDown, ChevronUp, MapPin, Calendar, Truck, Loader, Copy, CheckCircle } from 'lucide-react';
 import TripStatusStepper from '../../components/tranporter/TripStatusStepper';
 import ProfileComponent from '../../components/tranporter/ProfileComponent';
+import { useNavigate } from 'react-router-dom';
+import LocationTrackingComponent from '../../components/tranporter/LocationTrackingComponent';
+
 
 
 interface ITripData {
-  _id: string; // Added ID for updating
+  _id: string; 
   shipperId: {
     _id: string;
     shipperName: string;
@@ -31,6 +34,10 @@ interface ITripData {
     pickupLocation: string;
     quantity: string;
     scheduledDate: Date;
+    dropCoordinates: {
+      latitude: number;
+      longitude: number
+    }
   };
   truckId: {
     capacity: string;
@@ -41,7 +48,15 @@ interface ITripData {
   };
   tripStatus: string;
   price: string;
-  createdAt: Date;
+  confirmedAt: Date;
+  progressAt: Date;
+  arrivedAt: Date;
+  completedAt: Date;
+}
+
+interface IDropCordinates {
+  latitude: number;
+  longitude: number
 }
 
 type TripStatus = 'confirmed' | 'inProgress' | 'arrived' | 'completed';
@@ -85,8 +100,12 @@ const TripCard = ({ trip, onStatusUpdate }: { trip: ITripData; onStatusUpdate: (
 
   const [expanded, setExpanded] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
+  const [, setIsCopied] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showMap, setShowMap] = useState<boolean>(false)
+  const [selectedTripsDropCordinates, setSelectedTripCordinates] = useState<IDropCordinates>()
+
+  const navigate = useNavigate();
 
   // Format date
   const formatDate = (date: Date) => {
@@ -119,9 +138,29 @@ const TripCard = ({ trip, onStatusUpdate }: { trip: ITripData; onStatusUpdate: (
 
     } catch (error) {
       console.log('Failed to copy text:', error);
-
     }
   }
+
+  const hanldeMessage = async (shipperId: string) => {
+    try {
+
+      const response: any = await createChat(shipperId);
+      if (response.success) {
+        navigate('/transporter/chat')
+      }
+
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const handleMapOpen = () => {
+    setShowMap(true);
+    setSelectedTripCordinates(trip.loadId.dropCoordinates)
+  }
+
+  console.log(selectedTripsDropCordinates);
+
 
   return (
     <>
@@ -178,7 +217,21 @@ const TripCard = ({ trip, onStatusUpdate }: { trip: ITripData; onStatusUpdate: (
               currentStatus={trip.tripStatus.toLowerCase() as TripStatus}
               onUpdateStatus={handleStatusUpdate}
               disabled={updating || trip.tripStatus.toLowerCase() === 'completed' || trip.tripStatus.toLowerCase() === 'cancelled'}
+              confirmedAt={trip.confirmedAt ? new Date(trip.confirmedAt) : undefined}
+              progressAt={trip.progressAt ? new Date(trip.progressAt) : undefined}
+              arrivedAt={trip.arrivedAt ? new Date(trip.arrivedAt) : undefined}
+              completedAt={trip.completedAt ? new Date(trip.completedAt) : undefined}
             />
+            {trip.tripStatus !== 'completed' && (
+              <div className='bg-white p-4 rounded-lg shadow-md w-full flex items-center justify-between mb-4'>
+                <p className='text-lg text-gray-700 mb-2 '>
+                  Click the button to view the destination route on the map.
+                </p>
+                <button onClick={handleMapOpen} className="px-4  py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+                  Show Destination
+                </button>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Left Column */}
@@ -294,12 +347,15 @@ const TripCard = ({ trip, onStatusUpdate }: { trip: ITripData; onStatusUpdate: (
                         </div>
                       </div>
                     </div>
-                    <p className="text-sm mt-2 text-gray-500">Trip created on {formatDate(trip.createdAt)}</p>
+                    <p className="text-sm mt-2 text-gray-500">Trip created on {formatDate(trip.confirmedAt)}</p>
                   </div>
 
                   <div>
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-                      Contact Shipper
+                    <button
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
+                      onClick={() => hanldeMessage(trip.shipperId._id)}
+                    >
+                      Message Shipper
                     </button>
                   </div>
                 </div>
@@ -308,6 +364,10 @@ const TripCard = ({ trip, onStatusUpdate }: { trip: ITripData; onStatusUpdate: (
           </div>
         )}
       </div>
+
+      {showMap && (
+        <LocationTrackingComponent dropCoordinates={trip.loadId.dropCoordinates} onClose={() => setShowMap(false)} />
+      )}
 
       {showProfileModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-xs backdrop-brightness-75 bg-opacity-50">
@@ -334,18 +394,20 @@ const TripCard = ({ trip, onStatusUpdate }: { trip: ITripData; onStatusUpdate: (
 };
 
 export default function Trips() {
-  const [tripData, setTripData] = useState<ITripData[]>([]);
+  const [tripDatas, setTripDatas] = useState<ITripData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
-
-
+  const [filter, setFilter] = useState('');
+  const [page, setPage] = useState<number>(1)
+  const [totalPages, setTotalPages] = useState<number>(100)
+  const limit = 4
 
   useEffect(() => {
     const getTrips = async () => {
       try {
         setLoading(true);
-        const response = await fetchTrips();
-        setTripData(response as ITripData[]);
+        const response: any = await fetchTrips(filter, page, limit);
+        setTripDatas(response.trips as ITripData[]);
+        setTotalPages(response.totalPages)
       } catch (error) {
         console.error("Failed to fetch trips:", error);
       } finally {
@@ -354,19 +416,16 @@ export default function Trips() {
     };
 
     getTrips();
-  }, []);
+  }, [filter, page]);
 
-  console.log(tripData, 'tr');
+  console.log(tripDatas, 'trjps');
 
 
-  // Handle trip status update
   const handleStatusUpdate = async (tripId: string, newStatus: TripStatus) => {
     try {
-      // Call API to update status
       await updateTripStatus(tripId, newStatus);
 
-      // Update local state
-      setTripData(prevTrips =>
+      setTripDatas(prevTrips =>
         prevTrips.map(trip =>
           trip._id === tripId ? { ...trip, tripStatus: newStatus } : trip
         )
@@ -377,17 +436,11 @@ export default function Trips() {
     }
   };
 
-  // Filter trips based on status
-  const filteredTrips = tripData?.filter(trip => {
-    if (filter === 'all') return true;
-    return trip.tripStatus.toLowerCase() === filter.toLowerCase();
-  });
-
   return (
     <>
       <Navbar />
 
-      <div className='flex min-h-screen bg-gray-100'>
+      <div className='flex min-h-screen bg-gray-100 mt-10'>
         <ProfileSidebar />
 
         <div className="flex-1 p-6">
@@ -399,32 +452,32 @@ export default function Trips() {
           {/* Filter Tabs */}
           <div className="mb-6 flex flex-wrap gap-2">
             <button
-              className={`px-4 py-2 rounded-md ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
-              onClick={() => setFilter('all')}
+              className={`px-4 py-2 rounded-md ${filter === '' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
+              onClick={() => { setFilter(''), setPage(1) }}
             >
               All Trips
             </button>
             <button
               className={`px-4 py-2 rounded-md ${filter === 'confirmed' ? 'bg-yellow-600 text-white' : 'bg-white text-gray-700'}`}
-              onClick={() => setFilter('confirmed')}
+              onClick={() => { setFilter('confirmed'), setPage(1) }}
             >
               Confirmed
             </button>
             <button
               className={`px-4 py-2 rounded-md ${filter === 'inProgress' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
-              onClick={() => setFilter('inProgress')}
+              onClick={() => { setFilter('inProgress'), setPage(1) }}
             >
               In Progress
             </button>
             <button
               className={`px-4 py-2 rounded-md ${filter === 'arrived' ? 'bg-purple-600 text-white' : 'bg-white text-gray-700'}`}
-              onClick={() => setFilter('arrived')}
+              onClick={() => { setFilter('arrived'), setPage(1) }}
             >
               Arrived
             </button>
             <button
               className={`px-4 py-2 rounded-md ${filter === 'completed' ? 'bg-green-600 text-white' : 'bg-white text-gray-700'}`}
-              onClick={() => setFilter('completed')}
+              onClick={() => { setFilter('completed'), setPage(1) }}
             >
               Completed
             </button>
@@ -437,8 +490,8 @@ export default function Trips() {
                 <Loader className="w-10 h-10 text-blue-500 animate-spin mb-4" />
                 <p className="text-gray-600">Loading your trips...</p>
               </div>
-            ) : filteredTrips && filteredTrips.length > 0 ? (
-              filteredTrips.map((trip, index) => (
+            ) : tripDatas && tripDatas.length > 0 ? (
+              tripDatas.map((trip, index) => (
                 <TripCard
                   key={trip._id || index}
                   trip={trip}
@@ -458,6 +511,35 @@ export default function Trips() {
                 </p>
               </div>
             )}
+          </div>
+
+          {/* { Pagination} */}
+          <div className="flex justify-center mt-6 mr-5">
+            <div className="inline-flex rounded-md shadow-sm">
+              <button
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+                className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                                    ${page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .slice(Math.max(0, page - 3), Math.min(totalPages, page + 2))
+                .map((p) => (
+                  <button className={`px-3 py-2 ml-1  mr-1 text-sm rounded-md font-medium border-t border-b border-gray-300 cursor-pointer
+                                  ${p === page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                    {p}
+                  </button>
+                ))
+              }
+              <button
+                onClick={() => setPage(page + 1)}
+                disabled={page === totalPages}
+                className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                     ${page === totalPages ? 'bg-gray-100 text-gray-400 not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}'}`}>
+                Next
+              </button>
+            </div>
           </div>
         </div>
       </div>

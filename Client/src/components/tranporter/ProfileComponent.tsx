@@ -53,52 +53,6 @@ function ProfileComponent({ shipperId }: profileProps) {
   const [averageRating, setAverageRating] = useState<number>(0);
   const [alreadySubmitedReview, setAlreadySubmitedReview] = useState<boolean>();
 
-
-  // const [userData] = useState({
-  //   name: "John Doe",
-  //   avatar: "/api/placeholder/150/150",
-  //   location: "New York, USA",
-  //   rating: 4.8,
-  //   reviews: 147,
-  //   tripsCompleted: 328,
-  //   trucksOwned: 3,
-  //   followers: 215,
-  //   following: 84,
-  //   // Reviews data
-  //   userReviews: [
-  //     {
-  //       id: 1,
-  //       author: "Sarah Johnson",
-  //       avatar: "/api/placeholder/50/50",
-  //       date: "Apr 15, 2025",
-  //       rating: 5,
-  //       comment: "Excellent service! Delivered on time and kept me updated throughout the journey.",
-  //       likes: 12
-  //     },
-  //     {
-  //       id: 2,
-  //       author: "Michael Chen",
-  //       avatar: "/api/placeholder/50/50",
-  //       date: "Apr 3, 2025",
-  //       rating: 4,
-  //       comment: "Great transporter, very professional. Would use again for my shipping needs.",
-  //       likes: 8
-  //     },
-  //     {
-  //       id: 3,
-  //       author: "Emily Rodriguez",
-  //       avatar: "/api/placeholder/50/50",
-  //       date: "Mar 27, 2025",
-  //       rating: 5,
-  //       comment: "Went above and beyond to make sure my shipment arrived safely. Highly recommend!",
-  //       likes: 15
-  //     }
-  //   ]
-  // })
-
-  console.log(isFollow, 'isFollow');
-
-
   useEffect(() => {
     const fetchShipperProfile = async () => {
       try {
@@ -121,7 +75,6 @@ function ProfileComponent({ shipperId }: profileProps) {
 
   }, [])
 
-  console.log('userDatas', shipperData);
 
   const handleFollow = async (shipperId: string) => {
     try {

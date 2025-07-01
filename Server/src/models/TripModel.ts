@@ -8,7 +8,11 @@ export interface ITrip extends Document {
     truckId: Types.ObjectId;
     price: string;
     tripStatus: 'confirmed' | 'inProgress' | 'arrived' | 'completed';
-    createdAt: Date;
+    confirmedAt: Date;
+    progressAt?: Date;
+    arrivedAt?: Date;
+    completedAt?: Date;
+    adminPayment: boolean;
 }
 
 
@@ -49,9 +53,26 @@ const TripSchema: Schema = new Schema ({
         default: 'confirmed'
     },
 
-    createdAt: {
+    confirmedAt: {
         type: Date,
         default: Date.now
+    },
+
+    progressAt: {
+        type: Date,
+    },
+
+    arrivedAt: {
+        type: Date,
+    },
+
+    completedAt: {
+        type: Date,
+    },
+
+    adminPayment: {
+        type: Boolean,
+        default: false
     }
 
 })

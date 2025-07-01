@@ -3,7 +3,7 @@ import Navbar from '../../components/Common/Navbar/Navbar';
 import { XCircle, RefreshCw } from 'lucide-react';
 import { useEffect } from 'react';
 import { verifyBidPayment } from '../../services/shipper/shipperService';
-import toast from 'react-hot-toast';
+// import toast from 'react-hot-toast';
 
 export default function Failed() {
 
@@ -27,7 +27,8 @@ export default function Failed() {
             }
         }
 
-    })
+        paymentFailed()
+    }, [])
 
     return (
         <div className="min-h-screen bg-gray-900">

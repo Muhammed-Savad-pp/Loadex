@@ -44,7 +44,7 @@ export class AuthService implements ITransporterAuthService {
             
         }
 
-        if(existingTransporter && !existingTransporter.isVerified) {
+        if(existingTransporter && !existingTransporter.isVerified) {  
 
             const getOtp = await this._otpRepository.findOtpByEmail(email);
             
@@ -53,7 +53,6 @@ export class AuthService implements ITransporterAuthService {
                 const currentTime = new Date().getTime();
                 
                 const expirationTime = new Date(getOtp.createdAt).getTime() + 2 * 60 * 1000;
-                
 
                 if(currentTime < expirationTime ) {
                     

@@ -10,6 +10,13 @@ import Failed from '../pages/Transporter/Failed'
 import Trips from '../pages/Transporter/Trips'
 import Directory from '../pages/Transporter/Directory'
 import NotFound from '../pages/common/NotFound'
+import Network from '../pages/Transporter/Network'
+import Subscription from '../pages/Transporter/Subscription'
+import SubscriptionSuccess from '../pages/Transporter/SubscriptionSuccess'
+import SubscriptionFailed from '../pages/Transporter/SubscriptionFailed'
+import PaymentHistory from '../pages/Transporter/PaymentHistory'
+import Chat from '../pages/Transporter/Chat'
+import Wallet from '../pages/Transporter/Wallet'
 
 function TransporterRoute() {
   return (
@@ -26,6 +33,14 @@ function TransporterRoute() {
         <Route path='/failed' element={<Failed/>}/>
         <Route path='/trips' element={<Trips/>}/>
         <Route path='/directory' element={<Directory/>}/>
+        <Route path='/network' element={<Network/>}/>
+        <Route path='/subscription' element={<Subscription/>}/>
+        <Route path='/subscription-success' element={<SubscriptionSuccess/>}/>
+        <Route path='/subscription-failed' element={<SubscriptionFailed/>}/>
+        <Route path='/paymentHistory' element={<PaymentHistory/>}/>
+        <Route path='/chat' element={<Chat/>}/>
+        <Route path='/wallet' element={<Wallet/>}/>
+        {/* <Route path='/notification' element={< NotificationModal/>}/> */}
         <Route path='*' element={<NotFound/>}/>
       </Route>
     </Routes>

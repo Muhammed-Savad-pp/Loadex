@@ -4,6 +4,7 @@ import Truck, {ITruck} from '../../models/TruckModel';
 import { ITransporterRepository } from "../interface/ITransporterRepository";
 import Load, { ILoad } from "../../models/LoadModel";
 import Bid, { IBid } from "../../models/BidModel";
+import { UpdateResult } from "mongoose";
 
  class TransporterRepository extends BaseRepositories<ITransporter> implements ITransporterRepository {
 
@@ -92,7 +93,7 @@ import Bid, { IBid } from "../../models/BidModel";
         }
     }
 
-    async getRequestedTransporter(): Promise<ITransporter[]> {
+    async getRequestedTransporter(): Promise<ITransporter []> {
         try {
             
             const projection = {
@@ -112,6 +113,18 @@ import Bid, { IBid } from "../../models/BidModel";
         }
     }
  
+    async subscriptionExpiredUpdate(today: Date): Promise<UpdateResult> {
+        try {
+            
+            return await this.model.updateMany(
+                {'subscription.endDate': { $lt: today}, 'subscription.status': 'active'},
+                { $set: {'subscription.status': 'expired', 'subscription.isActive' : false}}
+            )
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
    
 }
 

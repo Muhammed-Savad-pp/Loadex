@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import Navbar from '../../components/Common/Navbar/Navbar';
 import { CheckCircle, ShoppingBag } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import {  useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { bidVerifyPayment } from '../../services/transporter/transporterApi';
 

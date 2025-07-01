@@ -4,6 +4,7 @@ import { adminLogout } from '../../services/admin/adminapi';
 import { logOut } from '../../redux/slice/authSlice';
 import { useDispatch } from 'react-redux';
 import { useState } from 'react';
+import { Truck } from 'lucide-react';
 
 
 const Sidebar: React.FC = () => {
@@ -100,8 +101,8 @@ const Sidebar: React.FC = () => {
             <button
               onClick={toggleDropdown}
               className={`w-full flex items-center p-3 rounded-md group transition-colors ${isRequestActive
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-indigo-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -126,8 +127,8 @@ const Sidebar: React.FC = () => {
                 <Link
                   to="/admin/request/transporter"
                   className={`flex items-center p-2 rounded-md text-sm ${isActive('/admin/request/transporter')
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
                     }`}
                 >
                   Transporter
@@ -135,17 +136,17 @@ const Sidebar: React.FC = () => {
                 <Link
                   to="/admin/request/shipper"
                   className={`flex items-center p-2 rounded-md text-sm ${isActive('/admin/request/approved')
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
                     }`}
                 >
-                 Shipper
+                  Shipper
                 </Link>
                 <Link
                   to="/admin/request/truck"
                   className={`flex items-center p-2 rounded-md text-sm ${isActive('/admin/request/rejected')
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
                     }`}
                 >
                   Trucks
@@ -167,10 +168,23 @@ const Sidebar: React.FC = () => {
             Loads
           </Link>
 
+          <Link
+            to="/admin/trips"
+            className={`flex items-center p-3 rounded-md group transition-colors ${isActive('/admin/trips')
+              ? 'bg-indigo-600 text-white'
+              : 'text-gray-600 hover:bg-gray-100'
+              }`}
+          >
+            <Truck className='h-10 mr-3' />
+            Trips
+          </Link>
+
+
+
           {/* Payouts Item */}
           <Link
-            to="/admin/payouts"
-            className={`flex items-center p-3 rounded-md group transition-colors ${isActive('/admin/payouts')
+            to="/admin/paymentHistory"
+            className={`flex items-center p-3 rounded-md group transition-colors ${isActive('/admin/paymentHistory')
               ? 'bg-indigo-600 text-white'
               : 'text-gray-600 hover:bg-gray-100'
               }`}

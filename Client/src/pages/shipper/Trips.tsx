@@ -36,20 +36,24 @@ interface ITrips {
     };
     price: string;
     tripStatus: string;
-    createdAt: string;
+    confirmedAt: string;
 }
 
 const Trips = () => {
     const [trips, setTrips] = useState<ITrips[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showProfileModal, setShowProfileModal] = useState<boolean>(false)
+    const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
+    const [page, setPage] = useState<number>(1);
+    const [totalPages, setTotalPages] = useState<number>(30);
+    const limit = 3;
 
     useEffect(() => {
         const getTrips = async () => {
             try {
                 setLoading(true);
-                const response = await fetchTrips();
-                setTrips(response as ITrips[]);
+                const response: any = await fetchTrips(page, limit);
+                setTrips(response.tripsData);
+                setTotalPages(response.totalPages)
             } catch (error) {
                 console.error("Failed to fetch trips:", error);
             } finally {
@@ -57,7 +61,7 @@ const Trips = () => {
             }
         };
         getTrips();
-    }, []);
+    }, [page]);
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -96,7 +100,7 @@ const Trips = () => {
     return (
         <>
             <Navbar />
-            <div className="flex min-h-screen bg-gray-50">
+            <div className="flex min-h-screen bg-gray-50 mt-10">
                 <ShipperProfileSidebar />
                 <div className="flex-1">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -114,7 +118,7 @@ const Trips = () => {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                 </svg>
                                 <h3 className="mt-4 text-lg font-medium text-gray-900">No trips found</h3>
-                               
+
                             </div>
                         ) : (
                             <div className="space-y-4">
@@ -129,7 +133,7 @@ const Trips = () => {
                                                     </span>
                                                 </div>
                                                 <div className="text-xs text-gray-500">
-                                                    Created on {formatDate(trip.createdAt)}
+                                                    Created on {formatDate(trip.confirmedAt)}
                                                 </div>
                                             </div>
                                             <div className="mt-1 flex row items-center cursor-pointer" onClick={() => setShowProfileModal(true)}>
@@ -233,14 +237,44 @@ const Trips = () => {
                                                     </button>
 
                                                     {/* Profile Component */}
-                                                    <ProfileComponent transporterId={trip.transporterId._id } />
+                                                    <ProfileComponent transporterId={trip.transporterId._id} />
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 ))}
                             </div>
+
+
                         )}
+
+                        <div className="flex justify-center mt-6">
+                            <div className="inline-flex rounded-md shadow-sm">
+                                <button
+                                    onClick={() => setPage(page - 1)}
+                                    disabled={page === 1}
+                                    className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                                    ${page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                                    Prev
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .slice(Math.max(0, page - 3), Math.min(totalPages, page + 2))
+                                    .map((p) => (
+                                        <button className={`px-3 py-2 ml-1  mr-1 text-sm rounded-md font-medium border-t border-b border-gray-300 cursor-pointer
+                                            ${p === page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                                            {p}
+                                        </button>
+                                    ))
+                                }
+                                <button
+                                    onClick={() => setPage(page + 1)}
+                                    disabled={page === totalPages}
+                                    className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                                        ${page === totalPages ? 'bg-gray-100 text-gray-400 not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}'}`}>
+                                    Next
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

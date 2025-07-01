@@ -58,9 +58,6 @@ const Profile = () => {
         profileImage: null,
     });
 
-    console.log(formData, 'formData');
-
-
     const [kycData, setKycData] = useState<KYCData>({
         companyName: '',
         gstNumber: '',
@@ -87,9 +84,6 @@ const Profile = () => {
         phone: ''
     })
 
-    console.log(shipperData, 'shipperData');
-
-
     useEffect(() => {
         const getProfileData = async () => {
 
@@ -102,6 +96,14 @@ const Profile = () => {
     }, [])
 
     useEffect(() => {
+        return () => {
+            if (previews.aadhaarFront) URL.revokeObjectURL(previews.aadhaarFront);
+            if (previews.aadhaarBack) URL.revokeObjectURL(previews.aadhaarBack);
+
+        };
+    }, [previews]);
+
+    useEffect(() => {
 
         if (shipperData) {
             setFormData({
@@ -112,6 +114,24 @@ const Profile = () => {
             })
         }
 
+    }, [shipperData])
+
+    useEffect(() => {
+        return () => {
+            if (profileImagePreviews) URL.revokeObjectURL(profileImagePreviews);
+        }
+    }, [profileImagePreviews]);
+
+    useEffect(() => {
+        if(shipperData) {
+            setKycData({
+                companyName: shipperData.companyName || '',
+                panNumber: shipperData.panNumber || '',
+                gstNumber: shipperData.gstNumber || '',
+                aadhaarFront: null,
+                aadhaarBack: null,
+            })
+        }
     }, [shipperData])
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,20 +186,10 @@ const Profile = () => {
     };
 
     // Cleanup preview URLs when component unmounts
-    useEffect(() => {
-        return () => {
-            if (previews.aadhaarFront) URL.revokeObjectURL(previews.aadhaarFront);
-            if (previews.aadhaarBack) URL.revokeObjectURL(previews.aadhaarBack);
-
-        };
-    }, [previews]);
+    
 
 
-    useEffect(() => {
-        return () => {
-            if (profileImagePreviews) URL.revokeObjectURL(profileImagePreviews);
-        }
-    }, [profileImagePreviews]);
+    
 
     const validation = (kycData: Partial<KYCData>) => {
         const errors = {
@@ -280,6 +290,10 @@ const Profile = () => {
                     phone: prev?.phone ?? '',
                     profileImage: prev?.profileImage ?? ''
                 }))
+
+                toast.success(response.message)
+            } else { 
+                toast.error(response.message)
             }
 
         } catch (error) {
@@ -364,7 +378,7 @@ const Profile = () => {
     return (
         <>
             <Navbar />
-            <div className="flex min-h-screen bg-gray-100">
+            <div className="flex min-h-screen bg-gray-100 mt-10">
                 {/* Sidebar on the left */}
                 <ShipperProfileSidebar />
                 {/* Right Side Content */}
@@ -493,9 +507,9 @@ const Profile = () => {
                                     type="text"
                                     name="companyName"
                                     placeholder="Enter Company Name"
-                                    value={shipperData?.companyName || kycData.companyName}
+                                    value={kycData.companyName}
                                     onChange={handleInputChange}
-                                    readOnly={!!shipperData?.companyName}
+                                    readOnly={!['pending', 'rejected'].includes(shipperData?.verificationStatus || '')}
                                     className="w-full shadow-lg  px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 outline-none bg-gray-100 text-gray-700 placeholder-gray-400"
                                 />
                             </div>
@@ -505,8 +519,8 @@ const Profile = () => {
                                     <input
                                         type="text"
                                         name="panNumber"
-                                        value={shipperData?.panNumber || kycData.panNumber}
-                                        readOnly={!!shipperData?.panNumber}
+                                        value={kycData.panNumber}
+                                        readOnly={!['pending', 'rejected'].includes(shipperData?.verificationStatus || '')}
                                         onChange={handleInputChange}
                                         placeholder="Ex:- PQRSX5678K"
                                         className="w-full shadow-lg px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-100 text-gray-500 placeholder-gray-400"
@@ -526,9 +540,9 @@ const Profile = () => {
                                     <input
                                         type="text"
                                         name="gstNumber"
-                                        value={shipperData?.gstNumber || kycData.gstNumber}
+                                        value={kycData.gstNumber}
                                         onChange={handleInputChange}
-                                        readOnly={!!shipperData?.gstNumber}
+                                        readOnly={!['pending', 'rejected'].includes(shipperData?.verificationStatus || '')}
                                         placeholder="Ex:-  12ABCDE1234F1Z5"
                                         className="w-full shadow-lg px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-100 text-gray-500 placeholder-gray-400"
                                     />
@@ -556,10 +570,10 @@ const Profile = () => {
                                             key={kycData.aadhaarFront ? 'front-with-file' : 'front-empty'}
                                         />
                                         <div className="w-full h-48 bg-gray-100 flex items-center justify-center rounded-md shadow overflow-hidden">
-                                            {shipperData?.aadhaarFront ? (
-                                                <img src={shipperData.aadhaarFront} alt="Aadhaar Front" className="w-full h-full object-contain" />
-                                            ) : previews.aadhaarFront ? (
-                                                <img src={previews.aadhaarFront} alt="Aadhaar Front Preview" className="w-full h-full object-contain" />
+                                            {previews?.aadhaarFront ? (
+                                                <img src={previews.aadhaarFront} alt="Aadhaar Front" className="w-full h-full object-contain" />
+                                            ) : shipperData?.aadhaarFront ? (
+                                                <img src={shipperData?.aadhaarFront} alt="Aadhaar Front Preview" className="w-full h-full object-contain" />
                                             ) : (
                                                 <span className="text-gray-400 text-3xl">+</span>
                                             )}
@@ -578,10 +592,10 @@ const Profile = () => {
                                             key={kycData.aadhaarBack ? 'back-with-file' : 'back-empty'}
                                         />
                                         <div className="w-full h-48 bg-gray-100 flex items-center justify-center rounded-md shadow overflow-hidden">
-                                            {shipperData?.aadhaarBack ? (
-                                                <img src={shipperData.aadhaarBack} alt="Aadhaar Back" className="w-full h-full object-contain" />
-                                            ) : previews.aadhaarBack ? (
-                                                <img src={previews.aadhaarBack} alt="Aadhaar Back Preview" className="w-full h-full object-contain" />
+                                            {previews?.aadhaarBack ? (
+                                                <img src={previews.aadhaarBack} alt="Aadhaar Back" className="w-full h-full object-contain" />
+                                            ) : shipperData?.aadhaarBack ? (
+                                                <img src={shipperData?.aadhaarBack} alt="Aadhaar Back Preview" className="w-full h-full object-contain" />
                                             ) : (
                                                 <span className="text-gray-400 text-3xl">+</span>
                                             )}
@@ -590,7 +604,7 @@ const Profile = () => {
                                 </div>
                             </div>
                             {
-                                shipperData?.verificationStatus === 'pending' ? <button
+                                shipperData?.verificationStatus === 'pending' || shipperData?.verificationStatus === 'rejected' ? <button
                                     type="submit"
                                     className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
                                 >

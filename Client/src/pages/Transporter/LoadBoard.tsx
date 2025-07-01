@@ -3,7 +3,7 @@ import Navbar from "../../components/Common/Navbar/Navbar";
 import { fetchLoads } from "../../services/transporter/transporterApi";
 import Footer from "../../components/Common/footer/Footer";
 import toast from "react-hot-toast";
-import { sendBid } from "../../services/transporter/transporterApi";
+import { sendBid, fetchActiveTruck } from "../../services/transporter/transporterApi";
 
 interface LoadItem {
     _id: string;
@@ -41,28 +41,47 @@ interface IFormData {
     loadId: string;
 }
 
+interface IActiveTruck {
+    truckNo: string
+}
+
 const LoadBoard: React.FC = () => {
 
     const [loads, setLoads] = useState<LoadItem[]>([]);
     const [selectedLoad, setSelectedLoad] = useState<LoadItem | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [formError, setFormError] = useState<Partial<IFormData>>()
+    const [formError, setFormError] = useState<Partial<IFormData>>();
+    const [page, setPage] = useState<number>(1);
+    const [totalPages, setTotalPages] = useState<number>(10);
+    const [activeTrucks, setActiveTrucks] = useState<IActiveTruck[]>([])
     const [formData, setFormData] = useState<Partial<IFormData>>({
         truckNo: '',
         rent: '',
         shipperId: '',
         loadId: ''
-    })    
+    })
+    const limit = 5
+
+
+    console.log('formData', formData);
+    
 
     useEffect(() => {
         const findLoads = async () => {
-            const response: any = await fetchLoads();
-            console.log(response);
-            setLoads(response);
+            const response: any = await fetchLoads(page, limit);
+            setLoads(response.loads);
+            setTotalPages(response.totalPages);
+
+            const trucksResponse = await fetchActiveTruck();
+            setActiveTrucks(trucksResponse as IActiveTruck[])
         };
 
         findLoads();
-    }, []);
+    }, [page]);
+
+
+    console.log(activeTrucks, 'activeTrucks');
+
 
     const openModal = (load: LoadItem) => {
         setSelectedLoad(load);
@@ -84,7 +103,11 @@ const LoadBoard: React.FC = () => {
         const errors: Partial<IFormData> = {}
 
         if (!(formData.truckNo?.trim())) errors.truckNo = 'Please enter your Truck no';
-        if (!(formData.rent?.trim())) errors.rent = 'Please enter your Rate';
+        if (!(formData.rent?.trim())) {
+            errors.rent = 'Please enter your Rate';
+        } else if (Number(formData.rent) <= 0) {
+            errors.rent = 'Negative value not Approved';
+        }
 
         return errors;
     };
@@ -112,11 +135,11 @@ const LoadBoard: React.FC = () => {
         formDataToSend.append('rent', formData.rent ?? '');
         formDataToSend.append('loadId', selectedLoad?._id ?? '');
         formDataToSend.append('shipperId', selectedLoad?.shipperId._id ?? '')
-        try {            
-            const  response: any = await sendBid(formDataToSend);
-            if(!response.success){
+        try {
+            const response: any = await sendBid(formDataToSend);
+            if (!response.success) {
                 toast.error(response.message)
-            }else{
+            } else {
                 setIsModalOpen(false)
                 toast.success(response.message)
             }
@@ -128,7 +151,7 @@ const LoadBoard: React.FC = () => {
     return (
         <>
             <Navbar />
-            <div className="max-w-7xl mx-auto mt-8 mb-8 p-4 rounded-md bg-gray-50">
+            <div className="max-w-7xl mx-auto mt-20 mb-8 p-4 rounded-md bg-gray-100 ">
                 <h1 className="text-2xl font-bold mb-6 text-gray-800">Load Board</h1>
 
                 <div className="grid grid-cols-1 gap-4">
@@ -222,6 +245,35 @@ const LoadBoard: React.FC = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+
+                <div className="flex justify-center mt-6">
+                    <div className="inline-flex rounded-md shadow-sm">
+                        <button
+                            onClick={() => setPage(page - 1)}
+                            disabled={page === 1}
+                            className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                                ${page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                            Prev
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .slice(Math.max(0, page - 3), Math.min(totalPages, page + 2))
+                            .map((p) => (
+                                <button className={`px-3 py-2 ml-1  mr-1 text-sm rounded-md font-medium border-t border-b border-gray-300 cursor-pointer
+                                    ${p === page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                                    {p}
+                                </button>
+                            ))
+                        }
+                        <button
+                            onClick={() => setPage(page + 1)}
+                            disabled={page === totalPages}
+                            className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                                ${page === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}'}`}>
+                            Next
+                        </button>
+                    </div>
+
                 </div>
 
                 {/* Modal for load details */}
@@ -367,9 +419,18 @@ const LoadBoard: React.FC = () => {
                                     <div className="flex items-center space-x-6">
                                         <div className="flex flex-col">
                                             <label className="mb-1 text-gray-600 text-sm font-medium">Enter Truck No.</label>
-                                            <input type="text" name="truckNo" value={formData?.truckNo} onChange={handleChange} className="border border-gray-400 p-1 rounded-md w-60" />
+                                            {/* <input type="" name="truckNo" value={formData?.truckNo} onChange={handleChange} className="border border-gray-400 p-1 rounded-md w-60" /> */}
+                                            <select name="truckNo" value={formData?.truckNo} onChange={handleChange} className="border border-gray-400 p-1 rounded-md w-60">
+                                                <option value="">Select Truck</option>
+                                                {
+                                                    
+                                                    activeTrucks.map((truck) => (
+                                                        <option value={truck.truckNo}>{truck.truckNo}</option>
+                                                    ))
+                                                }
+                                            </select>
                                             <div className="h-5">
-                                                {formError?.truckNo &&  <p className="text-red-600 text-sm mt-1">{formError?.truckNo}</p>}
+                                                {formError?.truckNo && <p className="text-red-600 text-sm mt-1">{formError?.truckNo}</p>}
                                             </div>
                                         </div>
 
@@ -377,8 +438,7 @@ const LoadBoard: React.FC = () => {
                                             <label className="mb-1 text-gray-600 text-sm font-medium">Enter Your Price.</label>
                                             <input type="text" name="rent" value={formData?.rent} onChange={handleChange} className="border border-gray-400 p-1 rounded-md w-60" />
                                             <div className="h-5">
-                                            {formError?.rent && <p className="text-sm text-red-600 mt-1">{formError.rent}</p>}
-
+                                                {formError?.rent && <p className="text-sm text-red-600 mt-1">{formError.rent}</p>}
                                             </div>
                                         </div>
                                     </div>

@@ -22,9 +22,11 @@ export interface ITruck extends Document {
     operatingStates?: string[],
     rcBook?: string,
     driverLicense?: string, 
+    truckImage?: string,
     available?: boolean,
     createdAt?: Date;
-    status?: 'active' | 'in-active' | 'in-transit'
+    status?: 'active' | 'in-active' | 'in-transit';
+    rcValidity: Date
 }
 
 const truckSchema: Schema = new Schema({
@@ -110,6 +112,11 @@ const truckSchema: Schema = new Schema({
         required: true,
     },
 
+    truckImage: {
+        type: String,
+
+    },
+
     available: {
         type: Boolean,
         default: false,
@@ -159,6 +166,10 @@ const truckSchema: Schema = new Schema({
         default: 'in-active'
     },
 
+    rcValidity: {
+        type: Date,
+        required: true
+    }
 
 });
 

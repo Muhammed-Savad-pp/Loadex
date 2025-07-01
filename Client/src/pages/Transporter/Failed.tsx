@@ -1,4 +1,4 @@
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import {  useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/Common/Navbar/Navbar';
 import { XCircle, RefreshCw } from 'lucide-react';
 import { useEffect } from 'react';
@@ -8,7 +8,7 @@ import { verifyBidPayment } from '../../services/shipper/shipperService';
 export default function Failed() {
 
     
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
 
     const [searchParams] = useSearchParams();
     const sessionId = searchParams.get('transactionId');
@@ -31,13 +31,14 @@ export default function Failed() {
             }
         }
 
+        paymentFailed();
     })
 
     return (
         <div className="min-h-screen bg-gray-900">
             <Navbar />
 
-            <div className="max-w-3xl mx-auto pt-16 pb-24 px-4">
+            <div className="max-w-3xl mx-auto pt-16 pb-24 px-4 mt-10">
                 {/* Failed Message */}
                 <div className="text-center mb-12">
                     <div className="inline-flex mb-6 p-4 bg-red-900 rounded-full">

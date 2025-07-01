@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Star, Truck, MessageSquare, Users, UserPlus, Calendar, Send } from 'lucide-react'
-import { fetchTransporterDetails, followTransporter, unFollowTransporter, postReview } from "../../services/shipper/shipperService";
+import { fetchTransporterDetails, followTransporter, unFollowTransporter, postReview, createChat } from "../../services/shipper/shipperService";
+import { useNavigate } from "react-router-dom";
 
 interface profileProps {
     transporterId: string
@@ -46,6 +47,8 @@ const ProfileComponent = ({ transporterId }: profileProps) => {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [averageRating, setAverageRating] = useState<number>(0);
     const [alreadySubmitedReview, setAlreadySubmitedReview] = useState<boolean>();
+
+    const navigate = useNavigate()
 
     useEffect(() => {
         const transporterDetails = async () => {
@@ -96,6 +99,19 @@ const ProfileComponent = ({ transporterId }: profileProps) => {
 
         } catch (error) {
             console.error("Error posting review:", error);
+        }
+    }
+
+    const handleMessage = async (transporterId: string) => {
+        try {
+            
+            const response: any = await createChat(transporterId)
+            if(response.success) {
+                navigate('/shipper/chat')
+            }
+
+        } catch (error) {
+            console.error(error)    
         }
     }
 
@@ -175,7 +191,7 @@ const ProfileComponent = ({ transporterId }: profileProps) => {
                         </button>
                 }
 
-                <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg flex-1" >
+                <button onClick={() => handleMessage(transporterData?._id ?? '')} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg flex-1" >
                     Message
                 </button>
             </div>

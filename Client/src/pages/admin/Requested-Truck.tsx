@@ -28,6 +28,8 @@ export interface ITrucks {
     driverLicense?: string,
     available?: boolean,
     createdAt?: Date;
+    rcValidity: Date;
+    truckImage?: string
 }
 
 const RequestTruck: React.FC = () => {
@@ -53,12 +55,12 @@ const RequestTruck: React.FC = () => {
 
     console.log(trucks, 'trucks')
 
-    const handleVerification  = async (id: string, status: string) => {
+    const handleVerification = async (id: string, status: string) => {
         try {
 
 
             const responses: any = await changeTruckVerificationStatus(id, status);
-            
+
             toast.success(responses.response);
 
 
@@ -185,10 +187,27 @@ const RequestTruck: React.FC = () => {
 
                                         <div className="space-y-3">
                                             <div className="flex items-start">
+                                                <div>
+                                                    <img
+                                                        className="w-28 h-16 object-cover rounded-md border border-gray-200"
+                                                        src={selectedTruck.truckImage}
+                                                        alt="Truck"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start">
                                                 <FiInfo className="mt-1 mr-3 text-indigo-500" />
                                                 <div>
                                                     <p className="text-sm text-gray-500">Truck Type</p>
                                                     <p className="font-medium">{selectedTruck.truckType}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-start">
+                                                <FiInfo className="mt-1 mr-3 text-indigo-500" />
+                                                <div>
+                                                    <p className="text-sm text-gray-500">RC Validity</p>
+                                                    <p className="font-medium">{new Date(selectedTruck.rcValidity).toLocaleDateString()}</p>
                                                 </div>
                                             </div>
 
@@ -344,7 +363,7 @@ const RequestTruck: React.FC = () => {
                                                             />
                                                         </div>
                                                     </div>
-                                                    
+
                                                 </div>
                                             </div>
                                         )}
@@ -378,10 +397,12 @@ const RequestTruck: React.FC = () => {
                                                             />
                                                         </div>
                                                     </div>
-                                                    
+
                                                 </div>
                                             </div>
                                         )}
+
+
                                     </div>
                                 </div>
                             </div>
@@ -389,7 +410,7 @@ const RequestTruck: React.FC = () => {
                             {selectedTruck.verificationStatus === 'requested' && (
                                 <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-4 border-t">
                                     <button
-                                        onClick={() => handleVerification(selectedTruck._id,'rejected')}
+                                        onClick={() => handleVerification(selectedTruck._id, 'rejected')}
                                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-150"
                                     >
                                         <FiX className="mr-2" /> Reject

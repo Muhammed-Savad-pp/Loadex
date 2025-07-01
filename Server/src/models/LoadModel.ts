@@ -14,7 +14,7 @@ export interface ILoad extends Document {
     height?:string;
     breadth?: string;
     descriptions?: string;
-    status: 'active' | 'in-Transit' | 'completed';
+    status: 'active' | 'in-Transit' | 'completed' | 'expired ';
     pickupCoordinates: {
         latitude: number,
         longitude: number,
@@ -93,7 +93,7 @@ const LoadSchema: Schema = new Schema ({
 
     status: {
         type: String,
-        enum: ['active', 'in-Transit'],
+        enum: ['active', 'in-Transit', 'completed', 'expired' ],
         default: 'active'
     },
 

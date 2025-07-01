@@ -3,7 +3,6 @@ import Navbar from '../../components/Common/Navbar/Navbar';
 import { CheckCircle, ShoppingBag } from 'lucide-react';
 import { verifyBidPayment } from '../../services/shipper/shipperService';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
 
 function Success() {
 

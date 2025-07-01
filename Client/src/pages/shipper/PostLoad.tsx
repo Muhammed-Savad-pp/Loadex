@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { TruckIcon, MapPinIcon, } from '@heroicons/react/24/outline';
 import { postLoad } from '../../services/shipper/shipperService';
 import toast from 'react-hot-toast';
@@ -28,7 +28,7 @@ export interface IFormData {
     breadth: string;
     height: string;
     includeConsignment: boolean;
-    discriptions: string;
+    descriptions: string;
 }
 
 interface Location {
@@ -44,10 +44,6 @@ interface Location {
     }
 }
 
-interface IResponse {
-    success: boolean,
-    message: string,
-}
 
 const PostLoad: React.FC = () => {
 
@@ -71,12 +67,10 @@ const PostLoad: React.FC = () => {
         breadth: '',
         height: '',
         includeConsignment: false,
-        discriptions: ''
+        descriptions: ''
     });
 
     const [formError, setFormError] = useState<Partial<IFormData>>()
-
-
 
     const debouncedSearch = useCallback(
         debounce(async (searchTerm) => {
@@ -94,12 +88,9 @@ const PostLoad: React.FC = () => {
                     setLocationSuggestions([])
                 });
 
-        }, 2000),
+        }, 1000),
         []
     );
-
-    console.log(locationSuggestions);
-
 
     const handlePickupSearch = (query: string) => {
         setPickupLocation(query);
@@ -148,7 +139,6 @@ const PostLoad: React.FC = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
 
-
         const { name, value, type, checked } = e.target as HTMLInputElement;
         setFormData({
             ...formData,
@@ -156,47 +146,36 @@ const PostLoad: React.FC = () => {
         });
     };
 
-    const validation = (formData: Partial<IFormData> ) => {
-
+    const validation = (formData: Partial<IFormData>) => {
 
         const errors: Partial<IFormData> = {}
 
-        if(!formData.pickupLocation?.trim()) errors.pickupLocation = 'PickupLocation must be required';
-        if(!formData.dropLocation?.trim()) errors.dropLocation = 'DropLocation must be required';
-        if(!formData.material?.trim()) errors.material = 'Material must be required';
-        if(!formData.quantity?.trim()) errors.quantity = 'Pickup must be required';
-        if(!formData.scheduledDate?.trim()) errors.scheduledDate = 'Date must be required';
-        if(!formData.truckType?.trim()) errors.truckType = 'Truck must be required';
-        if(!formData.transportationRent?.trim()) errors.transportationRent = 'Transportation Cost must be required'
-
+        if (!formData.pickupLocation?.trim()) errors.pickupLocation = 'PickupLocation must be required';
+        if (!formData.dropLocation?.trim()) errors.dropLocation = 'DropLocation must be required';
+        if (!formData.material?.trim()) errors.material = 'Material must be required';
+        if (!formData.quantity?.trim()) errors.quantity = 'Pickup must be required';
+        if (!formData.scheduledDate?.trim()) errors.scheduledDate = 'Date must be required';
+        if (!formData.truckType?.trim()) errors.truckType = 'Truck must be required';
+        if (!formData.transportationRent?.trim()) errors.transportationRent = 'Transportation Cost must be required'
 
         return errors
-         
-
     }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-
-
         e.preventDefault();
 
-
         const validateForm = validation(formData)
-
         setFormError(validateForm)
 
-
-        if(Object.keys(validateForm).length > 0) {
-
+        if (Object.keys(validateForm).length > 0) {
             toast.error('fix the error')
             return
-
         }
-        console.log('Form submitted:', formData);
+
         try {
-
-            const response = await postLoad(formData) as IResponse;
-
+            
+            const response: any = await postLoad(formData) ;
+            
             if (response.success) {
                 toast.success(response.message);
                 navigate('/')
@@ -204,12 +183,13 @@ const PostLoad: React.FC = () => {
                 toast.error(response.message)
             }
 
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
+            toast.error(error.message)
         }
     };
 
-    const materials = ['Vegetable', 'Fruits', 'Grains', 'Dairy', 'Other'];
+    const materials = ['Vegetable', 'Fruits', 'Grains', 'wood', 'Dairy','Metal', 'Other'];
     const vehicleTypes = ['Open Truck', 'Container', 'Refrigerated', 'Mini Truck', 'Tanker'];
 
     const RupeeIcon = () => (
@@ -221,7 +201,7 @@ const PostLoad: React.FC = () => {
     return (
         <>
             <Navbar />
-            <div className="w-full h-screen bg-gray-50 flex  justify-center p-6">
+            <div className="w-full h-screen bg-gray-50 flex  justify-center p-6 mt-10">
 
                 <div className="w-full max-w-4xl bg-white rounded-xl shadow-xl p-6">
                     <h1 className="text-2xl font-bold text-gray-800 border-b border-gray-200 pb-3 mb-5">Post Load</h1>
@@ -246,9 +226,7 @@ const PostLoad: React.FC = () => {
                                             placeholder="Pickup location"
                                         />
                                     </div>
-                                    {formError?.pickupLocation && <p className='text-red-600 text-sm mt-1'>{formError?.pickupLocation}</p> }
-
-
+                                    {formError?.pickupLocation && <p className='text-red-600 text-sm mt-1'>{formError?.pickupLocation}</p>}
                                     {isPickupDropdownOpen && locationSuggestions?.length > 0 && (
                                         <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto">
                                             <ul className="py-1">
@@ -314,10 +292,10 @@ const PostLoad: React.FC = () => {
                                             name="material"
                                             value={formData.material}
                                             onChange={handleChange}
-                                            className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2"
+                                            className="block w-full  rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2"
                                         >
                                             {materials.map((material) => (
-                                                <option key={material} value={material}>{material}</option>
+                                                <option  key={material} value={material}>{material}</option>
                                             ))}
                                         </select>
                                     </div>
@@ -332,7 +310,7 @@ const PostLoad: React.FC = () => {
                                             name="quantity"
                                             value={formData.quantity}
                                             onChange={handleChange}
-                                            className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2"
+                                            className="block w-full pl-2 rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2"
 
                                         />
                                         {formError?.quantity && <p className='text-sm text-red-600 mt-1'>{formError.quantity}</p>}
@@ -424,7 +402,7 @@ const PostLoad: React.FC = () => {
                                                 name="length"
                                                 value={formData.length}
                                                 onChange={handleChange}
-                                                className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2"
+                                                className="block w-full pl-2 rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2"
                                             />
                                         </div>
                                         <div>
@@ -435,7 +413,7 @@ const PostLoad: React.FC = () => {
                                                 name="breadth"
                                                 value={formData.breadth}
                                                 onChange={handleChange}
-                                                className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2"
+                                                className="block w-full pl-2 rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2"
                                             />
                                         </div>
                                         <div>
@@ -446,7 +424,7 @@ const PostLoad: React.FC = () => {
                                                 name="height"
                                                 value={formData.height}
                                                 onChange={handleChange}
-                                                className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2"
+                                                className="block pl-2 w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2"
                                             />
                                         </div>
                                     </div>
@@ -456,12 +434,12 @@ const PostLoad: React.FC = () => {
                                             Additional comments <span className="text-xs text-gray-500">(optional)</span>
                                         </label>
                                         <textarea
-                                            id="discriptions"
-                                            name="discriptions"
-                                            value={formData.discriptions}
+                                            id="descriptions"
+                                            name="descriptions"
+                                            value={formData.descriptions}
                                             onChange={handleChange}
                                             rows={4}
-                                            className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            className="block w-full rounded-md text-center border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             placeholder="Any special instructions or requirements..."
                                         />
                                     </div>
@@ -475,12 +453,12 @@ const PostLoad: React.FC = () => {
                                         Additional comments <span className="text-xs text-gray-500">(optional)</span>
                                     </label>
                                     <textarea
-                                        id="discriptions"
-                                        name="discriptions"
-                                        value={formData.discriptions}
+                                        id="descriptions"
+                                        name="descriptions"
+                                        value={formData.descriptions}
                                         onChange={handleChange}
                                         rows={2}
-                                        className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        className="block w-full pl-2 pt-2 rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         placeholder="Any special instructions or requirements..."
                                     />
                                 </div>

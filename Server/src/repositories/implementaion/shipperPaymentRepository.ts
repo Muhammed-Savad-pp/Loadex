@@ -20,10 +20,10 @@ class ShipperPaymentRepository extends BaseRepositories<IShipperPayment> impleme
         }
     }
 
-    async findShipperPaymentByTransactionIdandUpdate(transactionId: string, status: string): Promise<IShipperPayment | null> {
+    async findShipperPaymentByTransactionIdandUpdate(transactionId: string, status: string, paymentIntentId?: string): Promise<IShipperPayment | null> {
         try {
             
-            return await ShipperPayment.findOneAndUpdate({transactionId: transactionId}, {paymentStatus: status});
+            return await ShipperPayment.findOneAndUpdate({transactionId: transactionId}, {paymentStatus: status, paymentIntentId});
 
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error));

@@ -4,23 +4,32 @@ import mongoose, { Document, Schema, Types } from "mongoose";
 export interface IShipperPayment extends Document {
     transactionId?: string;
     bidId?: Types.ObjectId;
+    planId?: string;
     shipperId: Types.ObjectId;
-    paymentType: 'bid' | 'premium';
+    paymentType: 'bid' | 'subscription';
     amount: number,
     paymentStatus: 'pending' | 'success' | 'failed',
+    paymentIntentId?: string;
+    refundId?: string;
+    transactionType: 'credit' | 'debit';
+    refundStatus?: 'none' | 'refunded';
     createdAt: Date
 }
 
-const shipperPaymentSchema: Schema = new Schema ({
+const shipperPaymentSchema: Schema = new Schema({
 
     transactionId: {
         type: String,
-        
+
     },
 
     bidId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Bid'
+    },
+
+    planId: {
+        type: String,
     },
 
     shipperId: {
@@ -31,7 +40,7 @@ const shipperPaymentSchema: Schema = new Schema ({
 
     paymentType: {
         type: String,
-        enum: ['bid', 'premium']
+        enum: ['bid', 'subscription']
     },
 
     amount: {
@@ -42,14 +51,33 @@ const shipperPaymentSchema: Schema = new Schema ({
     paymentStatus: {
         type: String,
         enum: ['pending', 'success', 'failed'],
-        default: 'pending' 
+        default: 'pending'
+    },
+
+    transactionType: {
+        type: String,
+        enum: ['credit', 'debit'],
+        required: true,
+    },
+
+    paymentIntentId: {
+        type: String,
+    },
+
+    refundId: {
+        type: String,
+    },
+
+    refundStatus: {
+        type: String,
+        enum: ['none', 'refunded'],
+        default: 'none',
     },
 
     createdAt: {
         type: Date,
         default: Date.now,
     }
-
 })
 
 

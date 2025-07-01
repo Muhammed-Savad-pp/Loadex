@@ -1,4 +1,4 @@
-import { FilterQuery, PipelineStage, QueryOptions } from "mongoose";
+import { FilterQuery, PipelineStage, QueryOptions, SortOrder } from "mongoose";
 import { Model, Document, UpdateQuery } from "mongoose";
 import { IBaseRepository } from "../interface/IBaseRepository";
 
@@ -44,20 +44,39 @@ export class BaseRepositories <T extends Document > implements IBaseRepository<T
         }
     }
 
-    async find(filter: FilterQuery<T>, projection?: Record<string, number>): Promise<T[]> {
+    async find(filter: FilterQuery<T>, projection?: Record<string, number>, skip?: number, limit?: number, sort?: Record<string, SortOrder>): Promise<T[]> {
         try {
 
-            return await this.model.find(filter, projection);
+            let query = this.model.find(filter, projection).sort(sort)
+            if(typeof skip === 'number') {
+                query = query.skip(skip)
+            }
+
+            if(typeof limit === 'number') {
+                query = query.limit(limit)
+            }
+
+            return await query.exec();
             
+
         } catch (error) {
             throw new Error(`find failed: ${error instanceof Error ? error.message : String(error)}`)
         }
     }
 
-    async findWithPopulate(filter: FilterQuery<T>, populateOptions: {path: string; select?: string}[]): Promise<T[]> {
+    async findWithPopulate(filter: FilterQuery<T>, populateOptions: {path: string; select?: string}[], skip?: number, limit?: number, sort?: Record<string, SortOrder>): Promise<T[]> {
         try {
             
-            let query = this.model.find(filter);
+            let query = this.model.find(filter).sort(sort)
+
+            if( typeof skip === 'number') {
+                query = query.skip(skip)
+            }
+
+            if( typeof limit === 'number') {
+                query = query.limit(limit);
+            }
+            
             populateOptions.forEach(option => {
                 query = query.populate(option);
             });
@@ -116,5 +135,27 @@ export class BaseRepositories <T extends Document > implements IBaseRepository<T
             throw new Error(error instanceof Error ? error.message : String(error))
         }
     }
+
+    async deleteById(id: string): Promise<T | null> {
+        try {
+            
+            return this.model.findByIdAndDelete(id)
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error)) 
+        }
+    }
+
+    async findOne(filter: FilterQuery<T>, projection?: Record<string, number>): Promise<T | null> {
+        try {
+            
+            return this.model.findOne(filter, projection)
+
+        } catch (error) {
+            throw new Error(`Error in findOne: ${error instanceof Error ? error.message : String(error)}`)
+        }
+    }
+
+
 }
 

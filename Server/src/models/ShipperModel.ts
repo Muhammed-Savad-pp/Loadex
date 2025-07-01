@@ -1,6 +1,5 @@
 import mongoose, {Document, Schema} from "mongoose";
 
-
 export interface IShipper extends Document {
     shipperName: string;
     email: string;
@@ -17,6 +16,17 @@ export interface IShipper extends Document {
     profileImage?: string;
     followers?: string[];
     followings?: string[];  
+    subscription?: {
+        planId: string;
+        planName: string;
+        status: 'active' | 'canceled' | 'expired' | 'pending';
+        startDate: Date;
+        endDate: Date;
+        isActive: boolean; 
+        createdAt: Date; 
+        updatedAt?: Date;
+        paidAmount: number;
+    }
 }
 
 const shipperSchema: Schema = new Schema ({
@@ -87,7 +97,17 @@ const shipperSchema: Schema = new Schema ({
         type: [String],
     }, 
 
+    subscription: {
+        planId: {type: String},
+        planName: {type: String},
+        status: { type: String, enum: ['active', 'canceled', 'expired', 'pending'], default: 'pending' },
+        startDate: { type: Date},
+        endDate: {type: Date },
+        isActive: {type: Boolean, default: false},
+        createdAt: {type: Date, default: Date.now},
+        updatedAt: {type: Date},
+        paidAmount: {type: Number},
+    }
 })
-
 
 export default mongoose.model<IShipper>('Shipper', shipperSchema);

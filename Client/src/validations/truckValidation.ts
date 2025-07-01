@@ -12,7 +12,7 @@ interface TruckFormData {
     from: string;
     to: string;
     selectedLocations: string[];
-
+    rcValidity: string
 }
 
 
@@ -31,12 +31,13 @@ export const validateTruckForm = (formData: TruckFormData) => {
     if(!formData.currentLocation.trim()) errors.currentLocation = 'Current location is required';
     if(!formData.from.trim()) errors.from = 'From location is required';
     if(!formData.to.trim()) errors.to = 'To location is required';
+    if(!formData.rcValidity.trim()) errors.rcValidity = 'RC Validity is required'
 
     const phoneRegex = /^[6-9]\d{9}$/;
     if (!phoneRegex.test(formData.ownerMobileNo)) errors.ownerMobileNo = "Enter a valid 10-digit mobile number.";
     if (!phoneRegex.test(formData.driverMobileNumber)) errors.driverMobileNumber = "Enter a valid 10-digit mobile number.";
     if (!Array.isArray(formData.selectedLocations) || formData.selectedLocations.length === 0) {
-        errors.selectedLocations = "Select at least one location.";
+        errors.selectedLocations = ["Select at least one location."];
     }
     return errors
 

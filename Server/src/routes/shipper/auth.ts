@@ -10,6 +10,10 @@ import tripRepository from "../../repositories/implementaion/tripRepository";
 import transporterRepository from "../../repositories/implementaion/transporterRepository";
 import truckRepository from "../../repositories/implementaion/truckRepository";
 import reviewRatingRepository from "../../repositories/implementaion/reviewRatingRepository";
+import chatRepository from "../../repositories/implementaion/chatRepository";
+import messageRepository from "../../repositories/implementaion/messageRepository";
+import notificationRepository from "../../repositories/implementaion/notificationRepository";
+import adminPaymentRepository from "../../repositories/implementaion/adminPaymentRepository";
 
 
 const shipperAuth_rote = express.Router()
@@ -24,7 +28,11 @@ const shipperService = new ShipperService(
     tripRepository,
     transporterRepository,
     truckRepository,
-    reviewRatingRepository
+    reviewRatingRepository,
+    chatRepository,
+    messageRepository,
+    notificationRepository,
+    adminPaymentRepository
 )
 
 

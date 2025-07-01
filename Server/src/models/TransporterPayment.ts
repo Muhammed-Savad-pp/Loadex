@@ -1,16 +1,19 @@
-import mongoose, {Schema,Document,  Types} from "mongoose";
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 
 export interface ITransporterPayment extends Document {
 
     transactionId?: string;
-    bidId: Types.ObjectId;
+    bidId?: Types.ObjectId;
+    planId?: string;
+    tripId?: Types.ObjectId;
     transporterId: Types.ObjectId;
-    paymentType: 'bid' | 'premium';
+    paymentType: 'bid' | 'subscription' | 'trip';
     amount: number;
-    paymentStatus: 'pending' | 'success' | 'failed', 
-    createdAt: Date
-
+    paymentStatus: 'pending' | 'success' | 'failed',
+    createdAt: Date;
+    transactionType: 'credit' | 'debit';
+    paymentMethod?: 'stripe' | 'wallet';
 }
 
 const TransporterPaymentSchema: Schema = new Schema({
@@ -23,6 +26,15 @@ const TransporterPaymentSchema: Schema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Bid',
     },
+    planId: {
+        type: String
+    },
+
+    transactionType: {
+        type: String,
+        enum: ['credit', 'debit'],
+        required: true,
+    },
 
     transporterId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -30,9 +42,14 @@ const TransporterPaymentSchema: Schema = new Schema({
         required: true,
     },
 
+    tripId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Trip'
+    },
+
     paymentType: {
         type: String,
-        enum: ['bid', 'premium'],
+        enum: ['bid', 'subscription', 'trip'],
     },
 
     amount: {
@@ -44,6 +61,11 @@ const TransporterPaymentSchema: Schema = new Schema({
         type: String,
         enum: ['pending', 'success', 'failed'],
         default: 'pending',
+    },
+
+    paymentMethod: {
+        type: String,
+        enum: ['stripe', 'wallet']
     },
 
     createdAt: {

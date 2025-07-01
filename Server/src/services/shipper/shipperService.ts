@@ -25,11 +25,24 @@ import { ITruckRepository } from "../../repositories/interface/ITruckRepository"
 import { IReviewRatingRepository } from "../../repositories/interface/IReviewRatingRepository";
 import { IRatingReview } from "../../models/ReviewRatingModel";
 import { ITruck } from "../../models/TruckModel";
+import { SHIPPER_SUBSCRIPTION_PLAN } from "../../config/shipperPlans";
+import { IChat } from "../../models/Chat";
+import { IChatRepository } from "../../repositories/interface/IChatRepository";
+import { IMessageRepository } from "../../repositories/interface/IMessageRepository";
+import { IMessage } from "../../models/Message";
+import { INotificationRepository } from "../../repositories/interface/INotificationRepository";
+import { INotification } from "../../models/NotificationModel";
+import { HTTP_STATUS } from "../../enums/httpStatus";
+import { IShipperPayment } from "../../models/ShipperPaymentModel";
+import { startOfDay, subDays } from "date-fns";
+import { IAdminPaymentRepository } from "../../repositories/interface/IAdminPaymentRepository";
+import { BidForShipperDTO } from "../../dtos/bids/bid.for.shipper.dto";
+import { ShipperDTO } from "../../dtos/shipper/shipper.dto";
 
 configDotenv()
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-03-31.basil',
+    apiVersion: '2025-04-30.basil',
 })
 
 async function hashPassword(password: string): Promise<string> {
@@ -37,7 +50,7 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 function calculateCommission(distanceKm: number): number {
-    const ratePerKm = 5; 
+    const ratePerKm = 5;
     return distanceKm * ratePerKm;
 }
 
@@ -56,6 +69,10 @@ export class ShipperService implements IShipperService {
         private _transporterRepositories: ITransporterRepository,
         private _truckRepositories: ITruckRepository,
         private _reviewRatingRepositories: IReviewRatingRepository,
+        private _chatRepository: IChatRepository,
+        private _messageRepository: IMessageRepository,
+        private _notificationRepository: INotificationRepository,
+        private _adminPaymentRepository: IAdminPaymentRepository,
     ) { }
 
     async shipperSignUp(shipperName: string, email: string, phone: string, password: string, confirmPassword: string): Promise<{ success: boolean, message: string }> {
@@ -103,11 +120,8 @@ export class ShipperService implements IShipperService {
                 await mailService.sendOtpEmail(email, newOtp)
 
                 return { success: true, message: 'no OTP found. A new otp has been sent to your email ' }
-
             }
-
         }
-
 
         const hashedPassword = await hashPassword(password);
 
@@ -223,7 +237,7 @@ export class ShipperService implements IShipperService {
             const existingShipper = await this._shipperRepositories.findShipperByEmail(email);
 
             if (!existingShipper) {
-                const savedShipper:any = await this._shipperRepositories.createShipper({
+                const savedShipper: any = await this._shipperRepositories.createShipper({
                     shipperName: name,
                     email: email,
                     phone: 'not Provided',
@@ -258,7 +272,7 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async getShipperProfileData(id: string): Promise<{ success: boolean; message: string; shipperData?: Partial<IShipper>; }> {
+    async getShipperProfileData(id: string): Promise<{ success: boolean; message: string; shipperData?: ShipperDTO; }> {
         try {
 
             const shipperData = await this._shipperRepositories.findById(id)
@@ -268,7 +282,29 @@ export class ShipperService implements IShipperService {
             }
 
 
-            return { success: true, message: 'Shipper Find Successfully', shipperData: shipperData };
+            return {
+                success: true,
+                message: 'Shipper Find Successfully',
+                shipperData: {
+                    shipperName: shipperData.shipperName || '',
+                    email: shipperData.email || '',
+                    phone: shipperData.phone || '',
+                    verificationStatus: shipperData.verificationStatus || '',
+                    panNumber: shipperData.panNumber || '',
+                    aadhaarFront: shipperData.aadhaarFront || '',
+                    aadhaarBack: shipperData.aadhaarBack || '',
+                    companyName: shipperData.companyName || '',
+                    gstNumber: shipperData.gstNumber || '',
+                    profileImage: shipperData.profileImage || '',
+                    followers: shipperData.followers || [],
+                    followings: shipperData.followings || [],
+                    subscription: {
+                        status: shipperData.subscription?.status || '',
+                        isActive: shipperData.subscription?.isActive || false
+                    }
+                }
+            };
+
 
         } catch (error) {
             console.error('error in shipperService ', error)
@@ -342,51 +378,67 @@ export class ShipperService implements IShipperService {
     async createLoad(shipperId: string, formData: Partial<ILoad>): Promise<{ success: boolean; message: string; }> {
         try {
             const materials = formData.material;
-
             const { pickupLocation, dropLocation, material, quantity, scheduledDate, length, truckType,
                 transportationRent, height, breadth, descriptions, pickupCoordinates, dropCoordinates } = formData;
 
+            const shipper = await this._shipperRepositories.findById(shipperId)
 
-            console.log(pickupLocation, dropLocation, material, quantity, scheduledDate, length, truckType, transportationRent, height, breadth, descriptions);
+            const today = new Date();
 
-            function deg2rad(deg:number): number {
+            const dayOfWeek = today.getDay();
+            const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() + diffToMonday);
+            startOfWeek.setHours(0, 0, 0, 0);
+
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
+
+            const loadCountOfWeek = await this._loadRepositories.count({ shipperId: shipperId, createdAt: { $gte: startOfWeek, $lte: endOfWeek } })
+
+            if (loadCountOfWeek >= 2 && !shipper?.subscription?.isActive) {
+                return { success: false, message: 'You can post up to 2 loads per week with a free account. Please subscribe to post more loads.' }
+            }
+
+            function deg2rad(deg: number): number {
                 return deg * (Math.PI / 180);
             }
 
-            function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2:number): number {
+            function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
 
                 const R = 6371;
                 const dLat = deg2rad(lat2 - lat1);
                 const dLon = deg2rad(lon2 - lon1);
 
-                const a = 
-                    Math.sin(dLat / 2) * Math.sin(dLat / 2) + 
-                    Math.cos(deg2rad(lat1)) * 
-                        Math.cos(deg2rad(lat2)) * 
-                        Math.sin(dLon / 2) * 
-                        Math.sin(dLon / 2);
+                const a =
+                    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(deg2rad(lat1)) *
+                    Math.cos(deg2rad(lat2)) *
+                    Math.sin(dLon / 2) *
+                    Math.sin(dLon / 2);
 
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                 const d = R * c;
-                return d ;
+                return d;
             }
 
             let distances = 0;
 
             if (
                 pickupCoordinates?.latitude !== undefined && pickupCoordinates?.longitude !== undefined &&
-                dropCoordinates?.latitude !== undefined &&  dropCoordinates?.longitude !== undefined  ) {
+                dropCoordinates?.latitude !== undefined && dropCoordinates?.longitude !== undefined) {
 
                 distances = getDistanceFromLatLonInKm(
-                  pickupCoordinates.latitude,
-                  pickupCoordinates.longitude,
-                  dropCoordinates.latitude,
-                  dropCoordinates.longitude
+                    pickupCoordinates.latitude,
+                    pickupCoordinates.longitude,
+                    dropCoordinates.latitude,
+                    dropCoordinates.longitude
                 );
-              
+
                 console.log("Distance (km):", distances);
-              }
-              
+            }
+
 
             const shipperObjectId = new mongoose.Types.ObjectId(shipperId);
 
@@ -481,12 +533,53 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async findBids(id: string): Promise<IBid[] | null> {
+    async findBids(id: string, page: number, limit: number, status: string): Promise<{ bidData: BidForShipperDTO[] | null, totalPages: number }> {
         try {
 
-            const bids = await this._bidRepositories.findBidsForShipper(id);
+            const skip = (page - 1) * limit
 
-            return bids
+            const filter: any = {
+                shipperId: id
+            };
+
+            if(status !== 'all') {
+                filter.status = status
+            }
+
+            const bids = await this._bidRepositories.findBidsForShipper(filter, skip, limit);
+            const bidsCount = await this._bidRepositories.count({ shipperId: id })
+
+            const bidDatos: BidForShipperDTO[] = (bids ?? []).map((bid: IBid) => ({
+                _id: bid._id as string,
+                transporterId: {
+                    _id: (bid.transporterId as any)._id.toString(),
+                    transporterName: (bid.transporterId as any).transporterName,
+                    profileImage: (bid.transporterId as any).profileImage
+                },
+                shipperId: bid.shipperId.toString(),
+                loadId: {
+                    _id: (bid.loadId as any)._id.toString(),
+                    pickupLocation: (bid.loadId as any).pickupLocation,
+                    dropLocation: (bid.loadId as any).dropLocation,
+                    material: (bid.loadId as any).material,
+                    quantity: (bid.loadId as any).quantity,
+                    scheduledDate: (bid.loadId as any).scheduledDate
+                },
+                truckId: {
+                    _id: (bid.truckId as any)._id.toString(),
+                    truckNo: (bid.truckId as any).truckNo,
+                    truckType: (bid.truckId as any).truckType,
+                    capacity: (bid.truckId as any).capacity,
+                    truckImage: (bid.truckId as any).truckImage
+                },
+                price: bid.price,
+                status: bid.status,
+                createAt: bid.createAt,
+                shipperPayment: bid.shipperPayment,
+                transporterPayment: bid.transporterPayment
+            }))
+
+            return { bidData: bidDatos, totalPages: Math.ceil(bidsCount / limit) }
 
         } catch (error) {
             console.log(error);
@@ -510,35 +603,24 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async getShipperLoads(shipperId: string): Promise<ILoad[] | null> {
+    async getShipperLoads(shipperId: string, page: number, limit: number): Promise<{ loads: ILoad[] | null, totalPages: number }> {
         try {
+
+            const skip = (page - 1) * limit;
 
             const shipperObjectId = new mongoose.Types.ObjectId(shipperId);
 
-            const projection = {
-                pickupLocation: 1,
-                dropLocation: 1,
-                material: 1,
-                quantity: 1,
-                scheduledDate: 1,
-                createdAt: 1,
-                length: 1,
-                truckType: 1,
-                transportationRent: 1,
-                height: 1,
-                breadth: 1,
-                descriptions: 1,
-                status: 1,
-            }
-
-            const filter = {
-                shipperId: shipperObjectId
-            }
-
-            return await this._loadRepositories.getLoads( 
-                {shipperId: shipperObjectId},
-                []
+            const loads = await this._loadRepositories.getLoads(
+                { shipperId: shipperObjectId },
+                [],
+                skip,
+                limit,
+                { createdAt: -1 }
             );
+
+            const total = await this._loadRepositories.count({ shipperId: shipperObjectId })
+
+            return { loads: loads, totalPages: Math.ceil(total / limit) }
 
         } catch (error) {
             console.log(error);
@@ -548,18 +630,20 @@ export class ShipperService implements IShipperService {
 
     async sessionCheckout(bidId: string): Promise<{ success: boolean; message: string; sessionId?: string; }> {
         try {
-            
-            const bidObjectId =  new mongoose.Types.ObjectId(bidId);
+
+            const bidObjectId = new mongoose.Types.ObjectId(bidId);
 
             const bid = await this._bidRepositories.findBidById(bidId);
-            if(!bid) return {success: false, message: 'Bid not found'};
-            
+            if (!bid) return { success: false, message: 'Bid not found' };
+
             const loadid = String(bid.loadId)
 
             const load = await this._loadRepositories.findLoadById(loadid)
 
             const distanceInKm = load?.distanceInKm;
             const commission = calculateCommission(distanceInKm || 0);
+
+            const totalAmount = commission + Number(bid.price)
 
             const session = await stripe.checkout.sessions.create({
                 payment_method_types: ['card'],
@@ -569,9 +653,9 @@ export class ShipperService implements IShipperService {
                             currency: 'inr',
                             product_data: {
                                 name: 'Shipping Platform Commission',
-                                description: `Commission for bid ${bidId}`,
+                                description: `Ammount for bid ${bidId}`,
                             },
-                            unit_amount: Math.round(commission * 100),
+                            unit_amount: Math.round(totalAmount * 100),
                         },
                         quantity: 1,
                     },
@@ -588,12 +672,26 @@ export class ShipperService implements IShipperService {
                     shipperId: bid.shipperId,
                     bidId: bidObjectId,
                     paymentType: 'bid',
-                    amount: commission
+                    amount: totalAmount,
+                    transactionType: 'debit',
                 }
             )
 
 
-            return {success: true, sessionId: session.id, message: 'payment'}
+            const shipperId = String(bid?.shipperId)
+
+            await this._adminPaymentRepository.createAdminPaymentHistory({
+                transactionId: session.id,
+                userType: 'shipper',
+                userId: shipperId,
+                amount: totalAmount,
+                transactionType: 'credit',
+                paymentFor: 'bid',
+                bidId: bidObjectId
+            })
+
+
+            return { success: true, sessionId: session.id, message: 'payment' }
 
         } catch (error) {
             console.log(error);
@@ -604,18 +702,32 @@ export class ShipperService implements IShipperService {
     async verifyPayment(transactionId: string, status: string): Promise<{ success: boolean; message: string; }> {
         try {
 
-            const shipperPayment = await this._shipperPaymentRepositories.findShipperPaymentByTransactionIdandUpdate(transactionId, status)
+            const session = await stripe.checkout.sessions.retrieve(transactionId);
+            const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : '';
 
-            console.log('shipperPayment',shipperPayment);
+            const shipperPayment = await this._shipperPaymentRepositories.findShipperPaymentByTransactionIdandUpdate(transactionId, status, paymentIntentId)
+            await this._adminPaymentRepository.updateBytransactionId(transactionId, status)
+
+            console.log('shipperPayment', shipperPayment);
 
             const bidId = String(shipperPayment?.bidId)
-            
-            if(status === 'success') {
-                const bidData = await this._bidRepositories.findBidAndUpdate(bidId, {shipperPayment: true, status: 'accepted'})
+
+            if (status === 'success') {
+
+                const bidData = await this._bidRepositories.findBidAndUpdate(bidId, { shipperPayment: true, status: 'accepted' });
+
+
+                const transporterId = String(bidData?.transporterId)
+                await this._notificationRepository.createNotification({
+                    userId: transporterId,
+                    userType: 'transporter',
+                    title: 'Your Bid Has Been Accepted!',
+                    message: `Your bid on load ${bidData?.loadId} has been accepted by the shipper. Get ready to transport!`
+                })
             }
 
-            return {success: true,  message: 'success'}
-           
+            return { success: true, message: 'success' }
+
 
         } catch (error) {
             console.log(error);
@@ -623,20 +735,26 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async fetchTrips(shipperId: string): Promise<ITrip[] | null> {
+    async fetchTrips(shipperId: string, page: number, limit: number): Promise<{ tripsData: ITrip[] | null, totalPages: number }> {
         try {
-            
+
+            const skip = (page - 1) * limit;
+
             const trips = await this._tripRepositories.findTrips(
-                {shipperId: shipperId}, 
+                { shipperId: shipperId },
                 [
-                    {path: 'transporterId', select: "transporterName phone profileImage"},
-                    {path: 'shipperId', select: "shipperName"},
-                    {path: 'loadId', select: "pickupLocation dropLocation material quantity scheduledDate length height breadth descriptions distanceInKm "},
-                    {path: 'truckId', select: "truckNo truckType capacity driverName driverMobileNo"}
-                ]
+                    { path: 'transporterId', select: "transporterName phone profileImage" },
+                    { path: 'shipperId', select: "shipperName" },
+                    { path: 'loadId', select: "pickupLocation dropLocation material quantity scheduledDate length height breadth descriptions distanceInKm " },
+                    { path: 'truckId', select: "truckNo truckType capacity driverName driverMobileNo" }
+                ],
+                skip,
+                limit,
             )
 
-            return trips;
+            const tripsCount = await this._tripRepositories.count({ shipperId: shipperId })
+
+            return { tripsData: trips, totalPages: Math.ceil(tripsCount / limit) }
 
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -645,10 +763,10 @@ export class ShipperService implements IShipperService {
 
     async updateProfile(shipperId: string, shipperName: string, phone: string, profileImage?: Express.Multer.File): Promise<{ success: boolean; message: string; shipperData?: Partial<IShipper>; }> {
         try {
-            
+
             let profileImageUrl: string | undefined
 
-            const uploadToS3 = async (file: Express.Multer.File , folder: string) => {
+            const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
                 const s3Params = {
                     Bucket: process.env.AWS_BUCKET_NAME!,
                     Key: `${folder}/shipper/${Date.now()}_${file.originalname}`,
@@ -663,7 +781,7 @@ export class ShipperService implements IShipperService {
 
             }
 
-            if(profileImage) {
+            if (profileImage) {
                 profileImageUrl = await uploadToS3(profileImage, 'profileImage')
             }
 
@@ -673,41 +791,41 @@ export class ShipperService implements IShipperService {
                 profileImage: profileImageUrl,
             })
 
-            if(!updateShipper) {
-                return {success: false, message: 'Shipper Profile not Updated'}
+            if (!updateShipper) {
+                return { success: false, message: 'Shipper Profile not Updated' }
             }
 
-            console.log('profileImageUrl',profileImageUrl);
+            console.log('profileImageUrl', profileImageUrl);
 
-            return {success:true, message: 'Shipper Profile Updated SuccessFully', shipperData: updateShipper}
+            return { success: true, message: 'Shipper Profile Updated SuccessFully', shipperData: updateShipper }
 
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
     }
 
-    async fetchTransporterDetails(shipperId: string, transporterId: string): Promise<{ transporterData: ITransporter; isFollow: boolean; truckCount: number; tripsCount: number; reviews: Partial<IRatingReview>[]; averageRating: number,  isReview: boolean}> {
+    async fetchTransporterDetails(shipperId: string, transporterId: string): Promise<{ transporterData: ITransporter; isFollow: boolean; truckCount: number; tripsCount: number; reviews: Partial<IRatingReview>[]; averageRating: number, isReview: boolean }> {
         try {
 
             const transporter = await this._transporterRepositories.findTransporterById(transporterId);
 
-            if(!transporter) {
+            if (!transporter) {
                 throw new Error("Transporter not found")
             }
 
             let isFollow;
-            if(transporter.followers?.includes(shipperId)) {
+            if (transporter.followers?.includes(shipperId)) {
                 isFollow = true
             } else {
                 isFollow = false;
             }
 
-            const trucks = await this._truckRepositories.count({verificationStatus: 'approved'});
-            const trips = await this._tripRepositories.count({transporterId: transporterId, tripStatus: 'completed'});
+            const trucks = await this._truckRepositories.count({ verificationStatus: 'approved' });
+            const trips = await this._tripRepositories.count({ transporterId: transporterId, tripStatus: 'completed' });
             const reviews = await this._reviewRatingRepositories.findWithPopulates(
-                {"to.id": transporterId, "to.role": "Transporter"},
+                { "to.id": transporterId, "to.role": "Transporter" },
                 [
-                    {path: 'from.id', select: 'shipperName profileImage'}
+                    { path: 'from.id', select: 'shipperName profileImage' }
                 ]
             )
 
@@ -715,83 +833,94 @@ export class ShipperService implements IShipperService {
             let isReview = reviews.some(val => val.from.id.equals(shipperObjectId))
 
             const AverageRatingPipeline = [
-                { $match: { "to.id": new mongoose.Types.ObjectId(transporterId)}},
+                { $match: { "to.id": new mongoose.Types.ObjectId(transporterId) } },
                 {
                     $group: {
                         _id: "$to.id",
-                        avgRating: { $avg: "$rating"},
+                        avgRating: { $avg: "$rating" },
                     }
                 }
             ]
             const averageRatingResult = await this._reviewRatingRepositories.aggregate(AverageRatingPipeline);
             const averageRating = averageRatingResult[0]?.avgRating ?? 0;
-                
-            return {transporterData: transporter , isFollow: isFollow, truckCount: trucks, tripsCount: trips, reviews: reviews, averageRating: averageRating, isReview};
-            
-        } catch (error) {
-            throw new Error (error instanceof Error ? error.message : String(error))
-        }
-    }
 
-    async followTransporter(shipperId: string, tranpsorterId: string): Promise<{ success: boolean; transporterData: ITransporter; isFollow: boolean; }> {
-        try {
-            
-            const updateTransporter = await this._transporterRepositories.follow(tranpsorterId, 'followers', shipperId);
-
-            if(!updateTransporter) {
-                throw new Error('Transporter not found or Update Failed')
-            }
-
-            const updateShipper = await this._shipperRepositories.follow(shipperId, 'followings', tranpsorterId);
-
-            if(!updateShipper) {
-                throw new Error('Shipper not found or Update Failed')
-            }
-
-            let isFollow;
-            if(updateTransporter.followers?.includes(shipperId)) {
-                isFollow = true;
-            } else {
-                isFollow = false
-            }
-
-            return {success: true , transporterData: updateTransporter, isFollow: isFollow};
-
-        } catch (error) {
-            throw new Error( error instanceof Error ? error.message : String(error))
-        }
-    }
-
-    async unFollowTransporter(shipperId: string, transporterId: string): Promise<{ success: boolean; transporterData: ITransporter; isFollow: boolean; }> {
-        try {
-            
-            const updateTransporter = await this._transporterRepositories.unFollow(transporterId, 'followers', shipperId);
-
-            if(!updateTransporter) {
-                throw new Error('Transporter not found or Update failed')
-            }
-
-            const updateShipper = await this._shipperRepositories.unFollow(shipperId, 'followings', transporterId);
-
-            if(!updateShipper) {
-                throw new Error('Shipper not found or Update failed')
-            };
-
-            let isFollow;
-            if(updateTransporter.followers?.includes(shipperId)) {
-                isFollow = true;
-            } else {
-                isFollow = false
-            }
-
-            return { success: true, transporterData: updateTransporter, isFollow: isFollow};
+            return { transporterData: transporter, isFollow: isFollow, truckCount: trucks, tripsCount: trips, reviews: reviews, averageRating: averageRating, isReview };
 
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
     }
 
-    async postReview(shipperId: string, tranpsorterId: string, rating: number, comment: string): Promise<{ success: boolean, reviewData?: IRatingReview}> {
+    async followTransporter(shipperId: string, tranpsorterId: string): Promise<{ success: boolean; transporterData: ITransporter; isFollow: boolean; }> {
+        try {
+
+            const updateTransporter = await this._transporterRepositories.follow(tranpsorterId, 'followers', shipperId);
+
+            if (!updateTransporter) {
+                throw new Error('Transporter not found or Update Failed')
+            }
+
+
+
+            const updateShipper = await this._shipperRepositories.follow(shipperId, 'followings', tranpsorterId);
+
+
+
+            if (!updateShipper) {
+                throw new Error('Shipper not found or Update Failed')
+            }
+
+            await this._notificationRepository.createNotification({
+                userId: tranpsorterId,
+                userType: 'transporter',
+                title: 'New Follower',
+                message: `${updateShipper.shipperName} has started following you. Check your followers list to connect.`
+            })
+
+            let isFollow;
+            if (updateTransporter.followers?.includes(shipperId)) {
+                isFollow = true;
+            } else {
+                isFollow = false
+            }
+
+            return { success: true, transporterData: updateTransporter, isFollow: isFollow };
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async unFollowTransporter(shipperId: string, transporterId: string): Promise<{ success: boolean; transporterData: ITransporter; isFollow: boolean; }> {
+        try {
+
+            const updateTransporter = await this._transporterRepositories.unFollow(transporterId, 'followers', shipperId);
+
+            if (!updateTransporter) {
+                throw new Error('Transporter not found or Update failed')
+            }
+
+            const updateShipper = await this._shipperRepositories.unFollow(shipperId, 'followings', transporterId);
+
+            if (!updateShipper) {
+                throw new Error('Shipper not found or Update failed')
+            };
+
+            let isFollow;
+            if (updateTransporter.followers?.includes(shipperId)) {
+                isFollow = true;
+            } else {
+                isFollow = false
+            }
+
+            return { success: true, transporterData: updateTransporter, isFollow: isFollow };
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async postReview(shipperId: string, tranpsorterId: string, rating: number, comment: string): Promise<{ success: boolean, reviewData?: IRatingReview }> {
         try {
 
             const shipperObjectId = new mongoose.Types.ObjectId(shipperId);
@@ -799,25 +928,27 @@ export class ShipperService implements IShipperService {
 
             const review = await this._reviewRatingRepositories.createReview({
                 from: { id: shipperObjectId, role: 'Shipper' },
-                to: { id: transporterObjectId, role: 'Transporter'},
+                to: { id: transporterObjectId, role: 'Transporter' },
                 rating,
                 review: comment
             })
 
-            if(!review) {
-                return { success: false}
+            if (!review) {
+                return { success: false }
             }
 
-            return {success: true, reviewData: review}
-            
+            return { success: true, reviewData: review }
+
         } catch (error) {
-            throw new Error (error instanceof Error ? error.message : String(error))
+            throw new Error(error instanceof Error ? error.message : String(error))
         }
     }
 
-    async fetchTransporters(): Promise<ITransporter[] | null> {
+    async fetchTransporters(page: number, limit: number): Promise<{ transporters: ITransporter[] | null, totalPages: number }> {
         try {
-            
+
+            const skip = (page - 1) * limit;
+
             const projection = {
                 _id: 1,
                 transporterName: 1,
@@ -825,7 +956,10 @@ export class ShipperService implements IShipperService {
                 email: 1,
             }
 
-            return await this._transporterRepositories.find({}, projection);
+            const transporters = await this._transporterRepositories.find({}, projection, skip, limit);
+            const total = await this._transporterRepositories.count({});
+
+            return { transporters: transporters, totalPages: Math.ceil(total / limit) }
 
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -834,20 +968,579 @@ export class ShipperService implements IShipperService {
 
     async fetchTrucks(): Promise<ITruck[] | null> {
         try {
-            
-            const trucks =  await this._truckRepositories.findWithPopulate(
-                {verificationStatus: 'approved'},
+
+            const trucks = await this._truckRepositories.findWithPopulate(
+                { verificationStatus: 'approved' },
                 [
-                    {path:'transporterId', select:'transporterName profileImage'}
+                    { path: 'transporterId', select: 'transporterName profileImage' }
                 ]
             )
             console.log(trucks);
-            
+
             return trucks
 
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
     }
+
+    async fetchShipperPlans(): Promise<{ shipperPlans: {}; }> {
+        try {
+
+            return { shipperPlans: SHIPPER_SUBSCRIPTION_PLAN }
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async subscriptionCheckoutSession(shipperId: string, planId: string): Promise<{ success: boolean; sessionId?: string; message: string }> {
+        try {
+
+            const plan = SHIPPER_SUBSCRIPTION_PLAN.find(p => p.id === planId);
+            if (!plan) return { success: false, message: 'Invalid Plan' };
+
+            const shipper = await this._shipperRepositories.findById(shipperId);
+            if (!shipper) return { success: false, message: 'Shipper not found' }
+
+            const amount = Number(plan.price)
+
+            const session = await stripe.checkout.sessions.create({
+                payment_method_types: ['card'],
+                mode: 'payment',
+                line_items: [
+                    {
+                        price_data: {
+                            currency: 'inr',
+                            product_data: {
+                                name: plan.name,
+                                description: plan.duration
+                            },
+                            unit_amount: Math.round(amount * 100)
+                        },
+                        quantity: 1
+                    }
+                ],
+                success_url: `http://localhost:5173/shipper/subscription-success?session_id={CHECKOUT_SESSION_ID}&planId=${plan.id}`,
+                cancel_url: `http://localhost:5173/shipper/subscription-failed`,
+            });
+
+            const shipperObjectId = new mongoose.Types.ObjectId(shipperId)
+
+            await this._shipperPaymentRepositories.createPayment({
+                transactionId: session.id,
+                shipperId: shipperObjectId,
+                planId: planId,
+                paymentType: 'subscription',
+                amount: amount,
+                transactionType: 'debit',
+            })
+
+            await this._adminPaymentRepository.createAdminPaymentHistory({
+                transactionId: session.id,
+                userType: 'shipper',
+                userId: shipperId,
+                amount: amount,
+                transactionType: 'credit',
+                paymentFor: 'subscription',
+                subscriptionId: planId,
+            })
+
+            return { success: true, message: 'Payment Created', sessionId: session.id }
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async handleSubscriptionSuccess(shipperId: string, sessionId: string, planId: string): Promise<{ success: boolean; message: string; planName: string; endDate: Date }> {
+        try {
+
+            const plan = SHIPPER_SUBSCRIPTION_PLAN.find(p => p.id === planId);
+            if (!planId || !plan) {
+                throw new Error('Plan not found in metadata');
+            }
+
+            const planDuration = plan.PlanDurationInDays ? plan.PlanDurationInDays : 1;
+            const startDate = new Date();
+            const endDate = new Date(startDate);
+
+            endDate.setDate(endDate.getDate() + planDuration);
+
+            const amount = Number(plan.price)
+
+            const updateShipper = await this._shipperRepositories.updateShipperById(shipperId, {
+                subscription: {
+                    planId: planId,
+                    planName: plan.name,
+                    status: 'active',
+                    startDate,
+                    endDate,
+                    isActive: true,
+                    paidAmount: amount,
+                    createdAt: new Date()
+                }
+            });
+
+            await this._shipperPaymentRepositories.findShipperPaymentByTransactionIdandUpdate(sessionId, 'success');
+            await this._adminPaymentRepository.updateBytransactionId(sessionId, 'success')
+            await this._notificationRepository.createNotification({
+                userId: shipperId,
+                userType: 'shipper',
+                title: 'New Plan',
+                message: `${plan.name} has activated`
+            })
+
+            return { success: true, message: 'Subscription verified and saved', planName: plan.name, endDate: endDate };
+
+        } catch (error) {
+            console.error('Error in verifying subscription:', error);
+            throw new Error(error instanceof Error ? error.message : String(error));
+        }
+    }
+
+    async checkExpiredSubscriptions(): Promise<void> {
+        try {
+
+            const today = new Date();
+            const result = await this._shipperRepositories.expiredSubscriptionUpdate(today);
+
+            console.log(`Subscription expired: ${result.modifiedCount}`);
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async updateLoad(formData: Partial<ILoad>): Promise<{ success: boolean; message: string; updateData?: Partial<ILoad>; }> {
+        try {
+
+            const { pickupCoordinates, dropCoordinates, _id, shipperId, pickupLocation, dropLocation, material, quantity, scheduledDate,
+                length, truckType, transportationRent, height, breadth, descriptions
+            } = formData;
+
+            const loadId = formData._id as string;
+
+            function deg2rad(deg: number): number {
+                return deg * (Math.PI / 180);
+            }
+
+            function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+
+                const R = 6371;
+                const dLat = deg2rad(lat2 - lat1);
+                const dLon = deg2rad(lon2 - lon1);
+
+                const a =
+                    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(deg2rad(lat1)) *
+                    Math.cos(deg2rad(lat2)) *
+                    Math.sin(dLon / 2) *
+                    Math.sin(dLon / 2);
+
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                const d = R * c;
+                return d;
+            }
+
+            let distances = 0;
+
+            if (
+                pickupCoordinates?.latitude !== undefined && pickupCoordinates?.longitude !== undefined &&
+                dropCoordinates?.latitude !== undefined && dropCoordinates?.longitude !== undefined) {
+
+                distances = getDistanceFromLatLonInKm(
+                    pickupCoordinates.latitude,
+                    pickupCoordinates.longitude,
+                    dropCoordinates.latitude,
+                    dropCoordinates.longitude
+                );
+
+                console.log("Distance (km):", distances);
+            }
+
+
+            const updateData = await this._loadRepositories.updateById(loadId, {
+                pickupLocation,
+                dropLocation,
+                material,
+                quantity,
+                scheduledDate,
+                length,
+                transportationRent,
+                truckType,
+                height,
+                breadth,
+                descriptions,
+                pickupCoordinates,
+                dropCoordinates,
+                distanceInKm: distances
+            })
+
+            if (!updateData) return { success: false, message: 'Load not updated' }
+
+            return { success: true, message: 'Load updated Successfully', updateData: updateData };
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async deleteLoadByLoadId(loadId: string): Promise<{ success: boolean; message: string; loadData?: ILoad; }> {
+        try {
+
+            if (!loadId) return { success: false, message: 'LoadId not found' }
+
+            const deleteLoad = await this._loadRepositories.deleteById(loadId);
+            console.log(deleteLoad, 'deleteLoad');
+
+
+            return { success: true, message: 'Load Deleted', loadData: deleteLoad as ILoad }
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async startChat(shipperId: string, transporterId: string): Promise<{ success: boolean; chatData: IChat; }> {
+        try {
+
+            let chat = await this._chatRepository.findOne({ transporterId, shipperId });
+
+            const transporterObjectId = new mongoose.Types.ObjectId(transporterId);
+            const shipperObjectId = new mongoose.Types.ObjectId(shipperId);
+
+            if (!chat) {
+                chat = await this._chatRepository.createChat({ transporterId: transporterObjectId, shipperId: shipperObjectId })
+            }
+
+            return { success: true, chatData: chat }
+
+        } catch (error) {
+            console.error(error);
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async fetchChats(shipperId: string): Promise<IChat[] | null> {
+        try {
+
+            const chats = await this._chatRepository.findWithPopulate(
+                { shipperId },
+                [
+                    { path: 'transporterId', select: '_id transporterName profileImage' }
+                ]
+            )
+
+            const updatedChats = [];
+            for (let i = 0; i < chats.length; i++) {
+                let unreadCount = await this._messageRepository.count({
+                    chatId: chats[i]._id,
+                    receiverId: shipperId,
+                    isRead: false
+                })
+
+                const chatObj = chats[i].toObject();
+                chatObj.unreadCount = unreadCount;
+                updatedChats.push(chatObj)
+
+            }
+
+            return updatedChats;
+
+        } catch (error) {
+            console.error(error);
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async fetchMessages(chatId: string): Promise<IMessage[]> {
+        try {
+
+            const messages = await this._messageRepository.findWithPopulate(
+                { chatId },
+                [
+                    { path: 'chatId', select: 'lastMessage transporterId shipperId' }
+                ]
+            )
+
+            return messages;
+
+        } catch (error) {
+            console.error(error);
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async sendMessage(shipperId: string, chatId: string, transporterId: string, content: string): Promise<{ success: boolean; messageData?: IMessage; }> {
+        try {
+
+            const chatObjectId = new mongoose.Types.ObjectId(chatId)
+
+            const message = await this._messageRepository.createMessage({
+                chatId: chatObjectId,
+                senderId: shipperId,
+                receiverId: transporterId,
+                message: content
+            })
+
+            await this._chatRepository.updateLastMessage(chatId, content);
+
+            if (!message) return { success: false }
+
+            return { success: true, messageData: message }
+
+        } catch (error) {
+            console.error(error);
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async upateMessageAsRead(chatId: string, shipperId: string): Promise<{ success: boolean; }> {
+        try {
+
+            await this._messageRepository.updateMany({ chatId, receiverId: shipperId, isRead: false }, { isRead: true })
+            return { success: true }
+
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async fetchNotifications(shipperId: string, status: string): Promise<INotification[]> {
+        try {
+
+            const filter: any = {
+                userId: shipperId,
+                userType: 'shipper'
+            }
+
+            if (status !== 'all') {
+                if (status === 'unread') {
+                    filter.isRead = false
+                } else if (status === 'read') {
+                    filter.isRead = true
+                }
+            }
+
+            const response = await this._notificationRepository.find(filter, {}, 0, 0, { createdAt: -1 })
+            return response;
+
+        } catch (error) {
+            console.error(error);
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async updateNotificationAsRead(notificationId: string): Promise<{ success: boolean; message: string; notificationData?: INotification; }> {
+        try {
+
+            const updateData = await this._notificationRepository.updateById(notificationId, { isRead: true });
+            if (!updateData) return { success: false, message: 'Notification not updated' }
+
+            return { success: true, message: 'Mark notification as read', notificationData: updateData }
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async deleteNotification(notificationId: string): Promise<{ success: boolean; message: string; notificationData?: INotification; }> {
+        try {
+
+            const deleteData = await this._notificationRepository.deleteById(notificationId);
+
+            if (!deleteData) return { success: false, message: 'notification not deleted' };
+
+            return { success: true, message: 'notification Deleted', notificationData: deleteData }
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async fetchPaymentHistory(shipperId: string, status: string, type: string, date: string, page: number, limit: number):
+        Promise<{ paymentData: IShipperPayment[]; totalPages: number; totalEarnings: number; bidPayments: number; subscriptionPayment: number; pendingAmount: number; }> {
+        try {
+
+            const paymentData = await this._shipperPaymentRepositories.find({ shipperId: shipperId })
+            const totalEarnings = paymentData
+                .filter(p => p.paymentStatus === 'success')
+                .reduce((sum, p) => sum + p.amount, 0)
+
+            const pendingAmount = paymentData
+                .filter(p => p.paymentStatus === 'pending')
+                .reduce((sum, p) => sum + p.amount, 0)
+
+            const bidPayments = paymentData.filter(p => p.paymentType === 'bid').length;
+            const subscriptionPayment = paymentData.filter(p => p.paymentType === 'subscription').length;
+
+
+            const skip = (page - 1) * limit;
+
+            const filter: any = {
+                shipperId: shipperId
+            }
+
+            if (status !== 'all') {
+                filter.paymentStatus = status
+            }
+
+            if (type !== 'all') {
+                filter.paymentType = type
+            }
+
+            const now = new Date();
+            let fromDate: Date | null = null;
+
+            if (date === 'today') {
+                fromDate = startOfDay(now)
+            } else if (date === 'week') {
+                fromDate = subDays(now, 7);
+            } else if (date === 'month') {
+                fromDate = subDays(now, 30);
+            }
+
+            if (date !== 'all') {
+                filter.createdAt = { $gte: fromDate }
+            }
+
+            const payment = await this._shipperPaymentRepositories.find(filter, {}, skip, limit, { createdAt: -1 });
+            const totalPayment = await this._shipperPaymentRepositories.count(filter);
+
+            return { paymentData: payment, totalPages: Math.ceil(totalPayment / limit), totalEarnings, bidPayments, subscriptionPayment, pendingAmount };
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async checkAndRefundExpiredBids(): Promise<{ success: boolean; }> {
+        try {
+
+            const fourtyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+
+
+            const expiredbids = await this._bidRepositories.find(
+                {
+                    shipperPayment: true,
+                    transporterPayment: false,
+                    status: 'accepted',
+                    createAt: { $lt: fourtyEightHoursAgo }
+
+                }
+            )
+
+            for (const bid of expiredbids) {
+
+                const payment = await this._shipperPaymentRepositories.findOne(
+                    {
+                        bidId: bid._id,
+                        refundStatus: 'none',
+                        paymentStatus: 'success'
+                    }
+                );
+
+                if (!payment || !payment.paymentIntentId) continue;
+
+                try {
+
+                    const refund = await stripe.refunds.create({
+                        payment_intent: payment.paymentIntentId,
+                    })
+
+                    await this._shipperPaymentRepositories.updateById(payment._id as string, {
+                        refundId: refund.id,
+                        refundStatus: 'refunded',
+                        transactionType: 'credit'
+                    })
+
+                    const shipperId = String(payment.shipperId)
+                    const bidObjectId = new mongoose.Types.ObjectId(bid._id as string)
+
+                    await this._adminPaymentRepository.createAdminPaymentHistory({
+                        transactionId: payment.transactionId,
+                        userType: 'shipper',
+                        userId: shipperId,
+                        amount: payment.amount,
+                        transactionType: 'debit',
+                        paymentFor: 'refund',
+                        bidId: bidObjectId,
+                        paymentStatus: 'success'
+                    })
+
+                    await this._bidRepositories.updateBids({_id: bid._id}, {status: 'expired'});
+
+                    await this._notificationRepository.createNotification({
+                        userId: shipperId,
+                        userType: 'shipper',
+                        title: 'Refund',
+                        message: 'Refund processed because transporter didn’t start trip.'
+                    })
+
+                } catch (error) {
+                    console.error(`Refund failed for bid ${bid._id}:`, error)
+                }
+            }
+
+            return { success: true }
+
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async expireInActiveLoads(): Promise<void> {
+        try {
+
+            const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+            // const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+
+            const staleLoads = await this._loadRepositories.find(
+                { status: 'active', createdAt: { $lt: threeDaysAgo } },
+            );
+
+            for (const load of staleLoads) {
+
+                // const activeBid = await this._bidRepositories.find({ loadId: load._id });
+
+                const acceptedBid = await this._bidRepositories.find({ loadId: load._id, status: 'accepted' });
+
+                if (acceptedBid.length === 0) {
+                    await this._loadRepositories.updateById(load._id as string, { status: 'expired' });
+                   
+                    const bids = await this._bidRepositories.find({loadId: load.id});
+
+                    for( let bid of bids) {
+                        if(bid.status === 'requested') {
+                            await this._bidRepositories.updateById(bid._id as string, {status: 'expired'})
+                        }
+                    }
+
+                    console.log('expired log', load._id);
+
+                }
+            }
+
+        } catch (error) {
+            console.error(error);
+            throw new Error(error instanceof Error ? error.message : String(error));
+        }
+    }
+
+    async findUnReadNotificationCount(shipperId: string): Promise<number | undefined> {
+        try {
+
+            const counts = await this._notificationRepository.count({userType: 'shipper', userId: shipperId, isRead: false});
+            console.log(counts, 'counts');
+            
+            return counts
+            
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
 
 }

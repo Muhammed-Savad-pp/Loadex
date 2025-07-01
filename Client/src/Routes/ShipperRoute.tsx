@@ -10,6 +10,11 @@ import Trips from '../pages/shipper/Trips';
 import Directory from '../pages/shipper/Directory';
 import TruckBoard from '../pages/shipper/TruckBoard';
 import NotFound from '../pages/common/NotFound';
+import Subscription from '../pages/shipper/Subscription';
+import SubscriptionSuccess from '../pages/shipper/SubscriptionSuccess';
+import SubscriptionFailed from '../pages/shipper/SubscriptionFailed';
+import Chat from '../pages/shipper/Chat';
+import PaymentHistory from '../pages/shipper/PaymentHistory';
 
 function ShipperRoute() {
 
@@ -27,6 +32,12 @@ function ShipperRoute() {
             <Route path='/trips' element={<Trips/>}/>
             <Route path='/directory' element={<Directory/>}/>
             <Route path='/truckBoard' element={<TruckBoard/>}/>
+            <Route path='/subscription' element={<Subscription/>}/>
+            <Route path='/subscription-success' element={<SubscriptionSuccess/>}/>
+            <Route path='/subscription-failed' element={<SubscriptionFailed/>}/>
+            <Route path='/chat' element={<Chat/>}/>
+            <Route path='/paymentHistory' element={<PaymentHistory/>}/>
+
             <Route path='*' element={<NotFound/>}/>
         </Route>
     </Routes>

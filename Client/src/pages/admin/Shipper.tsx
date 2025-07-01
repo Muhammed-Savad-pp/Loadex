@@ -16,19 +16,29 @@ export interface IShipper {
 
 const Shipper: React.FC = () => {
 
-    const [shipperData, setShipperData] = useState<IShipper[]>([])
+    const [shipperData, setShipperData] = useState<IShipper[]>([]);
+    const [page, setPage] = useState<number>(1);
+    const [search, setSearch] = useState<string>('');
+    const [totalPages, setTotalPages] = useState<number>(10);
+    const limit = 2;
+
 
     useEffect(() => {
         const fetchShipper = async () => {
 
-            const response = await getShipper();
-            setShipperData(response as IShipper[]);
+            const response: any = await getShipper(search, page, limit);
+            setShipperData(response.shipperData);
+            setTotalPages(response.totalPages)
         }
         
-
         fetchShipper()
 
-    }, [])
+    }, [page, search])
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearch(e.target.value);
+        setPage(1);
+    };
 
     const handleBlockUnBlock = async (id: string) => {
         try {
@@ -49,15 +59,15 @@ const Shipper: React.FC = () => {
 
     const columns = [
         { header: "Name", key: "shipperName" as keyof IShipper },
-        { header: "Email", key: "email" as keyof IShipper},
+        { header: "Email", key: "email" as keyof IShipper },
         { header: "Mobile", key: "phone" as keyof IShipper },
     ];
 
     return (
         <><div className="flex min-h-screen bg-gray-50">
             <Sidebar />
-                {/* <div className="w-full h-fit  bg-white rounded-lg shadow-md p-4"> */}
-                {/* <div className="flex items-center justify-between bg-gray-100 text-lg p-3 rounded-md text-gray-600 font-bold">
+            {/* <div className="w-full h-fit  bg-white rounded-lg shadow-md p-4"> */}
+            {/* <div className="flex items-center justify-between bg-gray-100 text-lg p-3 rounded-md text-gray-600 font-bold">
                         <div className="w-1/5">Name</div>
                         <div className="w-1/4">Email</div>
                         <div className="w-1/5">Mobile</div>
@@ -65,7 +75,7 @@ const Shipper: React.FC = () => {
                         <div className="w-1/6 text-center">Details</div>
                     </div> */}
 
-                {/* {shipperData.map((shipper, index) => (
+            {/* {shipperData.map((shipper, index) => (
                         <div key={index} className="flex items-center justify-between bg-white p-3 my-2 font-semibold rounded-md shadow-sm">
                             <div className="w-1/5 flex items-center">
                                 <img
@@ -90,11 +100,49 @@ const Shipper: React.FC = () => {
                             </div>
                         </div>
                     ))} */}
-                {/* </div> */}
+            {/* </div> */}
 
-                <div className="min-h-screen w-full bg-blue-50 flex justify-center p-6 pt-10">
-                    <DataTable data={shipperData} columns={columns} handleBlockUnBlock={handleBlockUnBlock} />
+            <div className="min-h-screen w-full bg-blue-50  p-6 pt-10">
+                <div className="mb-4 flex justify-between">
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        value={search}
+                        onChange={handleSearch}
+                        className="p-2 border rounded-md w-80"
+                    />
                 </div>
+                <DataTable data={shipperData} columns={columns} handleBlockUnBlock={handleBlockUnBlock} />
+                {/* { Pagination} */}
+                <div className="flex justify-center mt-6 mr-5">
+                    <div className="inline-flex rounded-md shadow-sm">
+                        <button
+                            onClick={() => setPage(page - 1)}
+                            disabled={page === 1}
+                            className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                              ${page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                            Prev
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .slice(Math.max(0, page - 3), Math.min(totalPages, page + 2))
+                            .map((p) => (
+                                <button className={`px-3 py-2 ml-1  mr-1 text-sm rounded-md font-medium border-t border-b border-gray-300 cursor-pointer
+                              ${p === page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                                    {p}
+                                </button>
+                            ))
+                        }
+                        <button
+                            onClick={() => setPage(page + 1)}
+                            disabled={page === totalPages}
+                            className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                              ${page === totalPages ? 'bg-gray-100 text-gray-400 not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}'}`}>
+                            Next
+                        </button>
+                    </div>
+                </div>
+
+            </div>
         </div >
 
         </>

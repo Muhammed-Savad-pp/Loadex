@@ -15,4 +15,8 @@ export interface IAdminController {
     getRequestedTrucks(req: CustomeRequest, res: Response) : Promise<void>;
     changeTruckVerificationStatus(req: CustomeRequest, res: Response): Promise<void>;
     getLoads(req: CustomeRequest, res: Response) : Promise<void>;
+    fetchDashboardDatas(req: CustomeRequest, res: Response) : Promise<void>;
+    fetchTrips(req: CustomeRequest, res: Response): Promise<void>;
+    sendTripAmountToTransporter(req: CustomeRequest, res: Response): Promise<void>;
+    fetchPaymentHistory(req: CustomeRequest, res: Response): Promise<void>;
 }

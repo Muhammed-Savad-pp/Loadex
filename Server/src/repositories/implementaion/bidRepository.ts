@@ -1,8 +1,9 @@
-import { FilterQuery } from "mongoose";
+import { FilterQuery, UpdateResult } from "mongoose";
 import Bid, { IBid } from "../../models/BidModel";
 import { IBidRepository } from "../interface/IBidRepository";
 import { BaseRepositories } from "./baseRepositories";
 import { DeleteResult } from "mongoose";
+import { skip } from "node:test";
 
 
 class BidRepository extends BaseRepositories<IBid> implements IBidRepository {
@@ -21,35 +22,36 @@ class BidRepository extends BaseRepositories<IBid> implements IBidRepository {
         }
     }
 
-
     async findBidsForTransporter(transporterId: string): Promise<IBid[] | null> {
         try {
 
             return await this.findWithPopulate(
                 { transporterId: transporterId },
                 [
-                    { path: 'shipperId', select: 'shipperName' },
+                    { path: 'shipperId', select: 'shipperName profileImage' },
                     { path: 'truckId', select: 'truckNo truckType capacity' },
                     { path: 'loadId', select: 'pickupLocation dropLocation material quantity scheduledDate ' }
                 ]
             );
-
 
         } catch (error) {
             throw new Error(`Error in createBid ${error instanceof Error ? error.message : String(error)}`)
         }
     }
 
-    async findBidsForShipper(shipperId: string): Promise<IBid[] | null> {
+    async findBidsForShipper(filter: FilterQuery<IBid>, skip: number, limit: number): Promise<IBid[] | null> {
         try {
 
             return await this.findWithPopulate(
-                { shipperId: shipperId },
+                filter,
                 [
-                    { path: 'transporterId', select: 'transporterName' },
-                    { path: 'truckId', select: 'truckNo truckType capacity' },
+                    { path: 'transporterId', select: 'transporterName profileImage' },
+                    { path: 'truckId', select: 'truckNo truckType capacity truckImage' },
                     { path: 'loadId', select: 'pickupLocation dropLocation material quantity scheduledDate distanceInKm' }
-                ]
+                ],
+                skip,
+                limit,
+                {createAt: -1}
             )
 
 
@@ -84,8 +86,6 @@ class BidRepository extends BaseRepositories<IBid> implements IBidRepository {
             
             return await this.updateById(bidId, bidData)
 
-            
-
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
@@ -98,6 +98,16 @@ class BidRepository extends BaseRepositories<IBid> implements IBidRepository {
 
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
+
+    async updateBids(filter: FilterQuery<Partial<IBid>>, updateData: Partial<IBid>): Promise<UpdateResult> {
+        try {
+            
+            return await this.model.updateMany(filter, updateData)
+
+        } catch (error) {
+            throw new Error(`error in update bids status ${error instanceof Error ? error.message : String(error)}`)
         }
     }
 
