@@ -51,14 +51,17 @@ app.use('/transporter', transporter_route);
 app.use('/shipper', shipper_route);
 app.use('/admin', admin_route);
     
-app.use('*', (req, res) => {
-    logger.warn(`404 - Route not found: ${req.originalUrl}`);
-    res.status(HTTP_STATUS.NOT_FOUND).json({
-        message: 'Route not found',
-        status: 404
-    })
-})
+// app.use('*', (req, res) => {
+//     logger.warn(`404 - Route not found: ${req.originalUrl}`);
+//     res.status(HTTP_STATUS.NOT_FOUND).json({
+//         message: 'Route not found',
+//         status: 404
+//     })
+// })
 
+app.get('/', (req, res) => {
+  res.status(200).json({ message: "🚚 Loadex API is running" });
+});
 
 const server = http.createServer(app);
 setupSocket(server)
