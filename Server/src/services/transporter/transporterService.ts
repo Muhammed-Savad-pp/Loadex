@@ -612,8 +612,8 @@ export class TransporterService implements ITransporterService {
                     },
                 ],
                 mode: 'payment',
-                success_url: `http://localhost:5173/transporter/success?transactionId={CHECKOUT_SESSION_ID}`,
-                cancel_url: `http://localhost:5173/transporter/failed?transactionId={CHECKOUT_SESSION_ID}`,
+                success_url: `https://loadex.savad.online/transporter/success?transactionId={CHECKOUT_SESSION_ID}`,
+                cancel_url: `https://loadex.savad.online/transporter/failed?transactionId={CHECKOUT_SESSION_ID}`,
             })
 
             await this._transporterPaymentRepository.createPayment({
@@ -1161,8 +1161,8 @@ export class TransporterService implements ITransporterService {
                         quantity: 1
                     }
                 ],
-                success_url: `http://localhost:5173/transporter/subscription-success?session_id={CHECKOUT_SESSION_ID}&planId=${plan.id}`,
-                cancel_url: `http://localhost:5173/transporter/subscription-failed`,
+                success_url: `https://loadex.savad.online/transporter/subscription-success?session_id={CHECKOUT_SESSION_ID}&planId=${plan.id}`,
+                cancel_url: `https://loadex.savad.online/transporter/subscription-failed`,
             })
 
             const transporterObjectId = new mongoose.Types.ObjectId(transporterId)

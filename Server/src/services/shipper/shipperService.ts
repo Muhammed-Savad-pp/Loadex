@@ -661,8 +661,8 @@ export class ShipperService implements IShipperService {
                     },
                 ],
                 mode: 'payment',
-                success_url: `http://localhost:5173/shipper/success?transactionId={CHECKOUT_SESSION_ID}`,
-                cancel_url: `http://localhost:5173/shipper/failed?transactionId={CHECKOUT_SESSION_ID}`,
+                success_url: `https://loadex.savad.online/shipper/success?transactionId={CHECKOUT_SESSION_ID}`,
+                cancel_url: `https://loadex.savad.online/failed?transactionId={CHECKOUT_SESSION_ID}`,
             })
 
 
@@ -1021,8 +1021,8 @@ export class ShipperService implements IShipperService {
                         quantity: 1
                     }
                 ],
-                success_url: `http://localhost:5173/shipper/subscription-success?session_id={CHECKOUT_SESSION_ID}&planId=${plan.id}`,
-                cancel_url: `http://localhost:5173/shipper/subscription-failed`,
+                success_url: `https://loadex.savad.online/shipper/subscription-success?session_id={CHECKOUT_SESSION_ID}&planId=${plan.id}`,
+                cancel_url: `https://loadex.savad.online/shipper/subscription-failed`,
             });
 
             const shipperObjectId = new mongoose.Types.ObjectId(shipperId)

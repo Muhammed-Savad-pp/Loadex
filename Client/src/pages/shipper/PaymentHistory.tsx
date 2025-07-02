@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import Navbar from '../../components/Common/Navbar/Navbar'
-import ProfileSidebar from '../../components/tranporter/ProfileSidebar'
 import { Search, Calendar, DollarSign, Eye, Package, CreditCard } from 'lucide-react';
 import { fetchPaymentHistory } from '../../services/shipper/shipperService';
+import ShipperProfileSidebar from '../../components/shipper/ShipperProfileSidebar';
 
 
 interface ITransporterPayment {
@@ -118,7 +118,7 @@ const PaymentHistory: React.FC = () => {
     <>
       <Navbar />
       <div className='flex min-h-screen bg-gray-50 mt-10'>
-        <ProfileSidebar />
+        <ShipperProfileSidebar />
 
         <div className="flex-1 p-6">
           {/* Header */}
