@@ -299,8 +299,14 @@ export class ShipperService implements IShipperService {
                     followers: shipperData.followers || [],
                     followings: shipperData.followings || [],
                     subscription: {
+                        planId: shipperData.subscription?.planId || '',
+                        planName: shipperData.subscription?.planName || '',
                         status: shipperData.subscription?.status || '',
-                        isActive: shipperData.subscription?.isActive || false
+                        startDate: shipperData.subscription?.startDate ?? null,
+                        endDate: shipperData.subscription?.endDate ?? null,
+                        createdAt: shipperData.subscription?.createdAt ?? null,
+                        isActive: shipperData.subscription?.isActive || false,
+                        paidAmount: shipperData.subscription?.paidAmount || 0
                     }
                 }
             };

@@ -14,8 +14,14 @@ export interface ShipperDTO {
     followers: string[];
     followings: string[];
     subscription: {
+        planId: string;
+        planName: string;
         status: string;
-        isActive: boolean
+        startDate: Date | null;
+        endDate: Date | null;
+        isActive: boolean;
+        createdAt: Date | null;
+        paidAmount: number;
     }
 
 }
