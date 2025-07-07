@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ShipperProfileSidebar from "../../components/shipper/ShipperProfileSidebar";
 import Navbar from "../../components/Common/Navbar/Navbar";
-import { FaUser, FaEnvelope, FaPhone, FaLock } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaPhone } from "react-icons/fa";
 import { getShipperProfile, shipperKycSumbit, updateProfile } from "../../services/shipper/shipperService";
 import toast from "react-hot-toast";
 
@@ -123,7 +123,7 @@ const Profile = () => {
     }, [profileImagePreviews]);
 
     useEffect(() => {
-        if(shipperData) {
+        if (shipperData) {
             setKycData({
                 companyName: shipperData.companyName || '',
                 panNumber: shipperData.panNumber || '',
@@ -186,10 +186,10 @@ const Profile = () => {
     };
 
     // Cleanup preview URLs when component unmounts
-    
 
 
-    
+
+
 
     const validation = (kycData: Partial<KYCData>) => {
         const errors = {
@@ -292,7 +292,7 @@ const Profile = () => {
                 }))
 
                 toast.success(response.message)
-            } else { 
+            } else {
                 toast.error(response.message)
             }
 
@@ -479,10 +479,10 @@ const Profile = () => {
                                 }
 
                                 {/* Change Password Button */}
-                                <button className="flex items-center gap-2 bg-gray-700 text-white px-5 py-2 rounded-md hover:bg-gray-800 shadow-md transition">
+                                {/* <button className="flex items-center gap-2 bg-gray-700 text-white px-5 py-2 rounded-md hover:bg-gray-800 shadow-md transition">
                                     <FaLock className="text-white" />
                                     Change Password
-                                </button>
+                                </button> */}
                             </div>
                         </div>
                     </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import ProfileSidebar from "../../components/tranporter/ProfileSidebar";
 import { getTransporterProfile, transporterKYCSubmit, updateProfile } from "../../services/transporter/transporterApi";
 import Navbar from "../../components/Common/Navbar/Navbar";
-import { FaUser, FaEnvelope, FaPhone, FaLock } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaPhone } from "react-icons/fa";
 import toast from "react-hot-toast";
 
 
@@ -411,10 +411,10 @@ const Profile = () => {
 
 
                                 {/* Change Password Button */}
-                                <button className="flex items-center gap-2 bg-gray-700 text-white px-5 py-2 rounded-md hover:bg-gray-800 shadow-md transition">
+                                {/* <button className="flex items-center gap-2 bg-gray-700 text-white px-5 py-2 rounded-md hover:bg-gray-800 shadow-md transition">
                                     <FaLock className="text-white" />
                                     Change Password
-                                </button>
+                                </button> */}
                             </div>
                         </div>
 
