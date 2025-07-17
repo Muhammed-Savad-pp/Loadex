@@ -1,15 +1,16 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { configDotenv } from 'dotenv';
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import config from '../config';
 
 
 configDotenv();
 
 export const s3 = new S3Client({
-    region: process.env.AWS_REGION,
+    region: config.awsRegion,
     credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+        accessKeyId: config.awsAccessKeyId,
+        secretAccessKey: config.awsSecretAccessKey,
         
     }
 })
@@ -21,7 +22,7 @@ export const generateSignedUrl = async (url : string | undefined ) => {
 
         const expiresIn = 3600;
         const command = new GetObjectCommand({
-            Bucket: process.env.AWS_BUCKET_NAME,
+            Bucket: config.awsBucketName,
             Key: key
         })
 

@@ -1,5 +1,7 @@
 import { BidForShipperDTO } from "../../dtos/bids/bid.for.shipper.dto";
+import { LoadForShipperDTO } from "../../dtos/load/load.dto";
 import { ShipperDTO } from "../../dtos/shipper/shipper.dto";
+import { TripForShipperDTO } from "../../dtos/trip/trip.for.transporter.dto";
 import { IBid } from "../../models/BidModel";
 import { IChat } from "../../models/Chat";
 import { ILoad } from "../../models/LoadModel";
@@ -25,11 +27,11 @@ export interface IShipperService {
     setNewPassword(email: string, password: string): Promise<{success: boolean, message: string}>
     findBids(id: string, page: number, limit: number, status: string): Promise<{bidData: BidForShipperDTO[] | null, totalPages: number}>
     updateBidStatus(bidId: string, status: string): Promise<{success: boolean , message: string, bidData?:IBid}>;
-    getShipperLoads(shipperId: string, page: number, limit: number): Promise<{loads: ILoad[] | null, totalPages: number}> 
+    getShipperLoads(shipperId: string, page: number, limit: number): Promise<{loads: LoadForShipperDTO[] | null, totalPages: number}> 
     shipperGoogleLoging(name: string, email: string):  Promise<{success: boolean, message: string, data?: Partial<IShipper> | null, accessToken?: string, refreshToken?: string}> ;
     sessionCheckout(bidId: string): Promise<{success: boolean, message: string, sessionId?: string}>
     verifyPayment(transactionId: string, status: string): Promise<{success: boolean, message: string}>;
-    fetchTrips(shipperId: string, page: number, limit: number): Promise<{tripsData: ITrip[] | null, totalPages: number}>
+    fetchTrips(shipperId: string, page: number, limit: number): Promise<{tripsData: TripForShipperDTO[] | null, totalPages: number}>
     updateProfile(shipperId: string, shipperName: string, phone: string, profileImage?: Express.Multer.File): Promise<{success: boolean, message: string, shipperData?: Partial<IShipper>}>
     fetchTransporterDetails(shipperId: string, transporterId: string): Promise<{transporterData: ITransporter, isFollow: boolean, truckCount: number, tripsCount: number ,reviews: Partial<IRatingReview>[], averageRating: number, isReview: boolean}>;
     followTransporter(shipperId: string, tranpsorterId: string): Promise<{success: boolean, transporterData: ITransporter, isFollow: boolean}>

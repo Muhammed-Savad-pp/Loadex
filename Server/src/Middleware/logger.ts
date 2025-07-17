@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path';
 import { createLogger, format, transports } from "winston";
-
+import DailyRotateFile from 'winston-daily-rotate-file';
 
 const customLevels = {
     levels: {
@@ -27,18 +27,42 @@ export const logger = createLogger({
     ),
     transports: [
         new transports.Console(),
-        new transports.File({
-            filename: path.join(logDir, 'http.log'),
-            level: 'http'
+
+        new DailyRotateFile({
+            filename: path.join(logDir, 'http-%DATE%.log'),
+            datePattern: 'YYYY-MM-DD',
+            level: 'http',
+            maxFiles: '2m',              // ❗ keep only last 7 days
+            zippedArchive: true          // optional: compress old logs
         }),
-        new transports.File({
-            filename: path.join(logDir, 'error.log'),
-            level: 'error'
+
+        new DailyRotateFile({
+            filename: path.join(logDir, 'error-%DATE%.log'),
+            datePattern: 'YYYY-MM-DD',
+            level: 'error',
+            maxFiles: '2m',
+            zippedArchive: true
         }),
-        new transports.File({
-            filename: path.join(logDir, 'app.log'),
-            level: 'info'
+
+        new DailyRotateFile({
+            filename: path.join(logDir, 'app-%DATE%.log'),
+            datePattern: 'YYYY-MM-DD',
+            level: 'info',
+            maxFiles: '2m',
+            zippedArchive: true
         })
+        // new transports.File({
+        //     filename: path.join(logDir, 'http.log'),
+        //     level: 'http'
+        // }),
+        // new transports.File({
+        //     filename: path.join(logDir, 'error.log'),
+        //     level: 'error'
+        // }),
+        // new transports.File({
+        //     filename: path.join(logDir, 'app.log'),
+        //     level: 'info'
+        // })
     ]
 
 });

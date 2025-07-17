@@ -21,3 +21,4 @@ export interface TruckDTO {
     truckImage: string;
     rcValidity: Date;
 }
+

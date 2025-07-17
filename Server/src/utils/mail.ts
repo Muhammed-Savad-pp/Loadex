@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import dotenv from 'dotenv';
-
+import config from "../config";
 dotenv.config();
 
 
@@ -11,8 +11,8 @@ export class MailService {
         this.transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: process.env.NODEMAILER_EMAIL,
-                pass: process.env.NODEMAILER_PASSWORD,
+                user: config.nodemailerEmail,
+                pass: config.nodemailerPassword,
             },
         })
     }
@@ -21,7 +21,7 @@ export class MailService {
         try {
 
             const mailOptions = {
-                from: process.env.NODEMAILER_EMAIL,
+                from: config.nodemailerEmail,
                 to: recipientEmail,
                 subject: 'Your otp for Registration',
                 html: `

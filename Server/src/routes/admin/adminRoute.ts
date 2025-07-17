@@ -47,6 +47,6 @@ admin_route.get('/fetchDashboardDatas', authenticateToken, checkRole('admin'), a
 admin_route.get('/trips', authenticateToken, checkRole('admin'), adminController.fetchTrips.bind(adminController))
 admin_route.post('/sendTripAmountToTransporter', authenticateToken, checkRole('admin'), adminController.sendTripAmountToTransporter.bind(adminController));
 admin_route.get('/paymentHistory', authenticateToken, checkRole('admin'), adminController.fetchPaymentHistory.bind(adminController))
-
+admin_route.get('/revenue', authenticateToken, checkRole('admin'), adminController.fetchRevenueDatas.bind(adminController));
 
 export default admin_route

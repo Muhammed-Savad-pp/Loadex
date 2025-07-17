@@ -42,3 +42,38 @@ export interface TripForTransporterDTO {
     arrivedAt: Date | null;
     completedAt: Date | null;
 }
+
+
+export interface TripForShipperDTO {
+    transporterId: {
+        transporterName: string;
+        phone: string;
+        profileImage: string;
+        _id: string
+    };
+    shipperId: {
+        shipperName: string;
+    };
+    loadId: {
+        pickupLocation: string;
+        dropLocation: string;
+        material: string;
+        quantity: string;
+        scheduledDate: Date;
+        length: string;
+        height: string;
+        breadth: string;
+        descriptions: string;
+        distanceInKm: number;
+    };
+    truckId: {
+        truckNo: string;
+        truckType: string;
+        capacity: string;
+        driverName: string;
+        driverMobileNo: string;
+    };
+    price: string;
+    tripStatus: string;
+    confirmedAt: string;
+}

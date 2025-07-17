@@ -111,6 +111,7 @@ import Chat from "../models/Chat";
 
 import { Server as HTTPServer } from "http";
 import { Server as SocketIOServer, Socket } from "socket.io";
+import config from "../config";
 
 interface ISocketUser {
     userId: string;
@@ -122,7 +123,7 @@ const connectedUsers: ISocketUser[] = [];
 export const setupSocket = (server: HTTPServer) => {
     const io = new SocketIOServer(server, {
         cors: {
-            origin: process.env.FRONT_END_URL,
+            origin: config.frontEndUrl,
             methods: ["GET", "POST"],
             credentials: true
         },

@@ -115,8 +115,12 @@ export const sendTripAmountToTransporter = async(tripId: string, amount: string)
 
 export const fetchPaymentHistory = async (searchTerm: string, paymentStatus: string, userType: string, paymentfor: string, page: number, limit: number) => {
 
-    const response = await apiClient.get(`/admin/paymentHistory?searchTerm=${searchTerm}&paymentStatus=${paymentStatus}&userType=${userType}&paymentfor=${paymentfor}&page=${page}&limit=${limit}`);
-    console.log(response, 'resposne in serve');
-    
+    const response = await apiClient.get(`/admin/paymentHistory?searchTerm=${searchTerm}&paymentStatus=${paymentStatus}&userType=${userType}&paymentfor=${paymentfor}&page=${page}&limit=${limit}`);    
+    return response.data;
+}
+
+export const fetchRevenueByMonth = async () => {
+
+    const response = await apiClient.get('/admin/revenue');
     return response.data;
 }

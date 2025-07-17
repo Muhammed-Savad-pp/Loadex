@@ -25,9 +25,11 @@ const app = Express();
 app.use(morgan("combined", { stream: morganStream}));
 
 app.use(Express.json())
+console.log(config.frontEndUrl, 'cors frontend url');
+
 
 app.use(cors({
-    origin: process.env.FRONT_END_URL,
+    origin: config.frontEndUrl,
     credentials:true
 }))
 

@@ -2,9 +2,10 @@ import  jwt, { JwtPayload }  from "jsonwebtoken";
 import { ITransporter } from "../models/TransporterModel";
 import exp from "constants";
 import { HTTP_STATUS } from "../enums/httpStatus";
+import config from "../config";
 
 export const generateAcessToken = async (id: string, role: string) => {
-    const secret = process.env.JWT_ACESSTOKEN;
+    const secret = config.jwtAccessToken;
 
     if(!secret) {
         throw new Error('acessToken not working')
@@ -16,7 +17,7 @@ export const generateAcessToken = async (id: string, role: string) => {
 }
 
 export const generateRefreshToken = async (id: string, role: string ) => {
-    const secret = process.env.JWT_REFRESHTOKEN;
+    const secret = config.jwtRefreshToken;
 
     if(!secret){
         throw new Error('Refresh token not working')
@@ -32,7 +33,7 @@ export const generateRefreshToken = async (id: string, role: string ) => {
 export const verifyToken = (token: string): JwtPayload => {
     try {
         
-        const decoded = jwt.verify(token, process.env.JWT_REFRESHTOKEN as string) as JwtPayload;
+        const decoded = jwt.verify(token, config.jwtRefreshToken as string) as JwtPayload;
         console.log('decoded in util ', decoded);
         return decoded
         

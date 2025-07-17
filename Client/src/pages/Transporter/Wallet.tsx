@@ -19,18 +19,12 @@ const Wallet: React.FC = () => {
   useEffect(() => {
     const getWalletData = async () => {
         const response = await fetchWalletData();
-        console.log(response , 'res');
         
         setWalletState(response as WalletState)
     }
 
     getWalletData()
- 
   }, [])
-
-  console.log(walletState);
-  
-
 
 
   // const [addAmount, setAddAmount] = useState<string>('');

@@ -19,4 +19,5 @@ export interface IAdminController {
     fetchTrips(req: CustomeRequest, res: Response): Promise<void>;
     sendTripAmountToTransporter(req: CustomeRequest, res: Response): Promise<void>;
     fetchPaymentHistory(req: CustomeRequest, res: Response): Promise<void>;
+    fetchRevenueDatas(req: CustomeRequest, res: Response): Promise<void>;
 }

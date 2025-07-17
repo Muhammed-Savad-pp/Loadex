@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchDashBoardDatas } from '../../services/admin/adminapi';
+import ApexChart from './ApexChart';
 // import { LineChart, Line, ResponsiveContainer } from 'recharts';
 
 const DashboardContent: React.FC = () => {
@@ -13,7 +14,7 @@ const DashboardContent: React.FC = () => {
   //   { name: 'Jun', value: 400 },
   //   { name: 'Jul', value: 380 },
   // ];
-  
+
   // const tripsData = [
   //   { name: 'Jan', value: 50 },
   //   { name: 'Feb', value: 70 },
@@ -24,9 +25,9 @@ const DashboardContent: React.FC = () => {
   //   { name: 'Jul', value: 110 },
   // ];
 
-  const [users, setUsers] = useState<number>(0); 
+  const [users, setUsers] = useState<number>(0);
   const [loads, setLoads] = useState<number>(0);
-  const [trips, setTrips ] = useState<number>(0);
+  const [trips, setTrips] = useState<number>(0);
   const [revenueData, setRevenueData] = useState<number>(0)
 
   useEffect(() => {
@@ -108,6 +109,9 @@ const DashboardContent: React.FC = () => {
             <h2 className="text-2xl font-bold">{revenueData}</h2>
           </div>
         </div>
+      </div>
+      <div className='mt-5'>
+        <ApexChart />
       </div>
     </div>
   );

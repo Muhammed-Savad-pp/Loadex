@@ -280,4 +280,17 @@ export class AdminController implements IAdminController {
         }
     }
 
+    async fetchRevenueDatas(req: CustomeRequest, res: Response): Promise<void> {
+        try {
+            
+            const response = await this._adminService.fetchRevenueDatas();
+
+            res.status(HTTP_STATUS.OK).json(response);
+
+        } catch (error) {
+            console.error(error);
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(error)
+        }
+    }
+
 }

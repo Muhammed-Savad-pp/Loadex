@@ -18,6 +18,8 @@ import { ITransporterPaymentRepository } from "../../repositories/interface/ITra
 import mongoose from "mongoose";
 import { IAdminPaymentRepository } from "../../repositories/interface/IAdminPaymentRepository";
 import { AdminPaymentDTO } from "../../dtos/admin/admin.payment.history.dto";
+import config from "../../config";
+import { endOfMonth, startOfMonth } from "date-fns";
 
 configDotenv()
 
@@ -39,13 +41,7 @@ export class AdminService implements IAdminService {
     async login(email: string, passwrod: string): Promise<{ accessToken?: string, refreshToken?: string, success: boolean, message: string }> {
         try {
 
-            console.log(email, 'ema');
-            console.log(passwrod, 'password');
-            console.log(process.env.ADMIN_EMAIL);
-            console.log(process.env.ADMIN_PASSWORD);
-
-
-            if (email != process.env.ADMIN_EMAIL || passwrod != process.env.ADMIN_PASSWORD) {
+            if (email != config.adminEmail || passwrod != config.adminPassword) {
                 console.log('dasdfsdf');
 
                 return { success: false, message: 'Invalid Crendential' }
@@ -306,22 +302,26 @@ export class AdminService implements IAdminService {
             const trips = await this._tripRepository.count({ tripStatus: 'completed' });
 
             const creditAmount = [
-                { $match: { transactionType: 'credit'}},
-                { $group: {
-                    _id: null,
-                    totalCreditAmount: { $sum: '$amount'}
-                }}
+                { $match: { transactionType: 'credit' } },
+                {
+                    $group: {
+                        _id: null,
+                        totalCreditAmount: { $sum: '$amount' }
+                    }
+                }
             ]
 
             const totalcreditAmounts = await this._adminPaymentRepository.aggregate(creditAmount)
             const totalCredits = totalcreditAmounts[0]?.totalCreditAmount || 0;
 
             const debitAmount = [
-                { $match: { transactionType: 'debit'}},
-                { $group: {
-                    _id: null,
-                    debitAmount: { $sum: '$amount'}
-                }}
+                { $match: { transactionType: 'debit' } },
+                {
+                    $group: {
+                        _id: null,
+                        debitAmount: { $sum: '$amount' }
+                    }
+                }
             ]
 
             const totaldebitsAmounts = await this._adminPaymentRepository.aggregate(debitAmount)
@@ -353,13 +353,13 @@ export class AdminService implements IAdminService {
                 ],
                 skip,
                 limit,
-                {confirmedAt: -1}
+                { confirmedAt: -1 }
             )
 
             const totalCounts = await this._tripRepository.count({})
 
             console.log(trips);
-            
+
 
             return { tripsData: trips, totalPages: Math.ceil(totalCounts / limit) }
 
@@ -415,22 +415,22 @@ export class AdminService implements IAdminService {
         }
     }
 
-    async fetchPaymentHistory(searchTerm: string, paymentStatus: string, userType: string, paymentfor: string, page: number, limit: number): Promise<{paymentData: AdminPaymentDTO[] | null, totalPages: number}> {
+    async fetchPaymentHistory(searchTerm: string, paymentStatus: string, userType: string, paymentfor: string, page: number, limit: number): Promise<{ paymentData: AdminPaymentDTO[] | null, totalPages: number }> {
         try {
 
             const skip = (page - 1) * limit
 
             const filter: any = {};
 
-            if(paymentStatus !== 'all') {
+            if (paymentStatus !== 'all') {
                 filter.paymentStatus = paymentStatus
             }
 
-            if(userType !== 'all') {
+            if (userType !== 'all') {
                 filter.userType = userType
             }
 
-            if(paymentfor !== 'all') {
+            if (paymentfor !== 'all') {
                 filter.paymentFor = paymentfor
             }
 
@@ -446,7 +446,7 @@ export class AdminService implements IAdminService {
                 ],
                 skip,
                 limit,
-                {createdAt: -1}
+                { createdAt: -1 }
             )
 
             const adminPaymentDatos: AdminPaymentDTO[] = paymentDatas.map((data) => ({
@@ -467,7 +467,7 @@ export class AdminService implements IAdminService {
 
             const totalcounts = await this._adminPaymentRepository.count(filter)
 
-            return {paymentData: adminPaymentDatos, totalPages: Math.ceil(totalcounts / limit) }
+            return { paymentData: adminPaymentDatos, totalPages: Math.ceil(totalcounts / limit) }
 
         } catch (error) {
             console.error(error);
@@ -475,6 +475,72 @@ export class AdminService implements IAdminService {
         }
     }
 
+    async fetchRevenueDatas(): Promise<{ success: boolean; categories: string[]; data: number[] }> {
+        try {
 
+            const currentYear = new Date().getFullYear();
+
+            const monthlyTotals: number[] = [];
+
+            for (let month = 0; month < 12; month++) {
+                const start = startOfMonth(new Date(currentYear, month));
+                const end = endOfMonth(new Date(currentYear, month));
+
+                const credit = await this._adminPaymentRepository.aggregate([
+                    {
+                        $match: {
+                            transactionType: 'credit',
+                            paymentStatus: 'success',
+                            createdAt: {
+                                $gte: start,
+                                $lte: end
+                            }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            totalAmount: { $sum: "$amount" }
+                        }
+                    }
+                ])
+
+                const debit = await this._adminPaymentRepository.aggregate([
+                    {
+                        $match: {
+                            transactionType: "debit",
+                            paymentStatus: "success",
+                            createdAt: { $gte: start, $lte: end },
+                        },
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            totalAmount: { $sum: "$amount" },
+                        },
+                    }
+                ])
+
+                const totalCredit = credit[0]?.totalAmount || 0;
+                const totalDebit = debit[0]?.totalAmount || 0;
+
+                monthlyTotals.push(totalCredit - totalDebit);
+
+            }
+
+            const categories = [
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+            ];
+
+            return { success: true, categories, data: monthlyTotals };
+
+        } catch (error) {
+            console.error(error);
+            throw new Error(error instanceof Error ? error.message : String(error))
+        }
+    }
 }
+
+
 

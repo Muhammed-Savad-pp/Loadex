@@ -38,10 +38,13 @@ import { startOfDay, subDays } from "date-fns";
 import { IAdminPaymentRepository } from "../../repositories/interface/IAdminPaymentRepository";
 import { BidForShipperDTO } from "../../dtos/bids/bid.for.shipper.dto";
 import { ShipperDTO } from "../../dtos/shipper/shipper.dto";
+import config from "../../config";
+import { LoadForShipperDTO } from "../../dtos/load/load.dto";
+import { TripForShipperDTO } from "../../dtos/trip/trip.for.transporter.dto";
 
 configDotenv()
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe(config.stripeSecretKey, {
     apiVersion: '2025-04-30.basil',
 })
 
@@ -326,7 +329,7 @@ export class ShipperService implements IShipperService {
 
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
                 const s3Params = {
-                    Bucket: process.env.AWS_BUCKET_NAME!,
+                    Bucket: config.awsBucketName,
                     Key: `${folder}/shipper/${Date.now()}_${file.originalname}`,
                     Body: file.buffer,
                     ContentType: file.mimetype
@@ -335,7 +338,7 @@ export class ShipperService implements IShipperService {
                 const command = new PutObjectCommand(s3Params)
                 await s3.send(command)
 
-                return `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Params.Key}`;
+                return `https://${config.awsBucketName}.s3.${config.awsRegion}.amazonaws.com/${s3Params.Key}`;
             }
 
             if (aadhaarFront) {
@@ -548,7 +551,7 @@ export class ShipperService implements IShipperService {
                 shipperId: id
             };
 
-            if(status !== 'all') {
+            if (status !== 'all') {
                 filter.status = status
             }
 
@@ -609,7 +612,7 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async getShipperLoads(shipperId: string, page: number, limit: number): Promise<{ loads: ILoad[] | null, totalPages: number }> {
+    async getShipperLoads(shipperId: string, page: number, limit: number): Promise<{ loads: LoadForShipperDTO[] | null, totalPages: number }> {
         try {
 
             const skip = (page - 1) * limit;
@@ -624,9 +627,34 @@ export class ShipperService implements IShipperService {
                 { createdAt: -1 }
             );
 
-            const total = await this._loadRepositories.count({ shipperId: shipperObjectId })
+            const total = await this._loadRepositories.count({ shipperId: shipperObjectId });
 
-            return { loads: loads, totalPages: Math.ceil(total / limit) }
+            const loadDatos: LoadForShipperDTO[] = (loads || []).map((load: any) => ({
+                _id: load._id.toString(),
+                pickupLocation: load.pickupLocation ?? '',
+                dropLocation: load.dropLocation ?? '',
+                material: load.material ?? '',
+                quantity: load.quantity ?? '',
+                length: load.length ?? '',
+                truckType: load.truckType ?? '',
+                transportationRent: load.transportationRent ?? '',
+                height: load.height ?? '',
+                breadth: load.breadth ?? '',
+                status: load.status ?? '',
+                scheduledDate: load.scheduledDate,
+                createdAt: load.createdAt,
+                descriptions: load.descriptions ?? '',
+                pickupCoordinates: {
+                    latitude: load.pickupCoordinates?.latitude ?? 0,
+                    longitude: load.pickupCoordinates?.longitude ?? 0
+                },
+                dropCoordinates: {
+                    latitude: load.dropCoordinates?.latitude ?? 0,
+                    longitude: load.dropCoordinates?.longitude ?? 0
+                }
+            }));
+
+            return { loads: loadDatos, totalPages: Math.ceil(total / limit) }
 
         } catch (error) {
             console.log(error);
@@ -741,7 +769,7 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async fetchTrips(shipperId: string, page: number, limit: number): Promise<{ tripsData: ITrip[] | null, totalPages: number }> {
+    async fetchTrips(shipperId: string, page: number, limit: number): Promise<{ tripsData: TripForShipperDTO[] | null, totalPages: number }> {
         try {
 
             const skip = (page - 1) * limit;
@@ -760,7 +788,41 @@ export class ShipperService implements IShipperService {
 
             const tripsCount = await this._tripRepositories.count({ shipperId: shipperId })
 
-            return { tripsData: trips, totalPages: Math.ceil(tripsCount / limit) }
+            const tripsData: TripForShipperDTO[] = (trips || []).map((trip: any) => ({
+                transporterId: {
+                    _id: trip.transporterId?._id?.toString() ?? '',
+                    transporterName: trip.transporterId?.transporterName ?? '',
+                    phone: trip.transporterId?.phone ?? '',
+                    profileImage: trip.transporterId?.profileImage ?? ''
+                },
+                shipperId: {
+                    shipperName: trip.shipperId?.shipperName ?? ''
+                },
+                loadId: {
+                    pickupLocation: trip.loadId?.pickupLocation ?? '',
+                    dropLocation: trip.loadId?.dropLocation ?? '',
+                    material: trip.loadId?.material ?? '',
+                    quantity: trip.loadId?.quantity ?? '',
+                    scheduledDate: trip.loadId?.scheduledDate ?? new Date(),
+                    length: trip.loadId?.length ?? '',
+                    height: trip.loadId?.height ?? '',
+                    breadth: trip.loadId?.breadth ?? '',
+                    descriptions: trip.loadId?.descriptions ?? '',
+                    distanceInKm: trip.loadId?.distanceInKm ?? 0
+                },
+                truckId: {
+                    truckNo: trip.truckId?.truckNo ?? '',
+                    truckType: trip.truckId?.truckType ?? '',
+                    capacity: trip.truckId?.capacity ?? '',
+                    driverName: trip.truckId?.driverName ?? '',
+                    driverMobileNo: trip.truckId?.driverMobileNo ?? ''
+                },
+                price: trip.price ?? '',
+                tripStatus: trip.tripStatus ?? '',
+                confirmedAt: trip.confirmedAt ?? ''
+            }));
+
+            return { tripsData: tripsData, totalPages: Math.ceil(tripsCount / limit) }
 
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -774,7 +836,7 @@ export class ShipperService implements IShipperService {
 
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
                 const s3Params = {
-                    Bucket: process.env.AWS_BUCKET_NAME!,
+                    Bucket: config.awsBucketName,
                     Key: `${folder}/shipper/${Date.now()}_${file.originalname}`,
                     Body: file.buffer,
                     ContentType: file.mimetype
@@ -783,7 +845,7 @@ export class ShipperService implements IShipperService {
                 const command = new PutObjectCommand(s3Params)
                 await s3.send(command)
 
-                return `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Params.Key}`;
+                return `https://${config.awsBucketName}.s3.${config.awsRegion}.amazonaws.com/${s3Params.Key}`;
 
             }
 
@@ -1476,7 +1538,7 @@ export class ShipperService implements IShipperService {
                         paymentStatus: 'success'
                     })
 
-                    await this._bidRepositories.updateBids({_id: bid._id}, {status: 'expired'});
+                    await this._bidRepositories.updateBids({ _id: bid._id }, { status: 'expired' });
 
                     await this._notificationRepository.createNotification({
                         userId: shipperId,
@@ -1515,12 +1577,12 @@ export class ShipperService implements IShipperService {
 
                 if (acceptedBid.length === 0) {
                     await this._loadRepositories.updateById(load._id as string, { status: 'expired' });
-                   
-                    const bids = await this._bidRepositories.find({loadId: load.id});
 
-                    for( let bid of bids) {
-                        if(bid.status === 'requested') {
-                            await this._bidRepositories.updateById(bid._id as string, {status: 'expired'})
+                    const bids = await this._bidRepositories.find({ loadId: load.id });
+
+                    for (let bid of bids) {
+                        if (bid.status === 'requested') {
+                            await this._bidRepositories.updateById(bid._id as string, { status: 'expired' })
                         }
                     }
 
@@ -1538,11 +1600,11 @@ export class ShipperService implements IShipperService {
     async findUnReadNotificationCount(shipperId: string): Promise<number | undefined> {
         try {
 
-            const counts = await this._notificationRepository.count({userType: 'shipper', userId: shipperId, isRead: false});
+            const counts = await this._notificationRepository.count({ userType: 'shipper', userId: shipperId, isRead: false });
             console.log(counts, 'counts');
-            
+
             return counts
-            
+
         } catch (error) {
             console.error(error)
         }

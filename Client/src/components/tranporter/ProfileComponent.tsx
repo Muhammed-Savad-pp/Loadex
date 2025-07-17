@@ -14,7 +14,7 @@ interface IUserData {
   profileImage: string;
   followers: string[];
   followings: string[];
-}
+}   
 
 interface Review {
   _id: number;

@@ -23,5 +23,6 @@ export interface IAdminService {
     fetchTrips(page: number, limit: number): Promise<{tripsData: ITrip[], totalPages: number}>;
     sendTripAmountToTransporter(tripId: string): Promise<{success: boolean, message: string}>;
     fetchPaymentHistory(searchTerm: string, paymentStatus: string, userType: string, paymentfor: string, page: number, limit: number): Promise<{paymentData: AdminPaymentDTO[] | null, totalPages: number}>;
+    fetchRevenueDatas(): Promise<{ success: boolean; categories: string[]; data: number[] }>
 }
 
