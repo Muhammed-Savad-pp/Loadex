@@ -2,6 +2,10 @@
 interface SubscriptionForTransporterDTO {
     status: string;
     isActive: boolean;
+    planId: string;
+    planName: string;
+    endDate: Date;
+    startDate: Date;
 }
 
 export interface TransporterDTO {
@@ -33,4 +37,18 @@ export interface ShipperForTransporterDirectoryDTO {
     companyName: string;
     email: string;
     profileImage: string;
+}
+
+
+export interface TransporterForAdminDTO {
+    _id: string
+    transporterName: string;
+    email: string;
+    phone: string;
+    isBlocked: boolean;
+    profileImage: string;
+    verificationStatus: string;
+    panNumber: string;
+    aadhaarFront: string;
+    aadhaarBack: string;
 }

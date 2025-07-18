@@ -11,6 +11,7 @@ export interface ITransporter {
     email: string;
     phone: string;
     isBlocked: boolean;
+    profileImage: string;
 }
 const Transporter: React.FC = () => {
 
@@ -38,10 +39,7 @@ const Transporter: React.FC = () => {
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearch(e.target.value);
         setPage(1); // reset page on new search
-    };
-
-    console.log(search, 'search');
-    
+    };    
 
     const handleBlockUnBlock = async (id: string) => {
         try {
@@ -112,46 +110,7 @@ const Transporter: React.FC = () => {
                             </button>
                         </div>
                     </div>
-
-                    {/* <div className="w-full h-fit  bg-white rounded-lg shadow-md p-4"> */}
-                    {/* Header Row */}
-                    {/* <div className="flex items-center justify-between bg-gray-100 text-lg p-3 rounded-md text-gray-600 font-bold">
-                            <div className="w-1/5">Name</div>
-                            <div className="w-1/4">Email</div>
-                            <div className="w-1/5">Mobile</div>
-                            <div className="w-1/6 text-center">Action</div>
-                            <div className="w-1/6 text-center">Details</div>
-                        </div> */}
-
-                    {/* {transporter.map((transporter, index) => (
-                            <div key={index} className="flex items-center justify-between bg-white p-3 my-2 font-semibold rounded-md shadow-sm">
-                                <div className="w-1/5 flex items-center">
-                                    <img
-                                        src="https://via.placeholder.com/30"
-                                        alt="User"
-                                        className="w-8 h-8 rounded-full mr-3"
-                                    />
-                                    {transporter.transporterName}
-                                </div>
-                                <div className="w-1/4">{transporter.email}</div>
-                                <div className="w-1/5">{transporter.phone}</div>
-                                <div className="w-1/6 text-center">
-                                    {
-                                        transporter.isBlocked ? 
-                                         <button onClick={() => handleBlockUnBlock(transporter._id)} className="px-4 py-1 text-white rounded-full bg-red-500 "> Block </button>  :
-                                         <button onClick={() => handleBlockUnBlock(transporter._id)} className="px-4 py-1 text-white rounded-full bg-green-500 "> UnBlock </button>   
-                                    }
-                                    
-                                </div>
-                                <div className="w-1/6 text-center">
-                                    <button className="px-4 py-1 bg-blue-500 text-white rounded-full">Details</button>
-                                </div>
-                            </div>
-                        ))} */}
-                    {/* </div> */}
                 </div>
-
-
             </div >
         </>
     )

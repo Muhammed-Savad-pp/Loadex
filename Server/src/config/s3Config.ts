@@ -15,18 +15,15 @@ export const s3 = new S3Client({
     }
 })
 
-export const generateSignedUrl = async (url : string | undefined ) => {
+export const getPresignedDownloadUrl = async (key : string): Promise<string | undefined> => {
     try {
 
-        let key = url;
-
-        const expiresIn = 3600;
         const command = new GetObjectCommand({
             Bucket: config.awsBucketName,
             Key: key
         })
 
-        return await getSignedUrl(s3, command, {expiresIn})
+        return getSignedUrl(s3, command, {expiresIn: 60 * 10})
         
     } catch (error) {
         console.log(`error in generateSignedUrl ${error}`);

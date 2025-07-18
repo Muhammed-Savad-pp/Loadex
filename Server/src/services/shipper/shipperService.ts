@@ -665,7 +665,19 @@ export class ShipperService implements IShipperService {
     async sessionCheckout(bidId: string): Promise<{ success: boolean; message: string; sessionId?: string; }> {
         try {
 
+
             const bidObjectId = new mongoose.Types.ObjectId(bidId);
+
+            const existingPayment = await this._shipperPaymentRepositories.findOne({bidId: bidObjectId})
+
+            console.log(existingPayment, 'existing');
+            
+
+            if(existingPayment && (existingPayment.paymentStatus === 'success' || existingPayment.paymentStatus === 'pending')) {
+                console.log('herere');
+                
+                return { success: false, message: 'Payment is already in progress or completed for this bid.' };
+            }
 
             const bid = await this._bidRepositories.findBidById(bidId);
             if (!bid) return { success: false, message: 'Bid not found' };

@@ -25,7 +25,7 @@ const DataTable = <T extends { _id: string; isBlocked: boolean }>({
                     </div>
                 ))}
                 <div className="w-1/6 text-center">Action</div>
-                <div className="w-1/6 text-center">Details</div>
+                {/* <div className="w-1/6 text-center">Details</div> */}
             </div>
 
             {data.map((item) => (
@@ -34,7 +34,7 @@ const DataTable = <T extends { _id: string; isBlocked: boolean }>({
                         <div key={col.key as string} className={`w-1/5 ${col.className || ""}`}>
                             {(col.key === "shipperName" || col.key === "transporterName") ? (
                                 <div className="flex items-center">
-                                    <img src="https://via.placeholder.com/30" alt="User" className="w-8 h-8 rounded-full mr-3" />
+                                    <img src={(item as any).profileImage || "https://via.placeholder.com/30"} alt="User" className="w-8 h-8 rounded-full mr-3" />
                                     {String(item[col.key])}
                                 </div>
                             ) : (
@@ -52,9 +52,9 @@ const DataTable = <T extends { _id: string; isBlocked: boolean }>({
                             </button>
                         </div>
                     )}
-                    <div className="w-1/6 text-center">
+                    {/* <div className="w-1/6 text-center"> 
                         <button className="px-4 py-1 bg-blue-500 text-white rounded-full">Details</button>
-                    </div>
+                    </div> */}
                 </div>
             ))}
         </div>

@@ -77,7 +77,8 @@ const Profile = () => {
         const getProfileData = async () => {
 
             const response: any = await getTransporterProfile()
-
+            console.log(response, 'response');
+            
             if (response.success) {
                 setTransporterData(response.transporterData)
             }

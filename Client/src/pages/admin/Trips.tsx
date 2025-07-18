@@ -56,17 +56,23 @@ function Trips() {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(10);
+  const [search, setSearch] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const limit = 5;
 
+  console.log(search);
+  console.log(filterStatus);
+
+
   useEffect(() => {
-    const getTrips = async() => {
-        const response: any = await fetchTrips(page, limit);
-        setTrips(response.tripsData);
-        setTotalPages(response.totalPages)
+    const getTrips = async () => {
+      const response: any = await fetchTrips(page, limit, search, filterStatus);
+      setTrips(response.tripsData);
+      setTotalPages(response.totalPages)
     }
 
     getTrips()
-  },[page])
+  }, [page, limit, search, filterStatus])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -99,21 +105,21 @@ function Trips() {
 
     try {
 
-        const response: any = await sendTripAmountToTransporter(selectedTrip?._id as string, selectedTrip?.price as string);
-        if(response.success) {
-            toast.success(response.message);
-            setPaymentProcessing(false);
-            setShowPaymentModal(false)
-        }
-        
+      const response: any = await sendTripAmountToTransporter(selectedTrip?._id as string, selectedTrip?.price as string);
+      if (response.success) {
+        toast.success(response.message);
+        setPaymentProcessing(false);
+        setShowPaymentModal(false)
+      }
+
     } catch (error) {
-        console.log(error)
+      console.log(error)
     }
   };
 
   return (
     <div className=" flex min-h-screen bg-gray-50">
-        <Sidebar/>
+      <Sidebar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -122,13 +128,32 @@ function Trips() {
         </div>
 
         {/* Trips Table */}
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">All Trips</h2>
+        <div className="bg-white shadow-sm rounded-lg overflow-hidden w-full">
+          <div className="px-6 py-4 border-b border-gray-300 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <input
+              type="text"
+              placeholder="Search by truck/material"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full md:w-1/2 pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full md:w-40 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Status</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="in-progress">In Progress</option>
+              <option value="arrived">Arrived</option>
+              <option value="completed">Completed</option>
+            </select>
           </div>
-          
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+
+
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-full table-fixed divide-y divide-gray-200 w-full">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -151,9 +176,10 @@ function Trips() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 min-h-[400px]">
                 {trips.map((trip) => (
                   <tr key={trip._id} className="hover:bg-gray-50">
+                    {/* Truck + Load */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div>
@@ -166,6 +192,8 @@ function Trips() {
                         </div>
                       </div>
                     </td>
+
+                    {/* Pickup & Drop */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {trip.loadId.pickupLocation}
@@ -178,6 +206,19 @@ function Trips() {
                         {trip.loadId.distanceInKm} km
                       </div>
                     </td>
+
+                    {/* Trip Status */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(trip.tripStatus)}`}>
+                        {getStatusIcon(trip.tripStatus)}
+                        <span className="ml-1">{trip.tripStatus.replace('-', ' ')}</span>
+                      </span>
+                      {trip.tripStatus === 'completed' && !trip.adminPayment && (
+                        <span className="inline-flex items-center text-red-500 bg-red-200 px-2.5 py-0.5 rounded-full text-xs ml-1">Pay Rent</span>
+                      )}
+                    </td>
+
+                    {/* Transporter Info - Moved Right */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <img
@@ -195,20 +236,15 @@ function Trips() {
                         </div>
                       </div>
                     </td>
+
+                    {/* Price - Moved Right */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-green-600">
                         {trip.price}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusColor(trip.tripStatus)}`}>
-                        {getStatusIcon(trip.tripStatus)}
-                        <span className="ml-1">{trip.tripStatus.replace('-', ' ')}</span>
-                      </span>
-                      { trip.tripStatus === 'completed' && !trip.adminPayment && (
-                        <span className='`inline-flex items-center text-red-500 bg-red-200 px-2.5 py-0.5 rounded-full text-xs `'>Pay Rent</span>
-                      )}
-                    </td>
+
+                    {/* View Details Button */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => setSelectedTrip(trip)}
@@ -219,46 +255,47 @@ function Trips() {
                       </button>
                     </td>
                   </tr>
+
                 ))}
               </tbody>
             </table>
           </div>
 
           {/* { Pagination} */}
-                <div className="flex justify-center mt-6 mr-5">
-                    <div className="inline-flex rounded-md shadow-sm">
-                        <button
-                            onClick={() => setPage(page - 1)}
-                            disabled={page === 1}
-                            className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+          <div className="flex justify-center mt-6 mr-5">
+            <div className="inline-flex rounded-md shadow-sm">
+              <button
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+                className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
                             ${page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
-                            Prev
-                        </button>
+                Prev
+              </button>
 
-                        {(() => {
-                            const startPage = Math.max(1, page - 2);
-                            const endPage = Math.min(totalPages, startPage + 4);
-                            return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i)
-                                .map((p) => (
-                                    <button
-                                        key={p}
-                                        onClick={() => setPage(p)}
-                                        className={`px-3 py-2 mx-1 text-sm rounded-md font-medium border border-gray-300 cursor-pointer
+              {(() => {
+                const startPage = Math.max(1, page - 2);
+                const endPage = Math.min(totalPages, startPage + 4);
+                return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i)
+                  .map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`px-3 py-2 mx-1 text-sm rounded-md font-medium border border-gray-300 cursor-pointer
                             ${p === page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
-                                        {p}
-                                    </button>
-                                ));
-                        })()}
+                      {p}
+                    </button>
+                  ));
+              })()}
 
-                        <button
-                            onClick={() => setPage(page + 1)}
-                            disabled={page === totalPages}
-                            className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+              <button
+                onClick={() => setPage(page + 1)}
+                disabled={page === totalPages}
+                className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
                     ${page === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
-                            Next
-                        </button>
-                    </div>
-                </div>
+                Next
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Trip Details Modal */}

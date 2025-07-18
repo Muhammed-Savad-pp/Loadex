@@ -2,7 +2,7 @@ import { ITransporter } from "../../models/TransporterModel";
 import transporterRepository from "../../repositories/implementaion/transporterRepository";
 import { configDotenv } from 'dotenv';
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { s3, generateSignedUrl } from "../../config/s3Config";
+import { s3, getPresignedDownloadUrl } from "../../config/s3Config";
 import { ITransporterRepository } from "../../repositories/interface/ITransporterRepository";
 import { ITransporterService } from "../../interface/transporter/ITransporterService";
 import { ILoad } from "../../models/LoadModel";
@@ -103,7 +103,9 @@ export class TransporterService implements ITransporterService {
             return { success: false, message: 'No Transporter' }
         }
 
-        const signedUrl = await generateSignedUrl(transporterDatas?.aadhaarBack);
+        const aadhaarFrontUrl = transporterDatas.aadhaarFront ? await getPresignedDownloadUrl(transporterDatas.aadhaarFront) : '';
+        const aadhaarBackUrl = transporterDatas.aadhaarBack ? await getPresignedDownloadUrl(transporterDatas.aadhaarBack) : '';
+        const profileIamgeUrl = transporterDatas.profileImage ? await getPresignedDownloadUrl(transporterDatas.profileImage) : ''
 
         const transporterDatos: TransporterDTO = {
             transporterName: transporterDatas.transporterName,
@@ -111,14 +113,18 @@ export class TransporterService implements ITransporterService {
             phone: transporterDatas.phone,
             verificationStatus: transporterDatas.verificationStatus ?? '',
             panNumber: transporterDatas.panNumber ?? '',
-            aadhaarFront: transporterDatas.aadhaarFront ?? '',
-            aadhaarBack: transporterDatas.aadhaarBack ?? '',
-            profileImage: transporterDatas.profileImage ?? '',
+            aadhaarFront: aadhaarFrontUrl || '',
+            aadhaarBack: aadhaarBackUrl ?? '',
+            profileImage: profileIamgeUrl ?? '',
             followers: transporterDatas.followers ?? [],
             followings: transporterDatas.followings ?? [],
             subscription: {
                 status: (transporterDatas.subscription as any).status,
-                isActive: (transporterDatas.subscription as any).isActive
+                isActive: (transporterDatas.subscription as any).isActive,
+                planId: (transporterDatas.subscription as any).planId,
+                planName: (transporterDatas.subscription as any).planName,
+                endDate: (transporterDatas.subscription as any).endDate,
+                startDate: (transporterDatas.subscription as any).startDate
             }
         }
 
@@ -132,18 +138,18 @@ export class TransporterService implements ITransporterService {
             let aadhaarFrontUrl: string | undefined;
             let aadhaarBackUrl: string | undefined
 
-            const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
-                const s3Params = {
+            const uploadToS3 = async (file: Express.Multer.File, folder: string): Promise<string> => {
+
+                const key = `${folder}/transporter/${Date.now()}_${file.originalname}`;
+                const command = new PutObjectCommand({
                     Bucket: config.awsBucketName,
-                    Key: `${folder}/transporter/${Date.now()}_${file.originalname}`,
+                    Key: key,
                     Body: file.buffer,
-                    ContentType: file.mimetype
-                };
+                    ContentType: file.mimetype,
+                });
 
-                const command = new PutObjectCommand(s3Params)
                 await s3.send(command)
-
-                return `https://${config.awsBucketName}.s3.${config.awsRegion}.amazonaws.com/${s3Params.Key}`;
+                return key
             }
 
             if (aadhaarFront) {
@@ -228,14 +234,15 @@ export class TransporterService implements ITransporterService {
                 return { success: false, message: 'Truck already Exits' }
             }
 
-            let rcBookUrl: string | undefined;
-            let driverLicenseUrl: string | undefined;
-            let truckImageUrl: string | undefined;
+            let rcBookKey: string | undefined;
+            let driverLicenseKey: string | undefined;
+            let truckImageKey: string | undefined;
 
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
+                const key = `${folder}/transporter/${Date.now()}_${file.originalname}`
                 const s3Params = {
                     Bucket: config.awsBucketName,
-                    Key: `${folder}/transporter/${Date.now()}_${file.originalname}`,
+                    Key: key,
                     Body: file.buffer,
                     ContentType: file.mimetype
                 };
@@ -243,19 +250,19 @@ export class TransporterService implements ITransporterService {
                 const command = new PutObjectCommand(s3Params)
                 await s3.send(command)
 
-                return `https://${config.awsBucketName}.s3.${config.awsRegion}.amazonaws.com/${s3Params.Key}`;
+                return key;
             }
 
             if (rcBook) {
-                rcBookUrl = await uploadToS3(rcBook, 'rcBook')
+                rcBookKey = await uploadToS3(rcBook, 'rcBook')
             }
 
             if (driverLicense) {
-                driverLicenseUrl = await uploadToS3(driverLicense, 'driverLicense')
+                driverLicenseKey = await uploadToS3(driverLicense, 'driverLicense')
             }
 
             if (truckImage) {
-                truckImageUrl = await uploadToS3(truckImage, 'truckImage')
+                truckImageKey = await uploadToS3(truckImage, 'truckImage')
             }
 
             // Parse selectedLocations if it's a stringified array
@@ -289,13 +296,13 @@ export class TransporterService implements ITransporterService {
                 pickupLocation: from,
                 dropLocation: to,
                 operatingStates: selectedLocationsParsed,
-                rcBook: rcBookUrl,
-                driverLicense: driverLicenseUrl,
+                rcBook: rcBookKey,
+                driverLicense: driverLicenseKey,
                 currentLocationCoords: currentLocationCoords,
                 pickupLocationCoords: fromCoords,
                 dropLocationCoords: toCoords,
                 rcValidity: rcValidityDate,
-                truckImage: truckImageUrl,
+                truckImage: truckImageKey,
 
             })
 
@@ -394,27 +401,55 @@ export class TransporterService implements ITransporterService {
             const trucks = await this._truckRepository.find({ transporterId: id, status: status }, projection, skip, limit, { createdAt: -1 });
             const total = await this._truckRepository.count({ transporterId: id, status: status });
 
-            const truckDatos: TruckDTO[] = trucks.map((truck: ITruck) => ({
-                _id: truck._id as string,
-                available: truck.available ?? false,
-                currentLocation: truck.currentLocation ?? "",
-                driverMobileNo: truck.driverMobileNo ?? "",
-                driverName: truck.driverName ?? "",
-                dropLocation: truck.dropLocation ?? "",
-                operatingStates: truck.operatingStates ?? [],
-                pickupLocation: truck.pickupLocation ?? "",
-                truckNo: truck.truckNo ?? "",
-                truckOwnerMobileNo: truck.truckOwnerMobileNo ?? "",
-                truckOwnerName: truck.truckOwnerName ?? "",
-                truckType: truck.truckType ?? "",
-                tyres: truck.tyres ?? '0',
-                verificationStatus: truck.verificationStatus ?? "",
-                capacity: truck.capacity ?? "",
-                driverLicense: truck.driverLicense ?? "",
-                status: truck.status ?? "inactive",
-                truckImage: truck.truckImage ?? '',
-                rcValidity: truck.rcValidity
-            }));
+
+
+
+            const truckDatos: TruckDTO[] = await Promise.all(
+                trucks.map(async (truck: ITruck) => {
+
+                    let trukImageUrl = '';
+                    let driverLicenseUrl = ''
+
+                    if (truck.truckImage) {
+                        try {
+                            trukImageUrl = await getPresignedDownloadUrl(truck.truckImage) ?? '';
+                        } catch (err) {
+                            console.error(`Error generating URL for ${truck.truckImage}:`, err);
+                        }
+                    }
+
+
+                    if (truck.driverLicense) {
+                        try {
+                            driverLicenseUrl = await getPresignedDownloadUrl(truck.driverLicense) ?? ''
+                        } catch (error) {
+                            console.error(`error generating URL for ${truck.driverLicense}:`, error)
+                        }
+                    }
+
+                    return {
+                        _id: truck._id as string,
+                        available: truck.available ?? false,
+                        currentLocation: truck.currentLocation ?? "",
+                        driverMobileNo: truck.driverMobileNo ?? "",
+                        driverName: truck.driverName ?? "",
+                        dropLocation: truck.dropLocation ?? "",
+                        operatingStates: truck.operatingStates ?? [],
+                        pickupLocation: truck.pickupLocation ?? "",
+                        truckNo: truck.truckNo ?? "",
+                        truckOwnerMobileNo: truck.truckOwnerMobileNo ?? "",
+                        truckOwnerName: truck.truckOwnerName ?? "",
+                        truckType: truck.truckType ?? "",
+                        tyres: truck.tyres ?? '0',
+                        verificationStatus: truck.verificationStatus ?? "",
+                        capacity: truck.capacity ?? "",
+                        driverLicense: driverLicenseUrl,
+                        status: truck.status ?? "inactive",
+                        truckImage: trukImageUrl,
+                        rcValidity: truck.rcValidity
+                    };
+                })
+            );
 
             return { trucks: truckDatos, totalPages: Math.ceil(total / limit) }
 
@@ -428,13 +463,16 @@ export class TransporterService implements ITransporterService {
 
             const { id, driverName, driverMobileNo, currentLocation, driverLicense, currentLocationCoords } = formData;
 
-            let driverLicenseNewUrl: string | undefined;
+            let driverLicenseNewKey: string | undefined;
 
 
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
+
+                const key = `${folder}/transporter/${Date.now()}_${file.originalname}`
+
                 const s3Params = {
                     Bucket: config.awsBucketName,
-                    Key: `${folder}/transporter/${Date.now()}_${file.originalname}`,
+                    Key: key,
                     Body: file.buffer,
                     ContentType: file.mimetype
                 };
@@ -442,13 +480,13 @@ export class TransporterService implements ITransporterService {
                 const command = new PutObjectCommand(s3Params)
                 await s3.send(command)
 
-                return `https://${config.awsBucketName}.s3.${config.awsRegion}.amazonaws.com/${s3Params.Key}`;
+                return key;
             }
 
             if (driverLicensefile) {
-                driverLicenseNewUrl = await uploadToS3(driverLicensefile, 'driverLicense')
+                driverLicenseNewKey = await uploadToS3(driverLicensefile, 'driverLicense')
             } else {
-                driverLicenseNewUrl = driverLicense
+                driverLicenseNewKey = driverLicense
             }
 
             const truck = await this._truckRepository.findTruckById(id);
@@ -470,7 +508,7 @@ export class TransporterService implements ITransporterService {
                 driverMobileNo,
                 currentLocation,
                 currentLocationCoords,
-                driverLicense: driverLicenseNewUrl,
+                driverLicense: driverLicenseNewKey,
                 available: true,
                 status: 'active'
             });
@@ -634,6 +672,15 @@ export class TransporterService implements ITransporterService {
 
             const bidObjectId = new mongoose.Types.ObjectId(bidID);
 
+            const existingPayment = await this._transporterPaymentRepository.findOne({ bidId: bidObjectId });
+
+            console.log(existingPayment, 'existing payment');
+
+
+            if (existingPayment && (existingPayment.paymentStatus === 'success' || existingPayment.paymentStatus === 'pending')) {
+                return { success: false, message: 'Payment is already in progress or completed for this bid.' };
+            }
+
             const bid = await this._bidRepository.findBidById(bidID);
             if (!bid) return { success: false, message: 'Bid not Found' }
 
@@ -776,50 +823,64 @@ export class TransporterService implements ITransporterService {
                 limit,
                 { confirmedAt: -1 }
             )
+            const tripDatos: TripForTransporterDTO[] = await Promise.all(
+                trips.map(async (trip) => {
+                    let profileImageUrl = '';
+                    const imageKey = (trip.shipperId as any).profileImage;
 
-            const tripDatos: TripForTransporterDTO[] = trips.map((trip) => ({
-                _id: trip._id as string,
-                shipperId: {
-                    _id: (trip.shipperId as any)._id.toString(),
-                    shipperName: (trip.shipperId as any).shipperName ?? "",
-                    phone: (trip.shipperId as any).phone ?? "",
-                    companyName: (trip.shipperId as any).companyName ?? "",
-                    profileImage: (trip.shipperId as any).profileImage ?? "",
-                },
-                transporterId: {
-                    _id: (trip.transporterId as any)._id.toString(),
-                    transporterName: (trip.transporterId as any).transporterName ?? "",
-                },
-                loadId: {
-                    _id: (trip.loadId as any)._id.toString(),
-                    breadth: (trip.loadId as any).breadth ?? "",
-                    distanceInKm: (trip.loadId as any).distanceInKm ?? 0,
-                    dropLocation: (trip.loadId as any).dropLocation ?? "",
-                    height: (trip.loadId as any).height ?? "",
-                    length: (trip.loadId as any).length ?? "",
-                    material: (trip.loadId as any).material ?? "",
-                    pickupLocation: (trip.loadId as any).pickupLocation ?? "",
-                    quantity: (trip.loadId as any).quantity ?? "",
-                    scheduledDate: (trip.loadId as any).scheduledDate,
-                    dropCoordinates: {
-                        latitude: (trip.loadId as any).dropCoordinates?.latitude ?? 0,
-                        longitude: (trip.loadId as any).dropCoordinates?.longitude ?? 0,
+                    if (imageKey) {
+                        try {
+                            profileImageUrl = await getPresignedDownloadUrl(imageKey) ?? '';
+                        } catch (error) {
+                            console.error(`Error generating pre-signed URL for profile image: ${imageKey}`, error);
+                        }
                     }
-                },
-                truckId: {
-                    capacity: (trip.truckId as any).capacity ?? "",
-                    driverMobileNo: (trip.truckId as any).driverMobileNo ?? "",
-                    driverName: (trip.truckId as any).driverName ?? "",
-                    truckNo: (trip.truckId as any).truckNo ?? "",
-                    truckType: (trip.truckId as any).truckType ?? "",
-                },
-                tripStatus: trip.tripStatus ?? "",
-                price: trip.price ?? "",
-                confirmedAt: trip.confirmedAt ?? null,
-                progressAt: trip.progressAt ?? null,
-                arrivedAt: trip.arrivedAt ?? null,
-                completedAt: trip.completedAt ?? null,
-            }));
+
+                    return {
+                        _id: trip._id as string,
+                        shipperId: {
+                            _id: (trip.shipperId as any)._id.toString(),
+                            shipperName: (trip.shipperId as any).shipperName ?? "",
+                            phone: (trip.shipperId as any).phone ?? "",
+                            companyName: (trip.shipperId as any).companyName ?? "",
+                            profileImage: profileImageUrl, // pre-signed URL here
+                        },
+                        transporterId: {
+                            _id: (trip.transporterId as any)._id.toString(),
+                            transporterName: (trip.transporterId as any).transporterName ?? "",
+                        },
+                        loadId: {
+                            _id: (trip.loadId as any)._id.toString(),
+                            breadth: (trip.loadId as any).breadth ?? "",
+                            distanceInKm: (trip.loadId as any).distanceInKm ?? 0,
+                            dropLocation: (trip.loadId as any).dropLocation ?? "",
+                            height: (trip.loadId as any).height ?? "",
+                            length: (trip.loadId as any).length ?? "",
+                            material: (trip.loadId as any).material ?? "",
+                            pickupLocation: (trip.loadId as any).pickupLocation ?? "",
+                            quantity: (trip.loadId as any).quantity ?? "",
+                            scheduledDate: (trip.loadId as any).scheduledDate,
+                            dropCoordinates: {
+                                latitude: (trip.loadId as any).dropCoordinates?.latitude ?? 0,
+                                longitude: (trip.loadId as any).dropCoordinates?.longitude ?? 0,
+                            },
+                        },
+                        truckId: {
+                            capacity: (trip.truckId as any).capacity ?? "",
+                            driverMobileNo: (trip.truckId as any).driverMobileNo ?? "",
+                            driverName: (trip.truckId as any).driverName ?? "",
+                            truckNo: (trip.truckId as any).truckNo ?? "",
+                            truckType: (trip.truckId as any).truckType ?? "",
+                        },
+                        tripStatus: trip.tripStatus ?? "",
+                        price: trip.price ?? "",
+                        confirmedAt: trip.confirmedAt ?? null,
+                        progressAt: trip.progressAt ?? null,
+                        arrivedAt: trip.arrivedAt ?? null,
+                        completedAt: trip.completedAt ?? null,
+                    };
+                })
+            );
 
 
             const total = await this._tripRepository.count(filter)
@@ -880,12 +941,14 @@ export class TransporterService implements ITransporterService {
     async updateProfile(transporterId: string, transporterName: string, phone: string, profileImage: Express.Multer.File): Promise<{ success: boolean; message: string; transporterData?: TransporterDTO; }> {
         try {
 
-            let profileImageUrl: string | undefined;
+            let profileImagekey: string | undefined;
 
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
+
+                const key = `${folder}/transporter/${Date.now()}_${file.originalname}`
                 const s3Params = {
                     Bucket: config.awsBucketName,
-                    Key: `${folder}/transporter/${Date.now()}_${file.originalname}`,
+                    Key: key,
                     Body: file.buffer,
                     ContentType: file.mimetype
                 };
@@ -893,11 +956,11 @@ export class TransporterService implements ITransporterService {
                 const command = new PutObjectCommand(s3Params)
                 await s3.send(command)
 
-                return `https://${config.awsBucketName}.s3.${config.awsRegion}.amazonaws.com/${s3Params.Key}`;
+                return key;
             }
 
             if (profileImage) {
-                profileImageUrl = await uploadToS3(profileImage, 'profileImage')
+                profileImagekey = await uploadToS3(profileImage, 'profileImage')
             }
 
 
@@ -905,7 +968,7 @@ export class TransporterService implements ITransporterService {
                 {
                     transporterName: transporterName,
                     phone: phone,
-                    profileImage: profileImageUrl
+                    profileImage: profileImagekey
                 }
             )
 
@@ -926,7 +989,11 @@ export class TransporterService implements ITransporterService {
                 followings: updateTransporter.followings ?? [],
                 subscription: {
                     status: (updateTransporter.subscription as any).status,
-                    isActive: (updateTransporter.subscription as any).isActive
+                    isActive: (updateTransporter.subscription as any).isActive,
+                    planId: (updateTransporter.subscription as any).planId,
+                    planName: (updateTransporter.subscription as any).planName,
+                    endDate: (updateTransporter.subscription as any).endDate,
+                    startDate: (updateTransporter.subscription as any).startDate
                 }
             }
 
@@ -1719,7 +1786,7 @@ export class TransporterService implements ITransporterService {
             const walletDatos: WalletForTransporterDTO = {
                 _id: walletData?._id as string,
                 balance: walletData?.balance ?? 0
-            } 
+            }
 
             return walletDatos
 

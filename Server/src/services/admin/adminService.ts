@@ -20,6 +20,8 @@ import { IAdminPaymentRepository } from "../../repositories/interface/IAdminPaym
 import { AdminPaymentDTO } from "../../dtos/admin/admin.payment.history.dto";
 import config from "../../config";
 import { endOfMonth, startOfMonth } from "date-fns";
+import { TransporterForAdminDTO } from "../../dtos/transporter/transporter.dto";
+import { getPresignedDownloadUrl } from "../../config/s3Config";
 
 configDotenv()
 
@@ -60,7 +62,7 @@ export class AdminService implements IAdminService {
         }
     }
 
-    async getTransporter(search: string, page: number, limit: number): Promise<{ transporterData: ITransporter[], totalPages: number }> {
+    async getTransporter(search: string, page: number, limit: number): Promise<{ transporterData: TransporterForAdminDTO[], totalPages: number }> {
         try {
 
             const skip = (page - 1) * limit;
@@ -71,10 +73,56 @@ export class AdminService implements IAdminService {
                 filter.transporterName = { $regex: search, $options: 'i' }
             }
 
-            const transporter = await this._transporterRepository.find(filter, {}, skip, limit);
+            const transporters = await this._transporterRepository.find(filter, {}, skip, limit);
             const total = await this._transporterRepository.count(filter);
 
-            return { transporterData: transporter, totalPages: Math.ceil(total / limit) }
+            const transporterData: TransporterForAdminDTO[] = await Promise.all(
+                transporters.map(async (transporter: any) => {
+
+                    let profileImageUrl = '';
+                    let aadhaarFrontUrl = '';
+                    let aadhaarBackUrl = '';
+
+                    if (transporter.profileImage) {
+                        try {
+                            profileImageUrl = await getPresignedDownloadUrl(transporter.profileImage) ?? '';
+                        } catch (err) {
+                            console.error(`Error generating presigned URL for ${transporter.profileImage}`, err);
+                        }
+                    }
+
+                    if (transporter.aadhaarFront) {
+                        try {
+                            aadhaarFrontUrl = await getPresignedDownloadUrl(transporter.aadhaarFront) ?? ''
+                        } catch (error) {
+                            console.error(`Error generating presigned URL for ${transporter.aadhaarFront}`, error);
+                        }
+                    }
+
+                    if (transporter.aadhaarBack) {
+                        try {
+                            aadhaarBackUrl = await getPresignedDownloadUrl(transporter.aadhaarBack) ?? ''
+                        } catch (error) {
+                            console.error(`Error generating presigned URL for ${transporter.aadhaarBack}`, error);
+                        }
+                    }
+
+                    return {
+                        _id: transporter._id.toString(),
+                        transporterName: transporter.transporterName ?? '',
+                        email: transporter.email ?? '',
+                        phone: transporter.phone ?? '',
+                        isBlocked: transporter.isBlocked ?? false,
+                        profileImage: profileImageUrl,
+                        verificationStatus: transporter.verificationStatus ?? '',
+                        panNumber: transporter.panNumber ?? '',
+                        aadhaarFront: aadhaarFrontUrl,
+                        aadhaarBack: aadhaarBackUrl
+                    };
+                })
+            );
+
+            return { transporterData: transporterData, totalPages: Math.ceil(total / limit) }
 
         } catch (error) {
             console.error(error);
@@ -104,10 +152,58 @@ export class AdminService implements IAdminService {
         }
     }
 
-    async getRequestedTransporter(): Promise<ITransporter[]> {
+    async getRequestedTransporter(): Promise<TransporterForAdminDTO[]> {
         try {
 
-            return await this._transporterRepository.getRequestedTransporter()
+            const transporters = await this._transporterRepository.getRequestedTransporter()
+
+            const transporterData: TransporterForAdminDTO[] = await Promise.all(
+                transporters.map(async (transporter: any) => {
+
+                    let profileImageUrl = '';
+                    let aadhaarFrontUrl = '';
+                    let aadhaarBackUrl = '';
+
+                    if (transporter.profileImage) {
+                        try {
+                            profileImageUrl = await getPresignedDownloadUrl(transporter.profileImage) ?? '';
+                        } catch (err) {
+                            console.error(`Error generating presigned URL for ${transporter.profileImage}`, err);
+                        }
+                    }
+
+                    if (transporter.aadhaarFront) {
+                        try {
+                            aadhaarFrontUrl = await getPresignedDownloadUrl(transporter.aadhaarFront) ?? ''
+                        } catch (error) {
+                            console.error(`Error generating presigned URL for ${transporter.aadhaarFront}`, error);
+                        }
+                    }
+
+                    if (transporter.aadhaarBack) {
+                        try {
+                            aadhaarBackUrl = await getPresignedDownloadUrl(transporter.aadhaarBack) ?? ''
+                        } catch (error) {
+                            console.error(`Error generating presigned URL for ${transporter.aadhaarBack}`, error);
+                        }
+                    }
+
+                    return {
+                        _id: transporter._id.toString(),
+                        transporterName: transporter.transporterName ?? '',
+                        email: transporter.email ?? '',
+                        phone: transporter.phone ?? '',
+                        isBlocked: transporter.isBlocked ?? false,
+                        profileImage: profileImageUrl,
+                        verificationStatus: transporter.verificationStatus ?? '',
+                        panNumber: transporter.panNumber ?? '',
+                        aadhaarFront: aadhaarFrontUrl,
+                        aadhaarBack: aadhaarBackUrl
+                    };
+                })
+            );
+
+            return transporterData
 
         } catch (error: any) {
             console.error('error in getRequestedTransporter');
@@ -266,7 +362,7 @@ export class AdminService implements IAdminService {
         }
     }
 
-    async getLoads(page: number, limit: number): Promise<{ loadData: ILoad[] | null, totalPages: number }> {
+    async getLoads(page: number, limit: number, search: string, startDate: string, endDate: string): Promise<{ loadData: ILoad[] | null, totalPages: number }> {
         try {
 
             const skip = (page - 1) * limit;
@@ -277,7 +373,18 @@ export class AdminService implements IAdminService {
                 createdAt: 1,
             }
 
-            const filter = {}
+            const filter: any = {};
+
+            if (search) {
+                filter.material = { $regex: search, $options: "i" };
+            }
+
+            if (startDate && endDate) {
+                filter.createdAt = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate),
+                }
+            }
 
             const response = await this._loadRepository.find(filter, {}, skip, limit, { createdAt: -1 });
             const totalcounts = await this._loadRepository.count(filter)
@@ -338,30 +445,143 @@ export class AdminService implements IAdminService {
         }
     }
 
-    async fetchTrips(page: number, limit: number): Promise<{ tripsData: ITrip[]; totalPages: number; }> {
+    async fetchTrips(page: number, limit: number, search: string, status: string): Promise<{ tripsData: ITrip[]; totalPages: number; }> {
         try {
 
+            // const skip = (page - 1) * limit;
+
+            // const filter: any = {}
+
+            // if(status !== 'all') {
+            //     filter.tripStatus = status
+            // }
+
+            // const trips = await this._tripRepository.findWithPopulate(
+            //     filter,
+            //     [
+            //         { path: 'transporterId', select: 'transporterName profileImage phone email' },
+            //         { path: 'shipperId', select: 'shipperName profileImage phone email' },
+            //         { path: 'loadId', select: 'pickupLocation dropLocation material quantity scheduledDate distanceInKm' },
+            //         { path: 'truckId', select: 'truckOwnerName truckOwnerMobileNo truckNo truckType driverName driverMobileNo' }
+            //     ],
+            //     skip,
+            //     limit,
+            //     { confirmedAt: -1 }
+            // )
+
+            // const totalCounts = await this._tripRepository.count({})
+
+            // console.log(trips);
+
+
+            // return { tripsData: trips, totalPages: Math.ceil(totalCounts / limit) }
+
             const skip = (page - 1) * limit;
+            const matchStage: any = {};
 
-            const trips = await this._tripRepository.findWithPopulate(
-                {},
-                [
-                    { path: 'transporterId', select: 'transporterName profileImage phone email' },
-                    { path: 'shipperId', select: 'shipperName profileImage phone email' },
-                    { path: 'loadId', select: 'pickupLocation dropLocation material quantity scheduledDate distanceInKm' },
-                    { path: 'truckId', select: 'truckOwnerName truckOwnerMobileNo truckNo truckType driverName driverMobileNo' }
-                ],
-                skip,
-                limit,
-                { confirmedAt: -1 }
-            )
+            // Filter by trip status
+            if (status !== 'all') {
+                matchStage.tripStatus = status;
+            }
 
-            const totalCounts = await this._tripRepository.count({})
+            // Initial aggregation pipeline
+            const pipeline: any[] = [
+                // Lookup transporter
+                {
+                    $lookup: {
+                        from: 'transporters',
+                        localField: 'transporterId',
+                        foreignField: '_id',
+                        as: 'transporter'
+                    }
+                },
+                { $unwind: '$transporter' },
 
-            console.log(trips);
+                // Lookup shipper
+                {
+                    $lookup: {
+                        from: 'shippers',
+                        localField: 'shipperId',
+                        foreignField: '_id',
+                        as: 'shipper'
+                    }
+                },
+                { $unwind: '$shipper' },
 
+                // Lookup load
+                {
+                    $lookup: {
+                        from: 'loads',
+                        localField: 'loadId',
+                        foreignField: '_id',
+                        as: 'load'
+                    }
+                },
+                { $unwind: '$load' },
 
-            return { tripsData: trips, totalPages: Math.ceil(totalCounts / limit) }
+                // Lookup truck
+                {
+                    $lookup: {
+                        from: 'trucks',
+                        localField: 'truckId',
+                        foreignField: '_id',
+                        as: 'truck'
+                    }
+                },
+                { $unwind: '$truck' },
+
+                // Match status (if any)
+                { $match: matchStage },
+            ];
+
+            // Search filter
+            if (search && search.trim() !== '') {
+                const searchRegex = new RegExp(search, 'i');
+                pipeline.push({
+                    $match: {
+                        $or: [
+                            { 'truck.truckNo': searchRegex },
+                            { 'load.material': searchRegex }
+                        ]
+                    }
+                });
+            }
+
+            // Count total
+            const countPipeline = [...pipeline, { $count: 'total' }];
+            const countResult = await this._tripRepository.aggregate(countPipeline);
+            const totalCounts = countResult[0]?.total || 0;
+
+            // Apply sorting, pagination
+            pipeline.push(
+                { $sort: { confirmedAt: -1 } },
+                { $skip: skip },
+                { $limit: limit }
+            );
+
+            // Project only needed fields
+            pipeline.push({
+                $project: {
+                    transporterId: '$transporter',
+                    shipperId: '$shipper',
+                    loadId: '$load',
+                    truckId: '$truck',
+                    price: 1,
+                    tripStatus: 1,
+                    confirmedAt: 1,
+                    progressAt: 1,
+                    arrivedAt: 1,
+                    completedAt: 1,
+                    adminPayment: 1
+                }
+            });
+
+            const trips = await this._tripRepository.aggregate(pipeline);
+
+            return {
+                tripsData: trips,
+                totalPages: Math.ceil(totalCounts / limit)
+            };
 
         } catch (error) {
             console.log(error);

@@ -18,7 +18,7 @@ if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
 
 export const logger = createLogger({
     levels: customLevels.levels,
-    level: "http",
+    level: process.env.NODE_ENV === 'production' ? 'http' : 'debug',
     format: format.combine(
         format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
         format.printf(({ level, message, timestamp }) => {

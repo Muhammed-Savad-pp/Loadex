@@ -88,9 +88,9 @@ export const changeTruckVerificationStatus = async (id: string, status: string) 
 }
 
 
-export const getLoads = async (page: number, limit: number) => {
+export const getLoads = async (page: number, limit: number, search: string, startDate: string, endDate: string) => {
     
-    const response = await apiClient.get(`/admin/fetchLoads?page=${page}&limit=${limit}`);
+    const response = await apiClient.get(`/admin/fetchLoads?page=${page}&limit=${limit}&search=${search}&startDate=${startDate}&endDate=${endDate}`);
     return response.data;
     
 }
@@ -101,9 +101,9 @@ export const fetchDashBoardDatas = async () => {
     return response.data;
 }
 
-export const fetchTrips = async(page: number, limit: number) => {
+export const fetchTrips = async(page: number, limit: number, search: string, status: string) => {
 
-    const response = await apiClient.get(`/admin/trips?page=${page}&limit=${limit}`);
+    const response = await apiClient.get(`/admin/trips?page=${page}&limit=${limit}&search=${search}&status=${status}`);
     return response.data;
 };
 

@@ -206,8 +206,11 @@ export class AdminController implements IAdminController {
 
             const page = parseInt(req.query.page as string);
             const limit = parseInt(req.query.limit as string);
-            
-            const response = await this._adminService.getLoads(page, limit);
+            const search = req.query.search as string;
+            const startDate = req.query.startDate as string;
+            const endDate = req.query.endDate as string;
+
+            const response = await this._adminService.getLoads(page, limit, search, startDate, endDate);
             res.status(HTTP_STATUS.OK).json(response);
 
         } catch (error: any) {
@@ -231,9 +234,11 @@ export class AdminController implements IAdminController {
         try {
 
             const page = parseInt(req.query.page as string);
-            const limit = parseInt(req.query.limit as string)
+            const limit = parseInt(req.query.limit as string);
+            const search = req.query.search as string;
+            const status = req.query.status as string;
 
-            const response = await this._adminService.fetchTrips(page, limit);
+            const response = await this._adminService.fetchTrips(page, limit, search, status);
 
             res.status(HTTP_STATUS.OK).json(response)
             

@@ -355,7 +355,7 @@ const VehicleRegistration = () => {
                                         name="vehicleNumber"
                                         value={formData.vehicleNumber}
                                         onChange={handleInputChange}
-                                        className={`w-full border border-gray-400 shadow-md rounded p-2 text-sm bg-white pl-1 ${formError.vehicleNumber ? 'border-red-500' : ''}`}
+                                        className={`w-full border border-gray-400 shadow-md rounded p-2 text-sm bg-white pl-1 ${formError.vehicleNumber ? 'border-red-500' : ''} uppercase`}
                                         required
                                     />
                                     {formError.vehicleNumber && <p className="text-red-500 text-sm mt-1">{formError.vehicleNumber}</p>}
@@ -408,6 +408,7 @@ const VehicleRegistration = () => {
                                         value={formData.capacity}
                                         onChange={handleInputChange}
                                         className={`w-full border border-gray-400 shadow-md rounded p-2 text-sm bg-white pl-1 ${formError.capacity ? 'border-red-500' : ''}`}
+                                        min={1}
                                         required
                                     />
                                     {formError.capacity && <p className="text-red-500 text-sm mt-1">{formError.capacity}</p>}
@@ -423,6 +424,7 @@ const VehicleRegistration = () => {
                                         value={formData.tyres}
                                         onChange={handleInputChange}
                                         className={`w-full border border-gray-400 shadow-md rounded p-2 text-sm bg-white pl-1 ${formError.tyres ? 'border-red-500' : ''}`}
+                                        min={4}
                                         required
                                     />
                                     {formError.tyres && <p className="text-red-500 text-sm mt-1">{formError.tyres}</p>}
