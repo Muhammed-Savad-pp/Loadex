@@ -24,19 +24,23 @@ function TruckBoard() {
     const [trucks, setTrucks] = useState<ITrucks[]>([]);
     const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
     const [selectTransporterId, setSelectedTransporterId] = useState<string | null>(null);
+    const [page, setPage] = useState<number>(1);
+    const [totalPages, setTotalPages] = useState<number>(10);
+    const limit =4
 
     useEffect(() => {
         const listTrucks = async () => {
-            const response = await fetchTrucks();
-            setTrucks(response as ITrucks[]);
+            const response: any = await fetchTrucks(page, limit);
+            setTrucks(response.truckData);
+            setTotalPages(response.totalPages)
         }
         listTrucks()
-    }, [])
+    }, [page])
 
     return (
         <div>
             <Navbar />
-            <div className='max-w-7xl mx-auto mt-20 mb-8 p-4 h-[80vh] rounded-md bg-gray-50 '>
+            <div className='max-w-7xl mx-auto mt-20 mb-8 p-4 h-[100vh] rounded-md bg-gray-50 '>
                 <h1 className='text-2xl font-bold mb-6 text-gray-800'>Truck Board</h1>
                 <div className='grid grid-cols-1 gap-4'>
                     <div className='hidden md:grid md:grid-cols-7 bg-gray-200 rounded-t-lg p-3 font-semibold text-md text-gray-800'>
@@ -54,8 +58,8 @@ function TruckBoard() {
                         trucks.map((truck) => (
                             <div key={truck._id} className='bg-white rounded-lg shadow overflow-hidden'>
                                 <div className='hidden md:grid md:grid-cols-7 p-3 items-center hover:bg-gray-50'>
-                                    <div className='px-2 text-gray-900 flex row items-center cursor-pointer' onClick={() => { setShowProfileModal(true); setSelectedTransporterId(truck.transporterId._id)}}>
-                                        <img className='w-12 h-12' src={truck.transporterId.profileImage} alt="" />
+                                    <div className='px-2 text-gray-900 flex row items-center cursor-pointer' onClick={() => { setShowProfileModal(true); setSelectedTransporterId(truck.transporterId._id) }}>
+                                        <img className='w-12 h-12 rounded-full' src={truck.transporterId.profileImage} alt="" />
                                         <p className='font-semibold'>{truck.transporterId.transporterName}</p>
                                     </div>
                                     <div className='px-2 text-center font-semibold text-gray-900'>{truck.truckOwnerName}</div>
@@ -98,6 +102,34 @@ function TruckBoard() {
                             </div>
                         ))
                     }
+                </div>
+
+                <div className="flex justify-center mt-6">
+                    <div className="inline-flex rounded-md shadow-sm">
+                        <button
+                            onClick={() => setPage(page - 1)}
+                            disabled={page === 1}
+                            className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                                    ${page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                            Prev
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .slice(Math.max(0, page - 3), Math.min(totalPages, page + 2))
+                            .map((p) => (
+                                <button className={`px-3 py-2 ml-1  mr-1 text-sm rounded-md font-medium border-t border-b border-gray-300 cursor-pointer
+                                            ${p === page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                                    {p}
+                                </button>
+                            ))
+                        }
+                        <button
+                            onClick={() => setPage(page + 1)}
+                            disabled={page === totalPages}
+                            className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                                        ${page === totalPages ? 'bg-gray-100 text-gray-400 not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}'}`}>
+                            Next
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

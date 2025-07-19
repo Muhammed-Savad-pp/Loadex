@@ -19,6 +19,7 @@ import { LoadForTransporterDTO } from "../../dtos/load/load.dto";
 import { ReviewForTransporter } from "../../dtos/reviews/review.dto";
 import { NotificationForTransporterDTO } from "../../dtos/notifications/notification.dto";
 import { WalletForTransporterDTO } from "../../dtos/wallet/wallet.dto";
+import { ChatForTransporterDTO } from "../../dtos/chat/chat.dto";
 
 export interface ITransporterService {
     verificationStatus (id: string) : Promise<{success: boolean, message: string, verificationStatus?: string}>;
@@ -56,7 +57,7 @@ export interface ITransporterService {
     deleteBidById(bidId: string): Promise<{success: boolean, message: string, BidData?: IBid}>;
     fetchPaymentHistory(transporterId: string, status: string, type: string, date: string, page: number, limit: number): Promise<{paymentData:ITransporterPayment[], totalPages: number, totalEarnings: number, bidPayments: number, subscriptionPayment: number, pendingAmount: number}>;
     startChat(transporterId: string, shipperId: string): Promise<{success: boolean, chatData: IChat}>;
-    fetchChats(transporterId: string): Promise< IChat[]>;
+    fetchChats(transporterId: string): Promise< ChatForTransporterDTO[]>;
     sendMessage(transporterId: string , chatId: string , shipperId: string, content: string): Promise<{success: boolean, messageData?: IMessage}>;
     fetchMessages(chatId: string): Promise<IMessage[]>;
     updateMessageAsRead(chatId: string, transporeterId: string): Promise<{success: boolean}>;

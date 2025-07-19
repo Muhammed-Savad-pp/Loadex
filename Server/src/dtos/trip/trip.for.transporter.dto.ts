@@ -77,3 +77,46 @@ export interface TripForShipperDTO {
     tripStatus: string;
     confirmedAt: string;
 }
+
+export interface TripForAdminDTO {
+    _id: string;
+    transporterId: {
+        _id: string;
+        transporterName: string;
+        profileImage: string;
+        phone: string;
+        email: string;
+    };
+    shipperId: {
+        _id: string;
+        shipperName: string;
+        profileImage: string;
+        phone: string;
+        email: string;
+    };
+    loadId: {
+        _id: string;
+        pickupLocation: string;
+        dropLocation: string;
+        material: string;
+        quantity: string;
+        scheduledDate: Date;
+        distanceInKm: number;
+    };
+    truckId: {
+        _id: string;
+        truckOwnerName: string;
+        truckOwnerMobileNo: string;
+        truckNo: string;
+        truckType: string;
+        driverName: string;
+        driverMobileNo: string;
+    };
+    price: string;
+    tripStatus: string;
+    confirmedAt: Date;
+    progressAt: Date | null;
+    arrivedAt: Date | null;
+    completedAt: Date | null;
+    adminPayment: boolean
+}

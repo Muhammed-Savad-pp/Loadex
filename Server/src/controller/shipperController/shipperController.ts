@@ -459,8 +459,9 @@ class ShipperController implements IShipperController {
 
             const page = parseInt(req.query.page as string);
             const limit = parseInt(req.query.limit as string);
+            const search = req.query.search as string;
 
-            const response = await this._shipperService.fetchTransporters(page, limit);
+            const response = await this._shipperService.fetchTransporters(page, limit, search);
             res.status(HTTP_STATUS.OK).json(response);
 
         } catch (error) {
@@ -471,7 +472,10 @@ class ShipperController implements IShipperController {
     async fetchTrucks(req: CustomeRequest, res: Response): Promise<void> {
         try {
 
-            const response = await this._shipperService.fetchTrucks();
+            const page = parseInt(req.query.page as string);
+            const limit = parseInt(req.query.limit as string);
+
+            const response = await this._shipperService.fetchTrucks(page, limit);
             res.status(HTTP_STATUS.OK).json(response);
 
         } catch (error) {

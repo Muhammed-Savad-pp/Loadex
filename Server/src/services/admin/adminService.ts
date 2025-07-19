@@ -22,6 +22,8 @@ import config from "../../config";
 import { endOfMonth, startOfMonth } from "date-fns";
 import { TransporterForAdminDTO } from "../../dtos/transporter/transporter.dto";
 import { getPresignedDownloadUrl } from "../../config/s3Config";
+import { ShipperForAdminDTO } from "../../dtos/shipper/shipper.dto";
+import { TripForAdminDTO } from "../../dtos/trip/trip.for.transporter.dto";
 
 configDotenv()
 
@@ -244,7 +246,7 @@ export class AdminService implements IAdminService {
         }
     }
 
-    async getShipper(search: string, page: number, limit: number): Promise<{ shipperData: IShipper[], totalPages: number }> {
+    async getShipper(search: string, page: number, limit: number): Promise<{ shipperData: ShipperForAdminDTO[], totalPages: number }> {
         try {
 
             const skip = (page - 1) * limit;
@@ -257,7 +259,36 @@ export class AdminService implements IAdminService {
             const shippers = await this._shipperRepository.find(filter, {}, skip, limit);
             const total = await this._shipperRepository.count(filter);
 
-            return { shipperData: shippers, totalPages: Math.ceil(total / limit) }
+            const shipperData: ShipperForAdminDTO[] = await Promise.all(
+                shippers.map(async (shipper) => {
+                    const aadhaarFrontUrl = shipper.aadhaarFront
+                        ? await getPresignedDownloadUrl(shipper.aadhaarFront)
+                        : '';
+                    const aadhaarBackUrl = shipper.aadhaarBack
+                        ? await getPresignedDownloadUrl(shipper.aadhaarBack)
+                        : '';
+                    const profileImageUrl = shipper.profileImage
+                        ? await getPresignedDownloadUrl(shipper.profileImage)
+                        : '';
+
+                    return {
+                        _id: shipper._id as string,
+                        shipperName: shipper.shipperName,
+                        email: shipper.email,
+                        phone: shipper.phone,
+                        isBlocked: shipper.isBlocked,
+                        companyName: shipper.companyName ?? '',
+                        gstNumber: shipper.gstNumber ?? '',
+                        verificationStatus: shipper.verificationStatus ?? '',
+                        panNumber: shipper.panNumber ?? '',
+                        aadhaarFront: aadhaarFrontUrl ?? '',
+                        aadhaarBack: aadhaarBackUrl ?? '',
+                        profileImage: profileImageUrl ?? ''
+                    };
+                })
+            );
+
+            return { shipperData: shipperData, totalPages: Math.ceil(total / limit) }
 
         } catch (error) {
             console.error(error);
@@ -285,10 +316,40 @@ export class AdminService implements IAdminService {
         }
     }
 
-    async getRequestedShipper(): Promise<IShipper[]> {
+    async getRequestedShipper(): Promise<ShipperForAdminDTO[]> {
         try {
 
-            return await this._shipperRepository.getRequestedShipper()
+            const shippers = await this._shipperRepository.getRequestedShipper()
+            const shipperData: ShipperForAdminDTO[] = await Promise.all(
+                shippers.map(async (shipper) => {
+                    const aadhaarFrontUrl = shipper.aadhaarFront
+                        ? await getPresignedDownloadUrl(shipper.aadhaarFront)
+                        : '';
+                    const aadhaarBackUrl = shipper.aadhaarBack
+                        ? await getPresignedDownloadUrl(shipper.aadhaarBack)
+                        : '';
+                    const profileIamgeUrl = shipper.profileImage
+                        ? await getPresignedDownloadUrl(shipper.profileImage)
+                        : ''
+
+                    return {
+                        _id: shipper._id as string,
+                        shipperName: shipper.shipperName,
+                        email: shipper.email,
+                        phone: shipper.phone,
+                        isBlocked: shipper.isBlocked,
+                        companyName: shipper.companyName ?? '',
+                        gstNumber: shipper.gstNumber ?? '',
+                        verificationStatus: shipper.verificationStatus ?? '',
+                        panNumber: shipper.panNumber ?? '',
+                        aadhaarFront: aadhaarFrontUrl ?? '',
+                        aadhaarBack: aadhaarBackUrl ?? '',
+                        profileImage: profileIamgeUrl ?? ''
+                    };
+                })
+            );
+
+            return shipperData
 
         } catch (error) {
             console.log(error);
@@ -445,7 +506,7 @@ export class AdminService implements IAdminService {
         }
     }
 
-    async fetchTrips(page: number, limit: number, search: string, status: string): Promise<{ tripsData: ITrip[]; totalPages: number; }> {
+    async fetchTrips(page: number, limit: number, search: string, status: string): Promise<{ tripsData: TripForAdminDTO[]; totalPages: number; }> {
         try {
 
             // const skip = (page - 1) * limit;
@@ -578,8 +639,32 @@ export class AdminService implements IAdminService {
 
             const trips = await this._tripRepository.aggregate(pipeline);
 
+            const tripsWithSignedUrls = await Promise.all(
+                trips.map(async (trip: TripForAdminDTO) => {
+                    const transporterImage = trip.transporterId.profileImage
+                        ? await getPresignedDownloadUrl(trip.transporterId.profileImage)
+                        : '';
+
+                    const shipperImage = trip.shipperId.profileImage
+                        ? await getPresignedDownloadUrl(trip.shipperId.profileImage)
+                        : '';
+
+                    return {
+                        ...trip,
+                        transporterId: {
+                            ...trip.transporterId,
+                            profileImage: transporterImage || ''
+                        },
+                        shipperId: {
+                            ...trip.shipperId,
+                            profileImage: shipperImage || ''
+                        }
+                    };
+                })
+            );
+
             return {
-                tripsData: trips,
+                tripsData: tripsWithSignedUrls,
                 totalPages: Math.ceil(totalCounts / limit)
             };
 

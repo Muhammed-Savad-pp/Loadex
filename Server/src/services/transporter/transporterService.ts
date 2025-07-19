@@ -45,6 +45,7 @@ import { LoadForTransporterDTO } from "../../dtos/load/load.dto";
 import { ReviewForTransporter } from "../../dtos/reviews/review.dto";
 import { NotificationForTransporterDTO } from "../../dtos/notifications/notification.dto";
 import { WalletForTransporterDTO } from "../../dtos/wallet/wallet.dto";
+import { ChatForTransporterDTO } from "../../dtos/chat/chat.dto";
 
 configDotenv()
 
@@ -630,35 +631,46 @@ export class TransporterService implements ITransporterService {
 
             const totalDocumentCount = await this._bidRepository.count({ transporterId: transporterid });
 
-            const bidDtos: BidForTransporterDTO[] = bids.map((bid: IBid) => ({
-                _id: bid._id as string,
-                shipperId: {
-                    _id: (bid.shipperId as any)._id.toString(),
-                    shipperName: (bid.shipperId as any).shipperName,
-                    profileImage: (bid.shipperId as any).profileImage
-                },
-                transporterId: bid.transporterId.toString(),
-                loadId: {
-                    _id: (bid.loadId as any)._id.toString(),
-                    pickupLocation: (bid.loadId as any).pickupLocation,
-                    dropLocation: (bid.loadId as any).dropLocation,
-                    material: (bid.loadId as any).material,
-                    quantity: (bid.loadId as any).quantity,
-                    scheduledDate: (bid.loadId as any).scheduledDate
-                },
-                truckId: {
-                    _id: (bid.truckId as any)._id.toString(),
-                    truckNo: (bid.truckId as any).truckNo,
-                    truckType: (bid.truckId as any).truckType,
-                    capacity: (bid.truckId as any).capacity,
-                    truckImage: (bid.truckId as any).truckImage,
-                },
-                price: bid.price,
-                status: bid.status,
-                createAt: bid.createAt,
-                shipperPayment: bid.shipperPayment,
-                transporterPayment: bid.transporterPayment
-            }));
+            const bidDtos: BidForTransporterDTO[] = await Promise.all(
+                bids.map(async (bid: IBid) => {
+                    let profileImageUrl: string | null = null;
+
+                    if ((bid.shipperId as any).profileImage) {
+                        profileImageUrl = await getPresignedDownloadUrl((bid.shipperId as any).profileImage) ?? '';
+                    }
+
+                    return {
+                        _id: bid._id as string,
+                        shipperId: {
+                            _id: (bid.shipperId as any)._id.toString(),
+                            shipperName: (bid.shipperId as any).shipperName,
+                            profileImage: profileImageUrl ?? '',
+                        },
+                        transporterId: bid.transporterId.toString(),
+                        loadId: {
+                            _id: (bid.loadId as any)._id.toString(),
+                            pickupLocation: (bid.loadId as any).pickupLocation,
+                            dropLocation: (bid.loadId as any).dropLocation,
+                            material: (bid.loadId as any).material,
+                            quantity: (bid.loadId as any).quantity,
+                            scheduledDate: (bid.loadId as any).scheduledDate,
+                        },
+                        truckId: {
+                            _id: (bid.truckId as any)._id.toString(),
+                            truckNo: (bid.truckId as any).truckNo,
+                            truckType: (bid.truckId as any).truckType,
+                            capacity: (bid.truckId as any).capacity,
+                            truckImage: (bid.truckId as any).truckImage,
+                        },
+                        price: bid.price,
+                        status: bid.status,
+                        createAt: bid.createAt,
+                        shipperPayment: bid.shipperPayment,
+                        transporterPayment: bid.transporterPayment,
+                    };
+                })
+            );
+
 
             return { bidDatas: bidDtos, totalPages: Math.ceil(totalDocumentCount / limit) }
 
@@ -1045,42 +1057,52 @@ export class TransporterService implements ITransporterService {
             const averageRatingResult = await this._reviewRepository.aggregate(averageRatingPipeline);
             const averageRating = averageRatingResult[0]?.avgRating ?? 0;
 
+            let profileImageUrl = '',
+
+                profileIamgeUrl = shipper.profileImage ? await getPresignedDownloadUrl(shipper.profileImage) : ''
+
             const shipperDatos: ShipperForTransporterDTO = {
                 _id: shipper._id as string,
                 shipperName: shipper.shipperName,
                 companyName: shipper.companyName ?? '',
-                profileImage: shipper.profileImage ?? '',
+                profileImage: profileIamgeUrl ?? '',
                 followers: shipper.followers ?? [],
                 followings: shipper.followings ?? [],
             }
 
-            const reviewDatos: ReviewForTransporter[] = reviews.map((review) => {
-                const populatedFromId = review.from.id as unknown as {
-                    _id: mongoose.Types.ObjectId;
-                    transporterName: string;
-                    profileImage: string;
-                };
+            const reviewDatos: ReviewForTransporter[] = await Promise.all(
+                reviews.map(async (review) => {
+                    const populatedFromId = review.from.id as unknown as {
+                        _id: mongoose.Types.ObjectId;
+                        transporterName: string;
+                        profileImage?: string;
+                    };
 
-                return {
-                    _id: review._id as string,
-                    from: {
-                        id: {
-                            _id: populatedFromId._id.toString(),
-                            transporterName: populatedFromId.transporterName,
-                            profileImage: populatedFromId.profileImage
+                    let profileImageUrl = '';
+                    if (populatedFromId.profileImage) {
+                        profileImageUrl = await getPresignedDownloadUrl(populatedFromId.profileImage) ?? '';
+                    }
+
+                    return {
+                        _id: review._id as string,
+                        from: {
+                            id: {
+                                _id: populatedFromId._id.toString(),
+                                transporterName: populatedFromId.transporterName,
+                                profileImage: profileImageUrl
+                            },
+                            role: review.from.role
                         },
-                        role: review.from.role
-                    },
-                    to: {
-                        id: review.to.id.toString(),
-                        role: review.to.role
-                    },
-                    rating: review.rating,
-                    review: review.review,
-                    createdAt: review.createdAt
-                };
-            });
-
+                        to: {
+                            id: review.to.id.toString(),
+                            role: review.to.role
+                        },
+                        rating: review.rating,
+                        review: review.review,
+                        createdAt: review.createdAt
+                    };
+                })
+            );
 
             return { shipperData: shipperDatos, isFollow: isFollow, tripsCount: tripsCompletedcount, loadsCount: loadscount, reviews: reviewDatos, averageRating: averageRating, isReview: isReview };
 
@@ -1235,13 +1257,24 @@ export class TransporterService implements ITransporterService {
             const shippers = await this._shipperRepository.find({}, projection, skip, limit)
             const total = await this._shipperRepository.count({});
 
-            const shipperDatos: ShipperForTransporterDirectoryDTO[] = shippers.map((shipper) => ({
-                _id: shipper._id as string,
-                shipperName: shipper.shipperName ?? '',
-                companyName: shipper.companyName ?? '',
-                email: shipper.email,
-                profileImage: shipper.profileImage ?? '',
-            }))
+            const shipperDatos: ShipperForTransporterDirectoryDTO[] = await Promise.all(
+                shippers.map(async (shipper) => {
+                    let profileImageUrl: string = '';
+
+                    if (shipper.profileImage) {
+                        profileImageUrl = await getPresignedDownloadUrl(shipper.profileImage) ?? '';
+                    }
+
+                    return {
+                        _id: shipper._id as string,
+                        shipperName: shipper.shipperName ?? '',
+                        companyName: shipper.companyName ?? '',
+                        email: shipper.email,
+                        profileImage: profileImageUrl,
+                    };
+                })
+            );
+
 
             return { shipper: shipperDatos, totalPages: Math.ceil(total / limit), totalItems: total }
 
@@ -1251,15 +1284,109 @@ export class TransporterService implements ITransporterService {
     }
 
     async fetchTransporterFollowersandFollowings(transporterId: string, status: string, search: string, page: number, limit: number): Promise<{ datas: any[], followersCount: number, followingsCount: number, totalPages: number }> {
+        // try {
+
+        //     const skip = (page - 1) * limit;
+        //     const transporter = await this._transporterRepository.findById(transporterId);
+
+        //     if (!transporterRepository) {
+        //         throw new Error('Transporter not found')
+        //     }
+
+        //     const projection = {
+        //         _id: 1,
+        //         shipperName: 1,
+        //         profileImage: 1,
+        //         followers: 1,
+        //         followings: 1
+        //     }
+
+        //     type ShipperWithfollowesBack = {
+        //         _doc?: any;
+        //         followsBack: boolean;
+        //     }
+
+        //     const followersLength = transporter?.followers?.length ?? 0
+        //     const followingsLength = transporter?.followings?.length ?? 0;
+
+        //     let cleanedResult;
+        //     let total = 0;;
+
+        //     if (status === 'followers') {
+
+        //         // * ---- findFollowers ----*
+        //         const followersIds = transporter?.followers;
+        //         // const followersSet = new Set(followersIds);
+        //         total = transporter?.followers?.length as number
+
+        //         const filter: any = {
+        //             _id: { $in: followersIds }
+        //         }
+
+        //         if (search) {
+        //             filter.shipperName = { $regex: search, $options: 'i' }
+        //         }
+
+        //         const shippers = await this._shipperRepository.find(filter, projection, skip, limit);
+
+        //         const result = shippers.map(shipper => ({
+        //             ...shipper,
+        //             followsBack: shipper.followers?.includes(transporterId)
+        //         }))
+
+        //         cleanedResult = result.map(val => {
+        //             const { _doc, followsBack } = val as ShipperWithfollowesBack;
+        //             return {
+        //                 ..._doc,
+        //                 followsBack,
+        //             }
+        //         })
+
+        //     } else {
+
+        //         // * ---- findFollowings ----- *
+
+        //         const followingsIds = transporter?.followings;
+        //         // const followingsSet = new Set(followersIds);
+        //         total = transporter?.followings?.length as number;
+
+        //         const filter: any = {
+        //             _id: { $in: followingsIds }
+        //         }
+
+        //         if (search) {
+        //             filter.shipperName = { $regex: search, $options: 'i' }
+        //         }
+
+        //         const followingShipper = await this._shipperRepository.find(filter, projection, skip, limit);
+
+        //         const followingResult = followingShipper.map(shipper => ({
+        //             ...shipper,
+        //             followsBack: shipper.followers?.includes(transporterId)
+        //         }))
+
+        //         cleanedResult = followingResult.map(val => {
+        //             const { _doc, followsBack } = val as ShipperWithfollowesBack;
+        //             return {
+        //                 ..._doc,
+        //                 followsBack,
+        //             }
+        //         })
+        //     }
+        //     return { datas: cleanedResult, followersCount: followersLength, followingsCount: followingsLength, totalPages: Math.ceil(total / limit) }
+
+        // } catch (error) {
+        //     console.log(error);
+
+        //     throw new Error(error instanceof Error ? error.message : String(error))
+        // }
+
         try {
-
             const skip = (page - 1) * limit;
-
-
             const transporter = await this._transporterRepository.findById(transporterId);
 
-            if (!transporterRepository) {
-                throw new Error('Transporter not found')
+            if (!transporter) {
+                throw new Error('Transporter not found');
             }
 
             const projection = {
@@ -1268,86 +1395,106 @@ export class TransporterService implements ITransporterService {
                 profileImage: 1,
                 followers: 1,
                 followings: 1
-            }
+            };
 
-            type ShipperWithfollowesBack = {
-                _doc?: any;
-                followsBack: boolean;
-            }
+            const followersLength = transporter.followers?.length ?? 0;
+            const followingsLength = transporter.followings?.length ?? 0;
 
-            const followersLength = transporter?.followers?.length ?? 0
-            const followingsLength = transporter?.followings?.length ?? 0;
+            let cleanedResult: any[] = [];
+            let total = 0;
+            const validIds = (ids: string[]) => ids?.filter(id => id && id.trim() !== "");
 
-            let cleanedResult;
-            let total = 0;;
 
             if (status === 'followers') {
+                const followersIds = validIds(transporter?.followers ?? []);
+                total = followersIds.length;
 
-                // * ---- findFollowers ----*
-                const followersIds = transporter?.followers;
-                // const followersSet = new Set(followersIds);
-                total = transporter?.followers?.length as number
+                if (!followersIds.length) return {
+                    datas: [],
+                    followersCount: followersLength,
+                    followingsCount: followingsLength,
+                    totalPages: 0
+                };
 
                 const filter: any = {
                     _id: { $in: followersIds }
-                }
+                };
 
                 if (search) {
-                    filter.shipperName = { $regex: search, $options: 'i' }
+                    filter.shipperName = { $regex: search, $options: 'i' };
                 }
 
                 const shippers = await this._shipperRepository.find(filter, projection, skip, limit);
 
-                const result = shippers.map(shipper => ({
-                    ...shipper,
-                    followsBack: shipper.followers?.includes(transporterId)
-                }))
+                const result = await Promise.all(shippers.map(async shipper => {
+                    const presignedUrl = shipper.profileImage
+                        ? await getPresignedDownloadUrl(shipper.profileImage)
+                        : null;
 
-                cleanedResult = result.map(val => {
-                    const { _doc, followsBack } = val as ShipperWithfollowesBack;
                     return {
-                        ..._doc,
-                        followsBack,
-                    }
-                })
+                        ...shipper,
+                        profileImage: presignedUrl,
+                        followsBack: shipper.followers?.includes(transporterId)
+                    };
+                }));
+
+                // ❗ Don't use `const` again here
+                cleanedResult = result.map(({ _doc, ...rest }: any) => ({
+                    ..._doc,
+                    ...rest,
+                }));
+
+
 
             } else {
+                const followingsIds = validIds(transporter?.followings ?? []);
+                total = followingsIds.length;
 
-                // * ---- findFollowings ----- *
-
-                const followingsIds = transporter?.followings;
-                // const followingsSet = new Set(followersIds);
-                total = transporter?.followings?.length as number;
+                if (!followingsIds.length) return {
+                    datas: [],
+                    followersCount: followersLength,
+                    followingsCount: followingsLength,
+                    totalPages: 0
+                };
 
                 const filter: any = {
                     _id: { $in: followingsIds }
-                }
+                };
 
                 if (search) {
-                    filter.shipperName = { $regex: search, $options: 'i' }
+                    filter.shipperName = { $regex: search, $options: 'i' };
                 }
 
                 const followingShipper = await this._shipperRepository.find(filter, projection, skip, limit);
 
-                const followingResult = followingShipper.map(shipper => ({
-                    ...shipper,
-                    followsBack: shipper.followers?.includes(transporterId)
-                }))
+                const result = await Promise.all(followingShipper.map(async shipper => {
+                    const presignedUrl = shipper.profileImage
+                        ? await getPresignedDownloadUrl(shipper.profileImage)
+                        : null;
 
-                cleanedResult = followingResult.map(val => {
-                    const { _doc, followsBack } = val as ShipperWithfollowesBack;
                     return {
-                        ..._doc,
-                        followsBack,
-                    }
-                })
-            }
-            return { datas: cleanedResult, followersCount: followersLength, followingsCount: followingsLength, totalPages: Math.ceil(total / limit) }
+                        ...shipper,
+                        profileImage: presignedUrl,
+                        followsBack: shipper.followers?.includes(transporterId)
+                    };
+                }));
 
+                // ❗ Don't use `const` again here
+                cleanedResult = result.map(({ _doc, ...rest }: any) => ({
+                    ..._doc,
+                    ...rest,
+                }));
+            }
+
+            return {
+                datas: cleanedResult,
+                followersCount: followersLength,
+                followingsCount: followingsLength,
+                totalPages: Math.ceil(total / limit)
+            };
         } catch (error) {
             console.log(error);
-
-            throw new Error(error instanceof Error ? error.message : String(error))
+            throw new Error(error instanceof Error ? error.message : String(error));
         }
     }
 
@@ -1623,7 +1770,7 @@ export class TransporterService implements ITransporterService {
         }
     }
 
-    async fetchChats(transporterId: string): Promise<IChat[]> {
+    async fetchChats(transporterId: string): Promise<ChatForTransporterDTO[]> {
         try {
 
             let chats = await this._chatRepository.findWithPopulate(
@@ -1633,23 +1780,34 @@ export class TransporterService implements ITransporterService {
                 ]
             )
 
-            const updatedChats = [];
-            for (let i = 0; i < chats.length; i++) {
-                const unreadCount = await this._messageRepository.count({
-                    chatId: chats[i]._id,
-                    receiverId: transporterId,
-                    isRead: false,
-                });
+            const updatedChats: ChatForTransporterDTO[] = await Promise.all(
+                chats.map(async (chat) => {
+                    const unreadCount = await this._messageRepository.count({
+                        chatId: chat._id,
+                        receiverId: transporterId,
+                        isRead: false,
+                    });
 
-                const chatObj = chats[i].toObject();
-                chatObj.unreadCount = unreadCount;
+                    const chatObj = chat.toObject();
 
-                updatedChats.push(chatObj)
-            }
+                    let profileImageUrl = '';
+                    if (chatObj.shipperId?.profileImage) {
+                        profileImageUrl = await getPresignedDownloadUrl(chatObj.shipperId.profileImage) ?? '';
+                    }
 
-            console.log(chats, 'chats');
-
-
+                    return {
+                        _id: chatObj._id.toString(),
+                        transporterId: chatObj.transporterId.toString(),
+                        shipperId: {
+                            _id: chatObj.shipperId._id.toString(),
+                            shipperName: chatObj.shipperId.shipperName,
+                            profileImage: profileImageUrl
+                        },
+                        lastMessage: chatObj.lastMessage ?? null,
+                        unreadCount
+                    };
+                })
+            );
 
             return updatedChats
 

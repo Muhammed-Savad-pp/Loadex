@@ -23,5 +23,28 @@ export interface ShipperDTO {
         createdAt: Date | null;
         paidAmount: number;
     }
+}
 
+export interface TransporterForShipperDTO {
+    _id: string;
+    transporterName: string;
+    email: string;
+    profileImage: string;
+    followers: string[];
+    followings: string[]
+}
+
+export interface ShipperForAdminDTO {
+    _id: string
+    shipperName: string;
+    email: string;
+    phone: string;
+    isBlocked: boolean;
+    companyName: string;
+    gstNumber: string;
+    verificationStatus: string;
+    panNumber: string;
+    aadhaarFront: string;
+    aadhaarBack: string;
+    profileImage: string;
 }

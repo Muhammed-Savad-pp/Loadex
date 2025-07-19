@@ -26,12 +26,12 @@ const Directory: React.FC = () => {
 
     useEffect(() => {
         const getShippers = async () => {
-            const response: any = await fetchTransporters(page, limit);
+            const response: any = await fetchTransporters(page, limit, searchTerm);
             setTransporter(response.transporters as ITransporter[]);
             setTotalPages(response.totalPages);
         }
         getShippers()
-    }, [page])
+    }, [page, searchTerm])
 
     // Filter shippers based on search term only
     useEffect(() => {

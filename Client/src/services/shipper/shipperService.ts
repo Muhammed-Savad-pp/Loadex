@@ -185,15 +185,15 @@ export const postReview = async (transporterId: string, rating: number, comment:
 
 }
 
-export const fetchTransporters = async (page: number, limit: number) => {
+export const fetchTransporters = async (page: number, limit: number, searchTerm: string) => {
 
-    const response = await api.get(`/shipper/fetchTransporters?page=${page}&limit=${limit}`);
+    const response = await api.get(`/shipper/fetchTransporters?page=${page}&limit=${limit}&search=${searchTerm}`);
     return response.data
 }
 
-export const fetchTrucks = async () => {
+export const fetchTrucks = async (page: number, limit: number) => {
 
-    const response = await api.get('/shipper/fetchTrucks');
+    const response = await api.get(`/shipper/fetchTrucks?page=${page}&limit=${limit}`);
     return response.data;
 
 }

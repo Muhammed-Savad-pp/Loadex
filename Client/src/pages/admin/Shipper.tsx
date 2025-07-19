@@ -11,6 +11,7 @@ export interface IShipper {
     email: string;
     phone: string;
     isBlocked: boolean;
+    profileImage: string;
 }
 
 

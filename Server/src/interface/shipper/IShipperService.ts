@@ -1,7 +1,9 @@
 import { BidForShipperDTO } from "../../dtos/bids/bid.for.shipper.dto";
+import { ChatForShipperDTO } from "../../dtos/chat/chat.dto";
 import { LoadForShipperDTO } from "../../dtos/load/load.dto";
-import { ShipperDTO } from "../../dtos/shipper/shipper.dto";
+import { ShipperDTO, TransporterForShipperDTO } from "../../dtos/shipper/shipper.dto";
 import { TripForShipperDTO } from "../../dtos/trip/trip.for.transporter.dto";
+import { TruckForShipperDTO } from "../../dtos/truck/truck.for.shipper.dto";
 import { IBid } from "../../models/BidModel";
 import { IChat } from "../../models/Chat";
 import { ILoad } from "../../models/LoadModel";
@@ -33,12 +35,12 @@ export interface IShipperService {
     verifyPayment(transactionId: string, status: string): Promise<{success: boolean, message: string}>;
     fetchTrips(shipperId: string, page: number, limit: number): Promise<{tripsData: TripForShipperDTO[] | null, totalPages: number}>
     updateProfile(shipperId: string, shipperName: string, phone: string, profileImage?: Express.Multer.File): Promise<{success: boolean, message: string, shipperData?: Partial<IShipper>}>
-    fetchTransporterDetails(shipperId: string, transporterId: string): Promise<{transporterData: ITransporter, isFollow: boolean, truckCount: number, tripsCount: number ,reviews: Partial<IRatingReview>[], averageRating: number, isReview: boolean}>;
+    fetchTransporterDetails(shipperId: string, transporterId: string): Promise<{transporterData: TransporterForShipperDTO, isFollow: boolean, truckCount: number, tripsCount: number ,reviews: Partial<IRatingReview>[], averageRating: number, isReview: boolean}>;
     followTransporter(shipperId: string, tranpsorterId: string): Promise<{success: boolean, transporterData: ITransporter, isFollow: boolean}>
     unFollowTransporter(shipperId: string, transporterId: string): Promise<{success: boolean, transporterData: ITransporter, isFollow: boolean}>;
     postReview(shipperId: string, tranpsorterId: string, rating: number, comment: string): Promise<{success: boolean, reviewData?: IRatingReview}>
-    fetchTransporters(page: number, limit: number): Promise<{transporters: ITransporter[] | null, totalPages: number}>
-    fetchTrucks(): Promise<ITruck[] | null>
+    fetchTransporters(page: number, limit: number, search: string): Promise<{transporters: TransporterForShipperDTO[] | null, totalPages: number}>
+    fetchTrucks(page: number, limit: number): Promise<{truckData: TruckForShipperDTO[] | null, totalPages: number}>;
     fetchShipperPlans(): Promise<{shipperPlans: {}}>
     subscriptionCheckoutSession(shipperId: string, planId: string): Promise<{success: boolean, sessionId?: string, message: string}>
     handleSubscriptionSuccess(shipperId: string, sessionId: string, planId: string): Promise<{success: boolean, message: string; planName: string; endDate: Date}>
@@ -46,7 +48,7 @@ export interface IShipperService {
     updateLoad(formData: Partial<ILoad>): Promise<{success: boolean, message: string, updateData?: Partial<ILoad>}>
     deleteLoadByLoadId(loadId: string): Promise<{success: boolean, message: string, loadData?: Partial<ILoad> }>;
     startChat(shipperId: string, transporterId: string): Promise<{success: boolean, chatData: IChat}>
-    fetchChats(shipperId: string): Promise<IChat[] | null>;
+    fetchChats(shipperId: string): Promise<ChatForShipperDTO[] | null>;
     fetchMessages(chatId: string): Promise<IMessage[]>;
     sendMessage(shipperId: string, chatId: string, transporterId: string, content: string): Promise<{success: boolean, messageData?: IMessage}>;
     upateMessageAsRead(chatId: string, shipperId: string): Promise<{success: boolean}>;

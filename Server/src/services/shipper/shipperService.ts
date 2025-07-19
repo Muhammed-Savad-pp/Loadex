@@ -7,7 +7,7 @@ import { IShipper } from "../../models/ShipperModel";
 import { IShipperService } from "../../interface/shipper/IShipperService";
 import { IShipperRepository } from "../../repositories/interface/IShipperRepository";
 import { IOtpRepository } from "../../repositories/interface/IOtpRepository";
-import { s3 } from "../../config/s3Config";
+import { getPresignedDownloadUrl, s3 } from "../../config/s3Config";
 import { InvalidObjectState, PutObjectCommand } from "@aws-sdk/client-s3";
 import { ILoad } from "../../models/LoadModel";
 import mongoose, { Mongoose } from "mongoose";
@@ -37,10 +37,12 @@ import { IShipperPayment } from "../../models/ShipperPaymentModel";
 import { startOfDay, subDays } from "date-fns";
 import { IAdminPaymentRepository } from "../../repositories/interface/IAdminPaymentRepository";
 import { BidForShipperDTO } from "../../dtos/bids/bid.for.shipper.dto";
-import { ShipperDTO } from "../../dtos/shipper/shipper.dto";
+import { ShipperDTO, TransporterForShipperDTO } from "../../dtos/shipper/shipper.dto";
 import config from "../../config";
 import { LoadForShipperDTO } from "../../dtos/load/load.dto";
 import { TripForShipperDTO } from "../../dtos/trip/trip.for.transporter.dto";
+import { TruckForShipperDTO } from "../../dtos/truck/truck.for.shipper.dto";
+import { ChatForShipperDTO } from "../../dtos/chat/chat.dto";
 
 configDotenv()
 
@@ -284,34 +286,47 @@ export class ShipperService implements IShipperService {
                 return { success: false, message: 'Shipper not found' }
             }
 
+            const profileImageUrl = shipperData.profileImage
+                ? await getPresignedDownloadUrl(shipperData.profileImage)
+                : '';
+            const aadhaarFrontUrl = shipperData.aadhaarFront
+                ? await getPresignedDownloadUrl(shipperData.aadhaarFront)
+                : '';
+            const aadhaarBackUrl = shipperData.aadhaarBack
+                ? await getPresignedDownloadUrl(shipperData.aadhaarBack)
+                : '';
+
+
+            const dto: ShipperDTO = {
+                shipperName: shipperData.shipperName ?? '',
+                email: shipperData.email ?? '',
+                phone: shipperData.phone ?? '',
+                verificationStatus: shipperData.verificationStatus ?? '',
+                panNumber: shipperData.panNumber ?? '',
+                aadhaarFront: aadhaarFrontUrl ?? '',
+                aadhaarBack: aadhaarBackUrl ?? '',
+                companyName: shipperData.companyName ?? '',
+                gstNumber: shipperData.gstNumber ?? '',
+                profileImage: profileImageUrl ?? '',
+                followers: shipperData.followers?.map(String) ?? [],
+                followings: shipperData.followings?.map(String) ?? [],
+                subscription: {
+                    planId: shipperData.subscription?.planId ?? '',
+                    planName: shipperData.subscription?.planName ?? '',
+                    status: shipperData.subscription?.status ?? '',
+                    startDate: shipperData.subscription?.startDate ?? null,
+                    endDate: shipperData.subscription?.endDate ?? null,
+                    createdAt: shipperData.subscription?.createdAt ?? null,
+                    isActive: shipperData.subscription?.isActive ?? false,
+                    paidAmount: shipperData.subscription?.paidAmount ?? 0
+                }
+            };
+
 
             return {
                 success: true,
                 message: 'Shipper Find Successfully',
-                shipperData: {
-                    shipperName: shipperData.shipperName || '',
-                    email: shipperData.email || '',
-                    phone: shipperData.phone || '',
-                    verificationStatus: shipperData.verificationStatus || '',
-                    panNumber: shipperData.panNumber || '',
-                    aadhaarFront: shipperData.aadhaarFront || '',
-                    aadhaarBack: shipperData.aadhaarBack || '',
-                    companyName: shipperData.companyName || '',
-                    gstNumber: shipperData.gstNumber || '',
-                    profileImage: shipperData.profileImage || '',
-                    followers: shipperData.followers || [],
-                    followings: shipperData.followings || [],
-                    subscription: {
-                        planId: shipperData.subscription?.planId || '',
-                        planName: shipperData.subscription?.planName || '',
-                        status: shipperData.subscription?.status || '',
-                        startDate: shipperData.subscription?.startDate ?? null,
-                        endDate: shipperData.subscription?.endDate ?? null,
-                        createdAt: shipperData.subscription?.createdAt ?? null,
-                        isActive: shipperData.subscription?.isActive || false,
-                        paidAmount: shipperData.subscription?.paidAmount || 0
-                    }
-                }
+                shipperData: dto
             };
 
 
@@ -324,13 +339,15 @@ export class ShipperService implements IShipperService {
     async registerKyc(shipperId: string, companyName: string, panNumber: string, gstNumber: string, aadhaarFront?: Express.Multer.File, aadhaarBack?: Express.Multer.File): Promise<{ success: boolean; message: string; shipperData?: Partial<IShipper>; }> {
         try {
 
-            let aadhaarFrontUrl: string | undefined;
-            let aadhaarBackUrl: string | undefined;
+            let aadhaarFrontKey: string | undefined;
+            let aadhaarBackKey: string | undefined;
 
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
+
+                const key = `${folder}/shipper/${Date.now()}_${file.originalname}`
                 const s3Params = {
                     Bucket: config.awsBucketName,
-                    Key: `${folder}/shipper/${Date.now()}_${file.originalname}`,
+                    Key: key,
                     Body: file.buffer,
                     ContentType: file.mimetype
                 };
@@ -338,15 +355,15 @@ export class ShipperService implements IShipperService {
                 const command = new PutObjectCommand(s3Params)
                 await s3.send(command)
 
-                return `https://${config.awsBucketName}.s3.${config.awsRegion}.amazonaws.com/${s3Params.Key}`;
+                return key;
             }
 
             if (aadhaarFront) {
-                aadhaarFrontUrl = await uploadToS3(aadhaarFront, 'aadhaar-front');
+                aadhaarFrontKey = await uploadToS3(aadhaarFront, 'aadhaar-front');
             }
 
             if (aadhaarBack) {
-                aadhaarBackUrl = await uploadToS3(aadhaarBack, 'aadhaar-back');
+                aadhaarBackKey = await uploadToS3(aadhaarBack, 'aadhaar-back');
             }
 
             const updateShipper = await this._shipperRepositories.updateShipperById(
@@ -355,8 +372,8 @@ export class ShipperService implements IShipperService {
                     companyName,
                     panNumber,
                     gstNumber,
-                    aadhaarFront: aadhaarFrontUrl,
-                    aadhaarBack: aadhaarBackUrl,
+                    aadhaarFront: aadhaarFrontKey,
+                    aadhaarBack: aadhaarBackKey,
                     verificationStatus: 'requested'
                 }
             )
@@ -558,35 +575,55 @@ export class ShipperService implements IShipperService {
             const bids = await this._bidRepositories.findBidsForShipper(filter, skip, limit);
             const bidsCount = await this._bidRepositories.count({ shipperId: id })
 
-            const bidDatos: BidForShipperDTO[] = (bids ?? []).map((bid: IBid) => ({
-                _id: bid._id as string,
-                transporterId: {
-                    _id: (bid.transporterId as any)._id.toString(),
-                    transporterName: (bid.transporterId as any).transporterName,
-                    profileImage: (bid.transporterId as any).profileImage
-                },
-                shipperId: bid.shipperId.toString(),
-                loadId: {
-                    _id: (bid.loadId as any)._id.toString(),
-                    pickupLocation: (bid.loadId as any).pickupLocation,
-                    dropLocation: (bid.loadId as any).dropLocation,
-                    material: (bid.loadId as any).material,
-                    quantity: (bid.loadId as any).quantity,
-                    scheduledDate: (bid.loadId as any).scheduledDate
-                },
-                truckId: {
-                    _id: (bid.truckId as any)._id.toString(),
-                    truckNo: (bid.truckId as any).truckNo,
-                    truckType: (bid.truckId as any).truckType,
-                    capacity: (bid.truckId as any).capacity,
-                    truckImage: (bid.truckId as any).truckImage
-                },
-                price: bid.price,
-                status: bid.status,
-                createAt: bid.createAt,
-                shipperPayment: bid.shipperPayment,
-                transporterPayment: bid.transporterPayment
-            }))
+            const bidDatos: BidForShipperDTO[] = await Promise.all(
+                (bids ?? []).map(async (bid: IBid) => {
+                    let profileImageUrl = '';
+                    let truckImageUrl = '';
+
+                    // Generate presigned URLs if keys exist
+                    try {
+                        if ((bid.transporterId as any)?.profileImage) {
+                            profileImageUrl = await getPresignedDownloadUrl((bid.transporterId as any).profileImage) ?? '';
+                        }
+                        if ((bid.truckId as any)?.truckImage) {
+                            truckImageUrl = await getPresignedDownloadUrl((bid.truckId as any).truckImage) ?? '';
+                        }
+                    } catch (err) {
+                        console.error('Error generating presigned URL:', err);
+                    }
+
+                    return {
+                        _id: bid._id as string,
+                        transporterId: {
+                            _id: (bid.transporterId as any)._id.toString(),
+                            transporterName: (bid.transporterId as any).transporterName,
+                            profileImage: profileImageUrl
+                        },
+                        shipperId: bid.shipperId.toString(),
+                        loadId: {
+                            _id: (bid.loadId as any)._id.toString(),
+                            pickupLocation: (bid.loadId as any).pickupLocation,
+                            dropLocation: (bid.loadId as any).dropLocation,
+                            material: (bid.loadId as any).material,
+                            quantity: (bid.loadId as any).quantity,
+                            scheduledDate: (bid.loadId as any).scheduledDate
+                        },
+                        truckId: {
+                            _id: (bid.truckId as any)._id.toString(),
+                            truckNo: (bid.truckId as any).truckNo,
+                            truckType: (bid.truckId as any).truckType,
+                            capacity: (bid.truckId as any).capacity,
+                            truckImage: truckImageUrl
+                        },
+                        price: bid.price,
+                        status: bid.status,
+                        createAt: bid.createAt,
+                        shipperPayment: bid.shipperPayment,
+                        transporterPayment: bid.transporterPayment
+                    };
+                })
+            );
+
 
             return { bidData: bidDatos, totalPages: Math.ceil(bidsCount / limit) }
 
@@ -668,14 +705,14 @@ export class ShipperService implements IShipperService {
 
             const bidObjectId = new mongoose.Types.ObjectId(bidId);
 
-            const existingPayment = await this._shipperPaymentRepositories.findOne({bidId: bidObjectId})
+            const existingPayment = await this._shipperPaymentRepositories.findOne({ bidId: bidObjectId })
 
             console.log(existingPayment, 'existing');
-            
 
-            if(existingPayment && (existingPayment.paymentStatus === 'success' || existingPayment.paymentStatus === 'pending')) {
+
+            if (existingPayment && (existingPayment.paymentStatus === 'success' || existingPayment.paymentStatus === 'pending')) {
                 console.log('herere');
-                
+
                 return { success: false, message: 'Payment is already in progress or completed for this bid.' };
             }
 
@@ -800,39 +837,53 @@ export class ShipperService implements IShipperService {
 
             const tripsCount = await this._tripRepositories.count({ shipperId: shipperId })
 
-            const tripsData: TripForShipperDTO[] = (trips || []).map((trip: any) => ({
-                transporterId: {
-                    _id: trip.transporterId?._id?.toString() ?? '',
-                    transporterName: trip.transporterId?.transporterName ?? '',
-                    phone: trip.transporterId?.phone ?? '',
-                    profileImage: trip.transporterId?.profileImage ?? ''
-                },
-                shipperId: {
-                    shipperName: trip.shipperId?.shipperName ?? ''
-                },
-                loadId: {
-                    pickupLocation: trip.loadId?.pickupLocation ?? '',
-                    dropLocation: trip.loadId?.dropLocation ?? '',
-                    material: trip.loadId?.material ?? '',
-                    quantity: trip.loadId?.quantity ?? '',
-                    scheduledDate: trip.loadId?.scheduledDate ?? new Date(),
-                    length: trip.loadId?.length ?? '',
-                    height: trip.loadId?.height ?? '',
-                    breadth: trip.loadId?.breadth ?? '',
-                    descriptions: trip.loadId?.descriptions ?? '',
-                    distanceInKm: trip.loadId?.distanceInKm ?? 0
-                },
-                truckId: {
-                    truckNo: trip.truckId?.truckNo ?? '',
-                    truckType: trip.truckId?.truckType ?? '',
-                    capacity: trip.truckId?.capacity ?? '',
-                    driverName: trip.truckId?.driverName ?? '',
-                    driverMobileNo: trip.truckId?.driverMobileNo ?? ''
-                },
-                price: trip.price ?? '',
-                tripStatus: trip.tripStatus ?? '',
-                confirmedAt: trip.confirmedAt ?? ''
-            }));
+            const tripsData: TripForShipperDTO[] = await Promise.all(
+                (trips || []).map(async (trip: any) => {
+                    let profileImageUrl = '';
+
+                    if (trip.transporterId?.profileImage) {
+                        try {
+                            profileImageUrl = await getPresignedDownloadUrl(trip.transporterId.profileImage) ?? '';
+                        } catch (err) {
+                            console.error('Failed to generate presigned URL:', err);
+                        }
+                    }
+
+                    return {
+                        transporterId: {
+                            _id: trip.transporterId?._id?.toString() ?? '',
+                            transporterName: trip.transporterId?.transporterName ?? '',
+                            phone: trip.transporterId?.phone ?? '',
+                            profileImage: profileImageUrl // Replace with presigned URL
+                        },
+                        shipperId: {
+                            shipperName: trip.shipperId?.shipperName ?? ''
+                        },
+                        loadId: {
+                            pickupLocation: trip.loadId?.pickupLocation ?? '',
+                            dropLocation: trip.loadId?.dropLocation ?? '',
+                            material: trip.loadId?.material ?? '',
+                            quantity: trip.loadId?.quantity ?? '',
+                            scheduledDate: trip.loadId?.scheduledDate ?? new Date(),
+                            length: trip.loadId?.length ?? '',
+                            height: trip.loadId?.height ?? '',
+                            breadth: trip.loadId?.breadth ?? '',
+                            descriptions: trip.loadId?.descriptions ?? '',
+                            distanceInKm: trip.loadId?.distanceInKm ?? 0
+                        },
+                        truckId: {
+                            truckNo: trip.truckId?.truckNo ?? '',
+                            truckType: trip.truckId?.truckType ?? '',
+                            capacity: trip.truckId?.capacity ?? '',
+                            driverName: trip.truckId?.driverName ?? '',
+                            driverMobileNo: trip.truckId?.driverMobileNo ?? ''
+                        },
+                        price: trip.price ?? '',
+                        tripStatus: trip.tripStatus ?? '',
+                        confirmedAt: trip.confirmedAt ?? ''
+                    };
+                })
+            );
 
             return { tripsData: tripsData, totalPages: Math.ceil(tripsCount / limit) }
 
@@ -844,12 +895,13 @@ export class ShipperService implements IShipperService {
     async updateProfile(shipperId: string, shipperName: string, phone: string, profileImage?: Express.Multer.File): Promise<{ success: boolean; message: string; shipperData?: Partial<IShipper>; }> {
         try {
 
-            let profileImageUrl: string | undefined
+            let profileImageKey: string | undefined
 
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
+                const key = `${folder}/shipper/${Date.now()}_${file.originalname}`
                 const s3Params = {
                     Bucket: config.awsBucketName,
-                    Key: `${folder}/shipper/${Date.now()}_${file.originalname}`,
+                    Key: key,
                     Body: file.buffer,
                     ContentType: file.mimetype
                 };
@@ -857,25 +909,24 @@ export class ShipperService implements IShipperService {
                 const command = new PutObjectCommand(s3Params)
                 await s3.send(command)
 
-                return `https://${config.awsBucketName}.s3.${config.awsRegion}.amazonaws.com/${s3Params.Key}`;
+                return key;
 
             }
 
             if (profileImage) {
-                profileImageUrl = await uploadToS3(profileImage, 'profileImage')
+                profileImageKey = await uploadToS3(profileImage, 'profileImage')
             }
 
             const updateShipper = await this._shipperRepositories.updateShipperById(shipperId, {
                 shipperName: shipperName,
                 phone: phone,
-                profileImage: profileImageUrl,
+                profileImage: profileImageKey,
             })
 
             if (!updateShipper) {
                 return { success: false, message: 'Shipper Profile not Updated' }
             }
 
-            console.log('profileImageUrl', profileImageUrl);
 
             return { success: true, message: 'Shipper Profile Updated SuccessFully', shipperData: updateShipper }
 
@@ -884,7 +935,7 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async fetchTransporterDetails(shipperId: string, transporterId: string): Promise<{ transporterData: ITransporter; isFollow: boolean; truckCount: number; tripsCount: number; reviews: Partial<IRatingReview>[]; averageRating: number, isReview: boolean }> {
+    async fetchTransporterDetails(shipperId: string, transporterId: string): Promise<{ transporterData: TransporterForShipperDTO; isFollow: boolean; truckCount: number; tripsCount: number; reviews: Partial<IRatingReview>[]; averageRating: number, isReview: boolean }> {
         try {
 
             const transporter = await this._transporterRepositories.findTransporterById(transporterId);
@@ -924,7 +975,25 @@ export class ShipperService implements IShipperService {
             const averageRatingResult = await this._reviewRatingRepositories.aggregate(AverageRatingPipeline);
             const averageRating = averageRatingResult[0]?.avgRating ?? 0;
 
-            return { transporterData: transporter, isFollow: isFollow, truckCount: trucks, tripsCount: trips, reviews: reviews, averageRating: averageRating, isReview };
+            let profileImageUrl = '';
+            if (transporter?.profileImage) {
+                try {
+                    profileImageUrl = await getPresignedDownloadUrl(transporter.profileImage) ?? '';
+                } catch (error) {
+                    console.error("Error generating presigned URL:", error);
+                }
+            }
+
+            const mappedTransporter: TransporterForShipperDTO = {
+                _id: transporter._id as string,
+                transporterName: transporter.transporterName,
+                email: transporter.email,
+                profileImage: profileImageUrl,
+                followers: transporter.followers?.map((f: any) => f.toString()) ?? [],
+                followings: transporter.followings?.map((f: any) => f.toString()) ?? []
+            };
+
+            return { transporterData: mappedTransporter, isFollow: isFollow, truckCount: trucks, tripsCount: trips, reviews: reviews, averageRating: averageRating, isReview };
 
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -1024,10 +1093,12 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async fetchTransporters(page: number, limit: number): Promise<{ transporters: ITransporter[] | null, totalPages: number }> {
+    async fetchTransporters(page: number, limit: number, search: string): Promise<{ transporters: TransporterForShipperDTO[] | null, totalPages: number }> {
         try {
 
             const skip = (page - 1) * limit;
+
+            const filter: any = {}
 
             const projection = {
                 _id: 1,
@@ -1036,28 +1107,89 @@ export class ShipperService implements IShipperService {
                 email: 1,
             }
 
-            const transporters = await this._transporterRepositories.find({}, projection, skip, limit);
+            if (search) {
+                filter.transporterName = { $regex: search, $options: "i" }
+            }
+
+            const transporters = await this._transporterRepositories.find(filter, projection, skip, limit);
             const total = await this._transporterRepositories.count({});
 
-            return { transporters: transporters, totalPages: Math.ceil(total / limit) }
+            const transportersDatas: TransporterForShipperDTO[] = await Promise.all(
+                (transporters ?? []).map(async (transporter: any) => {
+                    let profileImageUrl = '';
+
+                    try {
+                        if (transporter.profileImage) {
+                            profileImageUrl = await getPresignedDownloadUrl(transporter.profileImage) ?? '';
+                        }
+                    } catch (error) {
+                        console.error('Failed to generate profile image URL:', error);
+                    }
+
+                    return {
+                        _id: transporter._id.toString(),
+                        transporterName: transporter.transporterName,
+                        email: transporter.email,
+                        profileImage: profileImageUrl,
+                        followers: transporter.followers?.map((f: any) => f.toString()) ?? [],
+                        followings: transporter.followings?.map((f: any) => f.toString()) ?? [],
+                    };
+                })
+            );
+
+            return { transporters: transportersDatas, totalPages: Math.ceil(total / limit) }
 
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
     }
 
-    async fetchTrucks(): Promise<ITruck[] | null> {
+    async fetchTrucks(page: number, limit: number): Promise<{ truckData: TruckForShipperDTO[] | null, totalPages: number }> {
         try {
+
+            const skip = (page - 1) * limit;
 
             const trucks = await this._truckRepositories.findWithPopulate(
                 { verificationStatus: 'approved' },
                 [
                     { path: 'transporterId', select: 'transporterName profileImage' }
-                ]
+                ],
+                skip,
+                limit
             )
-            console.log(trucks);
 
-            return trucks
+            const mappedTrucks: TruckForShipperDTO[] = await Promise.all(
+                (trucks ?? []).map(async (truck: any) => {
+                    let profileImageUrl = '';
+
+                    try {
+                        if (truck.transporterId?.profileImage) {
+                            profileImageUrl = await getPresignedDownloadUrl(truck.transporterId.profileImage) ?? '';
+                        }
+                    } catch (error) {
+                        console.error('Failed to generate presigned profile image URL:', error);
+                    }
+
+                    return {
+                        _id: truck._id.toString(),
+                        transporterId: {
+                            _id: truck.transporterId._id.toString(),
+                            transporterName: truck.transporterId.transporterName,
+                            profileImage: profileImageUrl,
+                        },
+                        truckOwnerName: truck.truckOwnerName,
+                        truckType: truck.truckType,
+                        truckNo: truck.truckNo,
+                        capacity: truck.capacity,
+                        tyres: truck.tyres,
+                        currentLocation: truck.currentLocation,
+                        operatingStates: truck.operatingStates,
+                    };
+                })
+            );
+
+            const total = await this._truckRepositories.count({ verificationStatus: 'approved' })
+            return { truckData: mappedTrucks, totalPages: Math.ceil(total / limit) }
 
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -1302,37 +1434,53 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async fetchChats(shipperId: string): Promise<IChat[] | null> {
+    async fetchChats(shipperId: string): Promise<ChatForShipperDTO[] | null> {
         try {
-
             const chats = await this._chatRepository.findWithPopulate(
                 { shipperId },
                 [
                     { path: 'transporterId', select: '_id transporterName profileImage' }
                 ]
-            )
+            );
 
-            const updatedChats = [];
-            for (let i = 0; i < chats.length; i++) {
-                let unreadCount = await this._messageRepository.count({
-                    chatId: chats[i]._id,
-                    receiverId: shipperId,
-                    isRead: false
+            const updatedChats: ChatForShipperDTO[] = await Promise.all(
+                chats.map(async (chat: any) => {
+                    let unreadCount = await this._messageRepository.count({
+                        chatId: chat._id,
+                        receiverId: shipperId,
+                        isRead: false
+                    });
+
+                    let profileImageUrl = '';
+                    try {
+                        if (chat.transporterId?.profileImage) {
+                            profileImageUrl = await getPresignedDownloadUrl(chat.transporterId.profileImage) ?? '';
+                        }
+                    } catch (err) {
+                        console.error('Failed to generate pre-signed profileImage URL:', err);
+                    }
+
+                    return {
+                        _id: chat._id.toString(),
+                        shipperId: chat.shipperId.toString(),
+                        lastMessage: chat.lastMessage ?? null,
+                        unreadCount: unreadCount,
+                        transporterId: {
+                            _id: chat.transporterId._id.toString(),
+                            transporterName: chat.transporterId.transporterName,
+                            profileImage: profileImageUrl,
+                        }
+                    };
                 })
-
-                const chatObj = chats[i].toObject();
-                chatObj.unreadCount = unreadCount;
-                updatedChats.push(chatObj)
-
-            }
+            );
 
             return updatedChats;
-
         } catch (error) {
             console.error(error);
-            throw new Error(error instanceof Error ? error.message : String(error))
+            throw new Error(error instanceof Error ? error.message : String(error));
         }
     }
+
 
     async fetchMessages(chatId: string): Promise<IMessage[]> {
         try {
