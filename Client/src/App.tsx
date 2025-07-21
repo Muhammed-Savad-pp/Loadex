@@ -1,11 +1,12 @@
+import React from 'react';
 
 import { Route, Routes } from 'react-router-dom'
 import './App.css'
-import CommonRoutes from './Routes/CommonRoutes';
+const CommonRoutes = React.lazy(() => import('./Routes/CommonRoutes'));
 import { Toaster } from 'react-hot-toast';
-import TransporterRoute from './Routes/TransporterRoute';
-import AdminRoutes from './Routes/AdminRoutes';
-import ShipperRoute from './Routes/ShipperRoute';
+const TransporterRoute = React.lazy(() => import('./Routes/TransporterRoute'));
+const AdminRoutes = React.lazy(() => import('./Routes/AdminRoutes'));
+const ShipperRoute = React.lazy(() => import('./Routes/ShipperRoute'));
 
 function App() {
   
