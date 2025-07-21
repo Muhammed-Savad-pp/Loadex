@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "../../components/Common/Navbar/Navbar";
 import ShipperProfileSidebar from "../../components/shipper/ShipperProfileSidebar";
 import { fetchTrips } from "../../services/shipper/shipperService";
 import { Copy } from 'lucide-react';
 import ProfileComponent from "../../components/shipper/ProfileComponent";
-import { debounce } from "lodash";
+// import { debounce } from "lodash";
 
 interface ITrips {
     _id: string;

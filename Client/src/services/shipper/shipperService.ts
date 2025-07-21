@@ -1,7 +1,6 @@
 import { LoadData, userSignUp } from "../../interface/interface";
 import { axiosInstance, publicApiClinet } from "../axiosInstance/axiosInstance";
 import { IFormData } from "../../pages/shipper/PostLoad";
-import { filter } from "lodash";
 
 const publicApi = publicApiClinet;
 const api = axiosInstance;
