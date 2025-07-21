@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Sidebar from "../../components/admin/Sidebar";
 import { getShipper } from "../../services/admin/adminapi";
 import { updateSipperStatus } from "../../services/admin/adminapi";
 import toast from "react-hot-toast";
 import DataTable from "../../components/admin/DataTable";
+import { debounce } from "lodash";
 
 export interface IShipper {
     _id: string
@@ -21,25 +22,34 @@ const Shipper: React.FC = () => {
     const [page, setPage] = useState<number>(1);
     const [search, setSearch] = useState<string>('');
     const [totalPages, setTotalPages] = useState<number>(10);
-    const limit = 2;
+    const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+
+    const limit = 7;
+
+    const debounceSearch = useCallback(
+        debounce((value: string) => {
+            setDebouncedSearch(value);
+        }, 1000),
+        []
+    );
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearch(e.target.value);
+        debounceSearch(e.target.value)
+    }
 
 
     useEffect(() => {
         const fetchShipper = async () => {
 
-            const response: any = await getShipper(search, page, limit);
+            const response: any = await getShipper(debouncedSearch, page, limit);
             setShipperData(response.shipperData);
             setTotalPages(response.totalPages)
         }
-        
+
         fetchShipper()
 
-    }, [page, search])
-
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearch(e.target.value);
-        setPage(1);
-    };
+    }, [page, debouncedSearch])
 
     const handleBlockUnBlock = async (id: string) => {
         try {
@@ -109,7 +119,7 @@ const Shipper: React.FC = () => {
                         type="text"
                         placeholder="Search..."
                         value={search}
-                        onChange={handleSearch}
+                        onChange={handleSearchChange}
                         className="p-2 border rounded-md w-80"
                     />
                 </div>

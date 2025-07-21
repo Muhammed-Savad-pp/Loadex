@@ -33,7 +33,7 @@ export interface IShipperService {
     shipperGoogleLoging(name: string, email: string):  Promise<{success: boolean, message: string, data?: Partial<IShipper> | null, accessToken?: string, refreshToken?: string}> ;
     sessionCheckout(bidId: string): Promise<{success: boolean, message: string, sessionId?: string}>
     verifyPayment(transactionId: string, status: string): Promise<{success: boolean, message: string}>;
-    fetchTrips(shipperId: string, page: number, limit: number): Promise<{tripsData: TripForShipperDTO[] | null, totalPages: number}>
+    fetchTrips(shipperId: string, page: number, limit: number, status: string): Promise<{tripsData: TripForShipperDTO[] | null, totalPages: number}>
     updateProfile(shipperId: string, shipperName: string, phone: string, profileImage?: Express.Multer.File): Promise<{success: boolean, message: string, shipperData?: Partial<IShipper>}>
     fetchTransporterDetails(shipperId: string, transporterId: string): Promise<{transporterData: TransporterForShipperDTO, isFollow: boolean, truckCount: number, tripsCount: number ,reviews: Partial<IRatingReview>[], averageRating: number, isReview: boolean}>;
     followTransporter(shipperId: string, tranpsorterId: string): Promise<{success: boolean, transporterData: ITransporter, isFollow: boolean}>
@@ -55,7 +55,7 @@ export interface IShipperService {
     fetchNotifications(shipperId: string, status: string): Promise<INotification[]>;
     updateNotificationAsRead(notificationId: string): Promise<{success: boolean, message: string, notificationData?:INotification}>;
     deleteNotification(notificationId: string): Promise<{success: boolean, message: string, notificationData?: INotification}>;
-    fetchPaymentHistory(shipperId: string, status: string, type: string, date: string, page: number, limit: number): Promise<{paymentData:IShipperPayment[], totalPages: number, totalEarnings: number, bidPayments: number, subscriptionPayment: number, pendingAmount: number}>;
+    fetchPaymentHistory(shipperId: string, status: string, type: string, date: string, page: number, limit: number, search: string): Promise<{paymentData:IShipperPayment[], totalPages: number, totalEarnings: number, bidPayments: number, subscriptionPayment: number, pendingAmount: number}>;
     checkAndRefundExpiredBids(): Promise<{success: boolean}>
     expireInActiveLoads(): Promise<void>
     findUnReadNotificationCount(shipperId: string): Promise<number | undefined>

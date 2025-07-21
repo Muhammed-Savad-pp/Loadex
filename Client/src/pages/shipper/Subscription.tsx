@@ -68,7 +68,7 @@ function Subscription() {
             if(response.success && stripe) {
                 await stripe.redirectToCheckout({sessionId: response.sessionId});
             } else {
-                toast.error('Stripe session failed.');
+                toast.error(response.message);
             }
         } catch (error) {
             console.error(error);
@@ -216,7 +216,7 @@ function Subscription() {
                                         >
                                             {shipper?.subscription?.planId === plan.id && (
                                                 <div className="bg-indigo-600 py-1.5 px-4 text-center">
-                                                    <span className="text-white text-sm font-medium">Current Plan</span>
+                                                    <span className="text-white text-sm font-medium">Recent Plan</span>
                                                 </div>
                                             )}
 

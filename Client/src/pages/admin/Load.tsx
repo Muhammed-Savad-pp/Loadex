@@ -132,13 +132,14 @@ const Load: React.FC = () => {
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
     const [dateError, setDateError] = useState('');
+    
     const limit = 7;
 
     const [debouncedSearch, setDebouncedSearch] = useState(search);
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedSearch(search);
-        }, 500);
+        }, 1000);
         return () => clearTimeout(handler);
     }, [search]);
 
@@ -175,12 +176,6 @@ const Load: React.FC = () => {
         };
         findLoads();
     }, [page, debouncedSearch, startDate, endDate]);
-
-    console.log(startDate);
-    console.log(endDate);
-    console.log(search);
-
-
 
     return (
         <div className="flex min-h-screen bg-gray-50">

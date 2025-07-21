@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Users } from 'lucide-react';
 import Navbar from '../../components/Common/Navbar/Navbar';
 import { fetchTransporters } from '../../services/shipper/shipperService';
 import ProfileComponent from '../../components/shipper/ProfileComponent';
+import { debounce } from 'lodash';
 
 
 interface ITransporter {
@@ -17,31 +18,42 @@ const Directory: React.FC = () => {
     const [transporter, setTransporter] = useState<ITransporter[]>([]);
     const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const [filteredTransporter, setFilteredTransporter] = useState<ITransporter[]>(transporter);
     const [selectTransporterId, setSelectedTransporterId] = useState<string | null>(null);
     const [page, setPage] = useState<number>(1);
     const [totalPages, setTotalPages] = useState<number>(10);
+    const [debouncedSearch, setDebouncedSearch] = useState<string>('');
     const limit = 5
 
+    const debounceSearch = useCallback(
+        debounce((value: string) => {
+            setDebouncedSearch(value);
+        }, 1000),
+        []
+    );
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+        debounceSearch(e.target.value)
+    }
 
     useEffect(() => {
         const getShippers = async () => {
-            const response: any = await fetchTransporters(page, limit, searchTerm);
+            const response: any = await fetchTransporters(page, limit, debouncedSearch);
             setTransporter(response.transporters as ITransporter[]);
             setTotalPages(response.totalPages);
         }
         getShippers()
-    }, [page, searchTerm])
+    }, [page, debouncedSearch])
 
     // Filter shippers based on search term only
-    useEffect(() => {
-        const results = transporter.filter(transporter =>
-            transporter.transporterName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            transporter.email.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+    // useEffect(() => {
+    //     const results = transporter.filter(transporter =>
+    //         transporter.transporterName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    //         transporter.email.toLowerCase().includes(searchTerm.toLowerCase())
+    //     );
 
-        setFilteredTransporter(results);
-    }, [searchTerm, transporter]);
+    //     setFilteredTransporter(results);
+    // }, [searchTerm, transporter]);
 
     return (
         <>
@@ -66,7 +78,7 @@ const Directory: React.FC = () => {
                                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                     placeholder="Search transporters..."
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={handleSearchChange}
                                 />
                             </div>
                         </div>
@@ -85,8 +97,8 @@ const Directory: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredTransporter.length > 0 ? (
-                                        filteredTransporter.map((transporter) => (
+                                    {transporter.length > 0 ? (
+                                        transporter.map((transporter) => (
                                             <tr key={transporter._id} className="hover:bg-blue-50 transition-colors duration-150">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">

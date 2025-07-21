@@ -818,13 +818,23 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async fetchTrips(shipperId: string, page: number, limit: number): Promise<{ tripsData: TripForShipperDTO[] | null, totalPages: number }> {
+    async fetchTrips(shipperId: string, page: number, limit: number, status: string): Promise<{ tripsData: TripForShipperDTO[] | null, totalPages: number }> {
         try {
 
             const skip = (page - 1) * limit;
 
+            const filter: any= {
+                 shipperId: shipperId 
+            };
+
+            if(status !== 'all') {
+                filter.tripStatus = status
+            }
+
+            
+
             const trips = await this._tripRepositories.findTrips(
-                { shipperId: shipperId },
+                filter,
                 [
                     { path: 'transporterId', select: "transporterName phone profileImage" },
                     { path: 'shipperId', select: "shipperName" },
@@ -833,9 +843,11 @@ export class ShipperService implements IShipperService {
                 ],
                 skip,
                 limit,
-            )
+            );
 
-            const tripsCount = await this._tripRepositories.count({ shipperId: shipperId })
+            
+
+            const tripsCount = await this._tripRepositories.count(filter);
 
             const tripsData: TripForShipperDTO[] = await Promise.all(
                 (trips || []).map(async (trip: any) => {
@@ -850,6 +862,7 @@ export class ShipperService implements IShipperService {
                     }
 
                     return {
+                        _id: trip._id as string,
                         transporterId: {
                             _id: trip.transporterId?._id?.toString() ?? '',
                             transporterName: trip.transporterId?.transporterName ?? '',
@@ -1211,6 +1224,18 @@ export class ShipperService implements IShipperService {
 
             const plan = SHIPPER_SUBSCRIPTION_PLAN.find(p => p.id === planId);
             if (!plan) return { success: false, message: 'Invalid Plan' };
+
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+            const existing = await this._shipperPaymentRepositories.findOne({
+                planId: planId,
+                shipperId: shipperId,
+                createdAt: { $gte: fiveMinutesAgo}
+            })
+
+            if(existing) {
+                return { success: false, message: 'You recently initiated a payment for this plan. Please wait a few minutes.' };
+            }
 
             const shipper = await this._shipperRepositories.findById(shipperId);
             if (!shipper) return { success: false, message: 'Shipper not found' }
@@ -1588,7 +1613,7 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async fetchPaymentHistory(shipperId: string, status: string, type: string, date: string, page: number, limit: number):
+    async fetchPaymentHistory(shipperId: string, status: string, type: string, date: string, page: number, limit: number, search: string):
         Promise<{ paymentData: IShipperPayment[]; totalPages: number; totalEarnings: number; bidPayments: number; subscriptionPayment: number; pendingAmount: number; }> {
         try {
 
@@ -1632,6 +1657,10 @@ export class ShipperService implements IShipperService {
 
             if (date !== 'all') {
                 filter.createdAt = { $gte: fromDate }
+            }
+
+            if (search) {
+                filter.transactionId = { $regex: search, $options: "i"}
             }
 
             const payment = await this._shipperPaymentRepositories.find(filter, {}, skip, limit, { createdAt: -1 });

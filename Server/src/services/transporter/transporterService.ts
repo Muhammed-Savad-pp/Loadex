@@ -1241,7 +1241,7 @@ export class TransporterService implements ITransporterService {
         }
     }
 
-    async fetchShippers(page: number, limit: number): Promise<{ shipper: ShipperForTransporterDirectoryDTO[] | null, totalPages: number, totalItems: number }> {
+    async fetchShippers(page: number, limit: number, search: string): Promise<{ shipper: ShipperForTransporterDirectoryDTO[] | null, totalPages: number, totalItems: number }> {
         try {
 
             const skip = (page - 1) * limit;
@@ -1254,8 +1254,14 @@ export class TransporterService implements ITransporterService {
                 email: 1
             }
 
-            const shippers = await this._shipperRepository.find({}, projection, skip, limit)
-            const total = await this._shipperRepository.count({});
+            const filter: any = {}
+            
+            if(search) {
+                filter.shipperName = { $regex: search, $options: "i"}
+            }
+
+            const shippers = await this._shipperRepository.find(filter, projection, skip, limit)
+            const total = await this._shipperRepository.count(filter);            
 
             const shipperDatos: ShipperForTransporterDirectoryDTO[] = await Promise.all(
                 shippers.map(async (shipper) => {
@@ -1513,6 +1519,18 @@ export class TransporterService implements ITransporterService {
 
             const plan = TRANSPORTER_SUBSCRIPTION_PLANS.find(p => p.id === planId);
             if (!plan) return { success: false, message: 'Invalid Plan' }
+
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+            const existing = await this._transporterPaymentRepository.findOne({
+                planId: planId,
+                transporterId: transporterId,
+                createdAt: { $gte: fiveMinutesAgo}
+            })
+
+            if(existing) {
+                return { success: false, message: 'You recently initiated a payment for this plan. Please wait a few minutes.' };
+            }
 
             const transporter = await this._transporterRepository.findById(transporterId);
             if (!transporter) return { success: false, message: 'Transporter not found' }

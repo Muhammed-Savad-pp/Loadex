@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Navbar from "../../components/Common/Navbar/Navbar";
 import ShipperProfileSidebar from "../../components/shipper/ShipperProfileSidebar";
 import { fetchTrips } from "../../services/shipper/shipperService";
 import { Copy } from 'lucide-react';
 import ProfileComponent from "../../components/shipper/ProfileComponent";
+import { debounce } from "lodash";
 
 interface ITrips {
+    _id: string;
     transporterId: {
         transporterName: string;
         phone: string;
@@ -39,19 +41,26 @@ interface ITrips {
     confirmedAt: string;
 }
 
+type IFilterStatus = 'all' | 'confirmed' | 'inProgress' | 'arrived' | 'completed';
+
 const Trips = () => {
     const [trips, setTrips] = useState<ITrips[]>([]);
     const [loading, setLoading] = useState(true);
     const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
     const [page, setPage] = useState<number>(1);
     const [totalPages, setTotalPages] = useState<number>(30);
+    const [filterStatus, setFilterStatus] = useState<IFilterStatus>('all');
     const limit = 3;
+
+
+    
+    
 
     useEffect(() => {
         const getTrips = async () => {
             try {
                 setLoading(true);
-                const response: any = await fetchTrips(page, limit);
+                const response: any = await fetchTrips(page, limit, filterStatus);
                 setTrips(response.tripsData);
                 setTotalPages(response.totalPages)
             } catch (error) {
@@ -61,17 +70,17 @@ const Trips = () => {
             }
         };
         getTrips();
-    }, [page]);
+    }, [page, filterStatus]);
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
-            case "completed":
+            case "confirmed":
                 return "bg-green-100 text-green-800";
-            case "in progress":
+            case "inProgress":
                 return "bg-blue-100 text-blue-800";
-            case "cancelled":
+            case "arrived":
                 return "bg-red-100 text-red-800";
-            case "pending":
+            case "completed":
                 return "bg-yellow-100 text-yellow-800";
             default:
                 return "bg-gray-100 text-gray-800";
@@ -87,6 +96,8 @@ const Trips = () => {
             console.log(error);
         }
     }
+    console.log(filterStatus);
+
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -106,6 +117,22 @@ const Trips = () => {
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                         <div className="flex justify-between items-center mb-6">
                             <h1 className="text-3xl font-bold text-gray-900">My Trips</h1>
+                            <div >
+                                
+                                <select
+                                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    value={filterStatus}
+                                    onChange={(e) => setFilterStatus(e.target.value as IFilterStatus)}
+                                >
+                                    <option value="all">All</option>
+                                    <option value="confirmed">Confirmed</option>
+                                    <option value="inProgress">InProgress</option>
+                                    <option value="arrived">Arrived</option>
+                                    <option value="completed">Completed</option>
+
+                                </select>
+                            </div>
+
                         </div>
 
                         {loading ? (
@@ -126,12 +153,17 @@ const Trips = () => {
                                     <div key={index} className="bg-white shadow rounded-lg overflow-hidden">
                                         <div className="border border-gray-200 bg-gray-50 px-4 py-3">
                                             <div className="flex justify-between items-center">
-                                                <div className="flex items-center space-x-2">
-                                                    <span className="text-md font-semibold text-gray-900">Trip #{index + 1}</span>
+                                                <div className="flex items-center space-x-4">
+                                                    <div className="flex items-center text-sm text-blue-600 font-semibold tracking-wide space-x-1">
+                                                        <span className="text-gray-500">Trip ID:</span>
+                                                        <span>{trip._id.slice(0, 10)}</span>
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-gray-800">Trip #{index + 1}</span>
                                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(trip.tripStatus)}`}>
                                                         {trip.tripStatus}
                                                     </span>
                                                 </div>
+
                                                 <div className="text-xs text-gray-500">
                                                     Created on {formatDate(trip.confirmedAt)}
                                                 </div>
@@ -244,8 +276,6 @@ const Trips = () => {
                                     </div>
                                 ))}
                             </div>
-
-
                         )}
 
                         <div className="flex justify-center mt-6">
@@ -278,9 +308,6 @@ const Trips = () => {
                     </div>
                 </div>
             </div>
-
-
-
         </>
     );
 };

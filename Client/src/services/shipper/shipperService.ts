@@ -1,6 +1,7 @@
 import { LoadData, userSignUp } from "../../interface/interface";
 import { axiosInstance, publicApiClinet } from "../axiosInstance/axiosInstance";
 import { IFormData } from "../../pages/shipper/PostLoad";
+import { filter } from "lodash";
 
 const publicApi = publicApiClinet;
 const api = axiosInstance;
@@ -138,9 +139,9 @@ export const verifyBidPayment = async (sessionId: string |null, status:  string)
 
 }
 
-export const fetchTrips = async (page: number, limit: number) => {
+export const fetchTrips = async (page: number, limit: number, filterStatus: string) => {
 
-    const response = await api.get(`/shipper/trips?page=${page}&limit=${limit}`);
+    const response = await api.get(`/shipper/trips?page=${page}&limit=${limit}&status=${filterStatus}`);
     return response.data;
 
 }
@@ -290,9 +291,9 @@ export const deleteNotification = async (notificationId: string) => {
     return response.data;
 }
 
-export const fetchPaymentHistory = async (statusFilter: string, typeFilter: string, dateFilter: string, page: number, limit: number) => {
+export const fetchPaymentHistory = async (statusFilter: string, typeFilter: string, dateFilter: string, page: number, limit: number, search: string) => {
     
-    const response = await api.get(`/shipper/paymentHistory?status=${statusFilter}&type=${typeFilter}&date=${dateFilter}&page=${page}&limit=${limit}`);
+    const response = await api.get(`/shipper/paymentHistory?status=${statusFilter}&type=${typeFilter}&date=${dateFilter}&page=${page}&limit=${limit}&search=${search}`);
     return response.data;
 }
 

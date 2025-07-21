@@ -46,7 +46,7 @@ export interface ITransporterService {
     followShipper(transporterId: string, shipperId: string): Promise<{success: boolean, shipperData: ShipperForTransporterDTO ,  isFollow: boolean}>;
     unFollowShipper(transporterId: string, shipperId: string): Promise<{success: boolean, shipperData: ShipperForTransporterDTO, isFollow: boolean}>;
     postReviews(transporterId: string, shipperId: string, rating: number, comment: string): Promise<{success: boolean, reviewData?: ReviewForTransporter}>
-    fetchShippers(page: number, limit: number): Promise<{shipper: ShipperForTransporterDirectoryDTO[] | null, totalPages: number, totalItems: number}>
+    fetchShippers(page: number, limit: number, search: string): Promise<{shipper: ShipperForTransporterDirectoryDTO[] | null, totalPages: number, totalItems: number}>
     fetchTransporterFollowersandFollowings(transporterId: string, status: string, search: string, page: number, limit: number): Promise<{ datas: any[], followersCount: number, followingsCount: number, totalPages: number}>;
     fetchSubscriptionPlans(): Promise<{subscriptionPlans: {}}>
     subscriptionCheckoutSession(transporterId: string, planId: string): Promise<{success: boolean, sessionId?: string, message: string}>

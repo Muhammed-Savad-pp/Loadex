@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Users } from 'lucide-react';
 import Navbar from '../../components/Common/Navbar/Navbar';
 import { listShipper } from '../../services/transporter/transporterApi';
 import ProfileComponent from '../../components/tranporter/ProfileComponent';
+import { debounce } from 'lodash';
 
 interface IShipper {
     _id: string;
@@ -17,32 +18,44 @@ const Directory: React.FC = () => {
     const [shippers, setShippers] = useState<IShipper[]>([]);
     const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const [filteredShippers, setFilteredShippers] = useState<IShipper[]>(shippers);
     const [selectShipperId, setSelectedShipperId] = useState<string | null>(null);
     const [page, setPage] = useState<number>(1);
-    const [totalPages, setTotalPages] = useState<number>(10)
+    const [totalPages, setTotalPages] = useState<number>(10);
+    const [debouncedSearch, setDebouncedSearch] = useState<string>('');
 
     const limit = 6;
 
+    const debounceSearch = useCallback(
+        debounce((value: string) => {
+            setDebouncedSearch(value);
+        }, 1000),
+        []
+    );
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+        debounceSearch(e.target.value)
+    }
+
     useEffect(() => {
         const getShippers = async () => {
-            const response: any = await listShipper(page, limit);
+            const response: any = await listShipper(page, limit, debouncedSearch);
             setShippers(response.shipper);
             setTotalPages(response.totalPages)
         }
         getShippers()
-    }, [])
+    }, [page, debouncedSearch])
 
     // Filter shippers based on search term only
-    useEffect(() => {
-        const results = shippers.filter(shipper =>
-            shipper.shipperName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            shipper.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            shipper.email.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+    // useEffect(() => {
+    //     const results = shippers.filter(shipper =>
+    //         shipper.shipperName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    //         shipper.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    //         shipper.email.toLowerCase().includes(searchTerm.toLowerCase())
+    //     );
 
-        setFilteredShippers(results);
-    }, [searchTerm, shippers]);
+    //     setFilteredShippers(results);
+    // }, [searchTerm, shippers]);
 
     return (
         <>
@@ -67,7 +80,7 @@ const Directory: React.FC = () => {
                                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                     placeholder="Search shippers..."
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={handleSearchChange}
                                 />
                             </div>
                         </div>
@@ -89,8 +102,8 @@ const Directory: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredShippers.length > 0 ? (
-                                        filteredShippers.map((shipper) => (
+                                    {shippers.length > 0 ? (
+                                        shippers.map((shipper) => (
                                             <tr key={shipper._id} className="hover:bg-blue-50 transition-colors duration-150">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
@@ -152,14 +165,14 @@ const Directory: React.FC = () => {
                                     disabled={page === 1}
                                     className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
                                     ${page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
-                                        Prev
+                                    Prev
                                 </button>
                                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                                     .slice(Math.max(0, page - 3), Math.min(totalPages, page + 2))
                                     .map((p) => (
                                         <button className={`px-3 py-2 ml-1  mr-1 text-sm rounded-md font-medium border-t border-b border-gray-300 cursor-pointer
                                             ${p === page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
-                                                {p}
+                                            {p}
                                         </button>
                                     ))
                                 }
@@ -168,7 +181,7 @@ const Directory: React.FC = () => {
                                     disabled={page === totalPages}
                                     className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
                                         ${page === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}'}`}>
-                                            Next
+                                    Next
                                 </button>
                             </div>
                         </div>

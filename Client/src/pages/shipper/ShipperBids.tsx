@@ -435,7 +435,8 @@ const ShipperBids: React.FC = () => {
                 if (response.success && stripe) {
                     await stripe.redirectToCheckout({ sessionId: response.sessionId })
                 } else {
-                    toast.error('Stripe session failed.')
+                    toast.error(response.message)
+                    window.location.reload()
                 }
             } else {
 

@@ -1,7 +1,8 @@
 import { Search, Filter, ChevronDown } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Sidebar from '../../components/admin/Sidebar';
 import { fetchPaymentHistory } from '../../services/admin/adminapi';
+import { debounce } from 'lodash';
 
 interface IPaymentData {
     transactionId: string;
@@ -32,19 +33,33 @@ function PaymentHistory() {
     const [showFilters, setShowFilters] = useState(false);
     const [page, setPage] = useState<number>(1);
     const [totalPages, setTotalPages] = useState<number>(20);
+    const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+
     const limit = 6
 
+    const debounceSearch = useCallback(
+        debounce((value: string) => {
+          setDebouncedSearch(value);
+        }, 1000),
+        []
+      );
+    
+      const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+        debounceSearch(e.target.value)
+      }
+    
 
     useEffect(() => {
         const getPaymentDatas = async () => {
-            const response: any = await fetchPaymentHistory(searchTerm, statusFilter, userTypeFilter, paymentForFilter, page, limit);
+            const response: any = await fetchPaymentHistory(debouncedSearch, statusFilter, userTypeFilter, paymentForFilter, page, limit);
             console.log(response, 'res');
 
             setPaymentDatas(response.paymentData);
             setTotalPages(response.totalPages)
         }
         getPaymentDatas()
-    }, [statusFilter, userTypeFilter, paymentForFilter, page, limit, searchTerm])
+    }, [statusFilter, userTypeFilter, paymentForFilter, page, limit, debouncedSearch])
 
 
     const getStatusBadge = (status: string) => {
@@ -97,10 +112,10 @@ function PaymentHistory() {
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                 <input
                                     type="text"
-                                    placeholder="Search by transaction ID or user ID..."
+                                    placeholder="Search by transaction ID"
                                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={handleSearchChange}
                                 />
                             </div>
 
@@ -270,7 +285,7 @@ function PaymentHistory() {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div>
                                                 <div className="text-sm font-medium text-gray-900">
-                                                    {payment.transactionId.toString().slice(-10)}
+                                                    {payment.transactionId.toString().slice(0, 20)}
                                                 </div>
                                                 <div className="text-sm text-gray-500">
                                                     {payment.paymentFor} • {payment.paymentMethod || 'N/A'}

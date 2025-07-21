@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Navbar from '../../components/Common/Navbar/Navbar'
 import { Search, Calendar, DollarSign, Eye, Package, CreditCard } from 'lucide-react';
 import { fetchPaymentHistory } from '../../services/shipper/shipperService';
 import ShipperProfileSidebar from '../../components/shipper/ShipperProfileSidebar';
+import { debounce } from 'lodash';
 
 
 interface ITransporterPayment {
@@ -23,7 +24,7 @@ type TypeFilter = 'all' | 'bid' | 'subscription'
 type DateFilter = 'all' | 'today' | 'week' | 'month'
 
 const PaymentHistory: React.FC = () => {
-  // const [searchTerm, setSearchTerm] = useState<string>('')
+  const [searchTerm, setSearchTerm] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [dateFilter, setDateFilter] = useState<DateFilter>('all')
@@ -34,13 +35,26 @@ const PaymentHistory: React.FC = () => {
   const [totalEarnings, setTotalEarnings] = useState<number>(0);
   const [bidPayments, setBidPayments] = useState<number>(0);
   const [subscriptionPayments, setSubscriptionPayments] = useState<number>(0);
-  const [pendingAmount, setPendingAmount] = useState<number>(0)
-  const limit = 5
+  const [pendingAmount, setPendingAmount] = useState<number>(0);
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+  const limit = 5;
+
+  const debounceSearch = useCallback(
+    debounce((value: string) => {
+      setDebouncedSearch(value);
+    }, 1000), 
+    []
+  );
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    debounceSearch(e.target.value)
+  }
 
   useEffect(() => {
 
     const PaymentHistory = async () => {
-      const response: any = await fetchPaymentHistory(statusFilter, typeFilter, dateFilter, page, limit);
+      const response: any = await fetchPaymentHistory(statusFilter, typeFilter, dateFilter, page, limit, debouncedSearch);
       setPaymentDatas(response.paymentData)
       setTotalPages(response.totalPages);
       setTotalEarnings(response.totalEarnings);
@@ -50,8 +64,8 @@ const PaymentHistory: React.FC = () => {
     }
 
     PaymentHistory();
-  }, [statusFilter, typeFilter, dateFilter, page]);
- 
+  }, [statusFilter, typeFilter, dateFilter, page, debouncedSearch]);
+
   const getStatusBadge = (status: ITransporterPayment['paymentStatus']): JSX.Element => {
     const statusConfig: Record<ITransporterPayment['paymentStatus'], string> = {
       success: 'bg-green-100 text-green-800 border-green-200',
@@ -183,16 +197,16 @@ const PaymentHistory: React.FC = () => {
             <div className="p-6">
               <div className="flex flex-col lg:flex-row gap-4 items-center justify-end">
                 <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto ">
-                  {/* <div className="relative">
+                  <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <input
                       type="text"
-                      placeholder="Search by transaction ID, bid ID, or plan..."
+                      placeholder="Search by transaction ID"
                       className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-80"
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={handleSearchChange}
                     />
-                  </div> */}
+                  </div>
 
                   <select
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -264,7 +278,7 @@ const PaymentHistory: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
                             <div className="text-sm font-medium text-gray-900">
-                              {payment.transactionId?.toString().slice(-18)}
+                              {payment.transactionId?.toString().slice(0, 18)}
                             </div>
                             <div className="text-sm text-gray-500">
                               {payment.paymentType === 'bid'
@@ -309,7 +323,7 @@ const PaymentHistory: React.FC = () => {
               </table>
             </div>
 
-            
+
 
             {paymentDatas.length === 0 && (
               <div className="text-center py-12">
@@ -323,33 +337,33 @@ const PaymentHistory: React.FC = () => {
           </div>
 
           {/* { Pagination} */}
-            <div className="flex justify-center mt-6 mr-5">
-              <div className="inline-flex rounded-md shadow-sm">
-                <button
-                  onClick={() => setPage(page - 1)}
-                  disabled={page === 1}
-                  className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+          <div className="flex justify-center mt-6 mr-5">
+            <div className="inline-flex rounded-md shadow-sm">
+              <button
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+                className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
                               ${page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
-                  Prev
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .slice(Math.max(0, page - 3), Math.min(totalPages, page + 2))
-                  .map((p) => (
-                    <button className={`px-3 py-2 ml-1  mr-1 text-sm rounded-md font-medium border-t border-b border-gray-300 cursor-pointer
+                Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .slice(Math.max(0, page - 3), Math.min(totalPages, page + 2))
+                .map((p) => (
+                  <button className={`px-3 py-2 ml-1  mr-1 text-sm rounded-md font-medium border-t border-b border-gray-300 cursor-pointer
                               ${p === page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
-                      {p}
-                    </button>
-                  ))
-                }
-                <button
-                  onClick={() => setPage(page + 1)}
-                  disabled={page === totalPages}
-                  className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
+                    {p}
+                  </button>
+                ))
+              }
+              <button
+                onClick={() => setPage(page + 1)}
+                disabled={page === totalPages}
+                className={`px-3 py-2 text-sm font-medium border border-gray-300 rounded-md cursor-pointer
                               ${page === totalPages ? 'bg-gray-100 text-gray-400 not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}'}`}>
-                  Next
-                </button>
-              </div>
+                Next
+              </button>
             </div>
+          </div>
         </div>
       </div>
 

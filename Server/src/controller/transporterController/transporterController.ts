@@ -359,9 +359,10 @@ export class TransporterController implements ITransporterController{
         try {
             
             const page = parseInt(req.query.page as string);
-            const limit = parseInt(req.query.limit as string)
-
-            const response = await this._transporterService.fetchShippers(page, limit);
+            const limit = parseInt(req.query.limit as string);
+            const search = req.query.search as string;
+            
+            const response = await this._transporterService.fetchShippers(page, limit, search);
             res.status(HTTP_STATUS.OK).json(response)            
 
         } catch (error) {

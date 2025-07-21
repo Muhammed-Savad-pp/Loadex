@@ -45,6 +45,7 @@ export interface TripForTransporterDTO {
 
 
 export interface TripForShipperDTO {
+    _id: string;
     transporterId: {
         transporterName: string;
         phone: string;

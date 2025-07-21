@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Eye, Phone, Mail, Truck, MapPin, Package, CreditCard, X, Check, Clock, AlertCircle } from 'lucide-react';
 import Sidebar from '../../components/admin/Sidebar';
 import { fetchTrips, sendTripAmountToTransporter } from '../../services/admin/adminapi';
 import toast from 'react-hot-toast';
+import { debounce } from 'lodash';
 
 
 
@@ -58,21 +59,34 @@ function Trips() {
   const [totalPages, setTotalPages] = useState<number>(10);
   const [search, setSearch] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+
   const limit = 5;
 
-  console.log(search);
-  console.log(filterStatus);
+
+
+  const debounceSearch = useCallback(
+    debounce((value: string) => {
+      setDebouncedSearch(value);
+    }, 1000),
+    []
+  );
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    debounceSearch(e.target.value)
+  }
 
 
   useEffect(() => {
     const getTrips = async () => {
-      const response: any = await fetchTrips(page, limit, search, filterStatus);
+      const response: any = await fetchTrips(page, limit, debouncedSearch, filterStatus);
       setTrips(response.tripsData);
       setTotalPages(response.totalPages)
     }
 
     getTrips()
-  }, [page, limit, search, filterStatus])
+  }, [page, limit, debouncedSearch, filterStatus])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -134,7 +148,7 @@ function Trips() {
               type="text"
               placeholder="Search by truck/material"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
               className="w-full md:w-1/2 pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
@@ -168,7 +182,7 @@ function Trips() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Transporter
                   </th>
-                  
+
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>

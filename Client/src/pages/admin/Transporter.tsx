@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import Sidebar from "../../components/admin/Sidebar";
 import { useEffect } from "react";
 import { getTransporter, updateTransporterBlockandUnblock } from "../../services/admin/adminapi";
 import toast from "react-hot-toast";
 import DataTable from "../../components/admin/DataTable";
+import { debounce } from "lodash";
 
 export interface ITransporter {
     _id: string
@@ -19,14 +20,29 @@ const Transporter: React.FC = () => {
     const [page, setPage] = useState<number>(1);
     const [search, setSearch] = useState<string>('');
     const [totalPages, setTotalPages] = useState<number>(10);
+    const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+
     const limit = 7;
+
+    const debounceSearch = useCallback(
+        debounce((value: string) => {
+            setDebouncedSearch(value);
+        }, 1000),
+        []
+    );
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearch(e.target.value);
+        debounceSearch(e.target.value)
+    }
+
 
 
     useEffect(() => {
 
         const fetchTransporter = async () => {
 
-            const response: any = await getTransporter(search, page, limit)
+            const response: any = await getTransporter(debouncedSearch, page, limit)
             setTransporter(response.transporterData);
             setTotalPages(response.totalPages)
 
@@ -34,12 +50,9 @@ const Transporter: React.FC = () => {
 
         fetchTransporter()
 
-    }, [page,search])
+    }, [page, debouncedSearch])
 
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearch(e.target.value);
-        setPage(1); // reset page on new search
-    };    
+    
 
     const handleBlockUnBlock = async (id: string) => {
         try {
@@ -76,7 +89,7 @@ const Transporter: React.FC = () => {
                             type="text"
                             placeholder="Search..."
                             value={search}
-                            onChange={handleSearch}
+                            onChange={handleSearchChange}
                             className="p-2 border rounded-md w-80"
                         />
                     </div>

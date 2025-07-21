@@ -358,8 +358,10 @@ class ShipperController implements IShipperController {
 
             const shipperId = req.user?.id;
             const page = parseInt(req.query.page as string);
-            const limit = parseInt(req.query.limit as string)
-            const response = await this._shipperService.fetchTrips(shipperId, page, limit);
+            const limit = parseInt(req.query.limit as string);
+            const status = req.query.status as string;
+
+            const response = await this._shipperService.fetchTrips(shipperId, page, limit, status);
 
             res.status(HTTP_STATUS.OK).json(response);
 
@@ -708,8 +710,9 @@ class ShipperController implements IShipperController {
             const date = req.query.date as string;
             const page = parseInt(req.query.page as string);
             const limit = parseInt(req.query.limit as string);
+            const search = req.query.search as string;
 
-            const response = await this._shipperService.fetchPaymentHistory(shipperId, status, type, date, page, limit);
+            const response = await this._shipperService.fetchPaymentHistory(shipperId, status, type, date, page, limit, search);
 
             res.status(HTTP_STATUS.OK).json(response)
 

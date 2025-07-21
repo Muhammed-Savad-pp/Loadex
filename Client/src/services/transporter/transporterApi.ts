@@ -230,9 +230,9 @@ export const postReview = async (shipperId: string, rating: number, comment: str
     
 }
 
-export const listShipper = async (page: number, limit: number) => {
+export const listShipper = async (page: number, limit: number, search: string) => {
 
-    const response = await apiClient.get(`/transporter/fetchShippers?page=${page}&limit=${limit}`);
+    const response = await apiClient.get(`/transporter/fetchShippers?page=${page}&limit=${limit}&search=${search}`);
     return response.data;
 
 }
