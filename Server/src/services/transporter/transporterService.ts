@@ -37,7 +37,7 @@ import { ITransporterWallet } from "../../models/TransporterWallet";
 import { ITransporterWalletRepository } from "../../repositories/interface/ITransporterWalletRepository";
 import { IAdminPaymentRepository } from "../../repositories/interface/IAdminPaymentRepository";
 import { BidForTransporterDTO } from "../../dtos/bids/bid.for.transporter.dto";
-import { ShipperForTransporterDirectoryDTO, ShipperForTransporterDTO, TransporterDTO } from "../../dtos/transporter/transporter.dto";
+import { ShipperForTransporterDirectoryDTO, ShipperForTransporterDTO, TransporterDTO, TransporterPaymentDTO } from "../../dtos/transporter/transporter.dto";
 import { TruckDTO } from "../../dtos/truck/truck.for.transporter.dto";
 import { TripForTransporterDTO } from "../../dtos/trip/trip.for.transporter.dto";
 import config from "../../config";
@@ -459,7 +459,7 @@ export class TransporterService implements ITransporterService {
         }
     }
 
-    async updateTruckAvailable(formData: Partial<ITruck>, driverLicensefile?: Express.Multer.File): Promise<{ success: boolean, truckData?: ITruck, message: string }> {
+    async updateTruckAvailable(formData: Partial<ITruck>, driverLicensefile?: Express.Multer.File): Promise<{ success: boolean, truckData?: TruckDTO, message: string }> {
         try {
 
             const { id, driverName, driverMobileNo, currentLocation, driverLicense, currentLocationCoords } = formData;
@@ -518,7 +518,29 @@ export class TransporterService implements ITransporterService {
                 return { success: false, message: "Truck not activated" }
             }
 
-            return { success: true, message: 'Truck Active SuccessFully', truckData: updateTruck }
+            const truckData: TruckDTO = {
+                _id: updateTruck._id as string,
+                available: updateTruck.available ?? false,
+                currentLocation: updateTruck.currentLocation ?? '',
+                driverMobileNo: updateTruck.driverMobileNo ?? '',
+                driverName: updateTruck.driverName ?? '',
+                dropLocation: updateTruck.dropLocation ?? '',
+                operatingStates: updateTruck.operatingStates ?? [],
+                pickupLocation: updateTruck.pickupLocation ?? '',
+                truckNo: updateTruck.truckNo ?? '',
+                truckOwnerMobileNo: updateTruck.truckOwnerMobileNo ?? '',
+                truckOwnerName: updateTruck.truckOwnerName ?? '',
+                truckType: updateTruck.truckType ?? '',
+                tyres: updateTruck.tyres ?? '',
+                verificationStatus: updateTruck.verificationStatus ?? '',
+                capacity: updateTruck.capacity ?? '',
+                driverLicense: updateTruck.driverLicense ?? '',
+                status: updateTruck.status ?? '',
+                truckImage: updateTruck.truckImage ?? '',
+                rcValidity: updateTruck.rcValidity ?? '',
+            };
+
+            return { success: true, message: 'Truck Active SuccessFully', truckData: truckData }
 
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -721,8 +743,8 @@ export class TransporterService implements ITransporterService {
                     },
                 ],
                 mode: 'payment',
-                success_url: `https://loadex.savad.online/transporter/success?transactionId={CHECKOUT_SESSION_ID}`,
-                cancel_url: `https://loadex.savad.online/transporter/failed?transactionId={CHECKOUT_SESSION_ID}`,
+                success_url: `${config.frontEndUrl}/transporter/success?transactionId={CHECKOUT_SESSION_ID}`,
+                cancel_url: `${config.frontEndUrl}/transporter/failed?transactionId={CHECKOUT_SESSION_ID}`,
             })
 
             await this._transporterPaymentRepository.createPayment({
@@ -904,49 +926,71 @@ export class TransporterService implements ITransporterService {
         }
     }
 
-    async updateTripStatus(tripId: string, newStatus: 'confirmed' | 'inProgress' | 'arrived' | 'completed'): Promise<{ success: boolean; message: string; }> {
+    async updateTripStatus(
+        tripId: string,
+        newStatus: 'confirmed' | 'inProgress' | 'arrived' | 'completed'
+    ): Promise<{ success: boolean; message: string }> {
         try {
+            const currentDate = new Date();
 
-            let currentDate = new Date()
+            // Always fetch fresh trip data before any operation
+            const trip = await this._tripRepository.findOne({ _id: tripId });
+            if (!trip) return { success: false, message: "Trip not found." }
 
-            let updateData
+            // Re-check the current status from DB
             switch (newStatus) {
                 case 'confirmed':
-                    updateData = await this._tripRepository.findByIdAndUpdate(tripId, { tripStatus: newStatus, confirmedAt: currentDate })
-                    break;
+                    break; // no condition needed
+
                 case 'inProgress':
-                    updateData = await this._tripRepository.findByIdAndUpdate(tripId, { tripStatus: newStatus, progressAt: currentDate })
+                    if (trip.tripStatus !== 'confirmed') {
+                        return { success: false, message: `Trip already in ${trip.tripStatus} status` }
+                    }
                     break;
+
                 case 'arrived':
-                    updateData = await this._tripRepository.findByIdAndUpdate(tripId, { tripStatus: newStatus, arrivedAt: currentDate })
+                    if (trip.tripStatus !== 'inProgress') {
+                        return { success: false, message: `Trip already in ${trip.tripStatus} status` };
+                    }
                     break;
+
                 case 'completed':
-                    updateData = await this._tripRepository.findByIdAndUpdate(tripId, { tripStatus: newStatus, completedAt: currentDate })
+                    if (trip.tripStatus !== 'arrived') {
+                        return { success: false, message: `Trip already in ${trip.tripStatus} status` };
+                    }
                     break;
+
                 default:
-                    break;
+                    return { success: false, message: 'Invalid Status.' }
             }
 
-            const shipperId = String(updateData?.shipperId);
+            // Apply status update
+            const updateFields: any = { tripStatus: newStatus };
+            if (newStatus === 'confirmed') updateFields.confirmedAt = currentDate;
+            if (newStatus === 'inProgress') updateFields.progressAt = currentDate;
+            if (newStatus === 'arrived') updateFields.arrivedAt = currentDate;
+            if (newStatus === 'completed') updateFields.completedAt = currentDate;
 
+            const updateData = await this._tripRepository.findByIdAndUpdate(tripId, updateFields);
+            if (!updateData) return { success: false, message: 'Update failed' }
+
+            const shipperId = String(updateData?.shipperId);
             await this._notificationRepository.createNotification({
                 userId: shipperId,
                 userType: 'shipper',
                 title: 'Trip Status Updated',
-                message: `${tripId} Trip Status has updated ${updateData?.tripStatus}`
-            })
+                message: `${tripId} Trip Status has been updated to ${newStatus}`
+            });
 
-            if (!updateData) return { success: false, message: 'Somthing wrong.' };
-
-            if (newStatus == 'completed') {
-                await this._truckRepository.updateTruckById(String(updateData.truckId), { status: 'in-active' })
-                await this._loadRepository.findLoadByIdAndUpdate(String(updateData.loadId), { status: 'completed' })
+            if (newStatus === 'completed') {
+                await this._truckRepository.updateTruckById(String(updateData.truckId), { status: 'in-active' });
+                await this._loadRepository.findLoadByIdAndUpdate(String(updateData.loadId), { status: 'completed' });
             }
 
             return { success: true, message: "Trip Status Updated." }
 
         } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
+            throw new Error(error instanceof Error ? error.message : String(error));
         }
     }
 
@@ -1255,13 +1299,13 @@ export class TransporterService implements ITransporterService {
             }
 
             const filter: any = {}
-            
-            if(search) {
-                filter.shipperName = { $regex: search, $options: "i"}
+
+            if (search) {
+                filter.shipperName = { $regex: search, $options: "i" }
             }
 
             const shippers = await this._shipperRepository.find(filter, projection, skip, limit)
-            const total = await this._shipperRepository.count(filter);            
+            const total = await this._shipperRepository.count(filter);
 
             const shipperDatos: ShipperForTransporterDirectoryDTO[] = await Promise.all(
                 shippers.map(async (shipper) => {
@@ -1525,10 +1569,10 @@ export class TransporterService implements ITransporterService {
             const existing = await this._transporterPaymentRepository.findOne({
                 planId: planId,
                 transporterId: transporterId,
-                createdAt: { $gte: fiveMinutesAgo}
+                createdAt: { $gte: fiveMinutesAgo }
             })
 
-            if(existing) {
+            if (existing) {
                 return { success: false, message: 'You recently initiated a payment for this plan. Please wait a few minutes.' };
             }
 
@@ -1551,8 +1595,8 @@ export class TransporterService implements ITransporterService {
                         quantity: 1
                     }
                 ],
-                success_url: `https://loadex.savad.online/transporter/subscription-success?session_id={CHECKOUT_SESSION_ID}&planId=${plan.id}`,
-                cancel_url: `https://loadex.savad.online/transporter/subscription-failed`,
+                success_url: `${config.frontEndUrl}/transporter/subscription-success?session_id={CHECKOUT_SESSION_ID}&planId=${plan.id}`,
+                cancel_url: `${config.frontEndUrl}/transporter/subscription-failed`,
             })
 
             const transporterObjectId = new mongoose.Types.ObjectId(transporterId)
@@ -1712,7 +1756,7 @@ export class TransporterService implements ITransporterService {
     }
 
     async fetchPaymentHistory(transporterId: string, status: string, type: string, date: string, page: number, limit: number):
-        Promise<{ paymentData: ITransporterPayment[], totalPages: number, totalEarnings: number, bidPayments: number, subscriptionPayment: number, pendingAmount: number }> {
+        Promise<{ paymentData: TransporterPaymentDTO[], totalPages: number, totalEarnings: number, bidPayments: number, subscriptionPayment: number, pendingAmount: number }> {
         try {
 
             const paymentData = await this._transporterPaymentRepository.find({ transporterId: transporterId })
@@ -1760,7 +1804,21 @@ export class TransporterService implements ITransporterService {
             const payment = await this._transporterPaymentRepository.find(filter, {}, skip, limit, { createdAt: -1 });
             const totalPayment = await this._transporterPaymentRepository.count(filter);
 
-            return { paymentData: payment, totalPages: Math.ceil(totalPayment / limit), totalEarnings, bidPayments, subscriptionPayment, pendingAmount };
+            const mappedPayments: TransporterPaymentDTO[] = payment.map((p) => ({
+                _id: p._id as string,
+                transactionId: p.transactionId ?? '',
+                bidId: p.bidId ? p.bidId.toString() : '',
+                planId: p.planId ?? '',
+                transporterId: p.transporterId.toString(),
+                paymentType: p.paymentType ?? '',
+                amount: p.amount ?? 0,
+                paymentStatus: p.paymentStatus ?? '',
+                createdAt: p.createdAt,
+                transactionType: p.transactionType ?? '',
+            }));
+
+
+            return { paymentData: mappedPayments, totalPages: Math.ceil(totalPayment / limit), totalEarnings, bidPayments, subscriptionPayment, pendingAmount };
 
         } catch (error) {
             console.error(error);
@@ -1926,32 +1984,53 @@ export class TransporterService implements ITransporterService {
         }
     }
 
-    async updateNotificationAsRead(notificationId: string): Promise<{ success: boolean; message: string; notificationData?: INotification; }> {
+    async updateNotificationAsRead(notificationId: string): Promise<{ success: boolean; message: string; notificationData?: NotificationForTransporterDTO; }> {
         try {
-
             const updateData = await this._notificationRepository.updateById(notificationId, { isRead: true });
-            if (!updateData) return { success: false, message: 'Notification not updated' }
 
-            return { success: true, message: 'Mark notification as read', notificationData: updateData }
+            if (!updateData) return { success: false, message: 'Notification not updated' };
+
+            const notificationData: NotificationForTransporterDTO = {
+                _id: updateData._id as string,
+                userId: updateData.userId.toString(),
+                userType: updateData.userType,
+                title: updateData.title,
+                message: updateData.message,
+                isRead: updateData.isRead,
+                createdAt: updateData.createdAt,
+            };
+
+            return { success: true, message: 'Mark notification as read', notificationData };
 
         } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
+            throw new Error(error instanceof Error ? error.message : String(error));
         }
     }
 
-    async deleteNotification(notificationId: string): Promise<{ success: boolean; message: string; notificationData?: INotification; }> {
-        try {
 
+    async deleteNotification(notificationId: string): Promise<{ success: boolean; message: string; notificationData?: NotificationForTransporterDTO; }> {
+        try {
             const deleteData = await this._notificationRepository.deleteById(notificationId);
 
-            if (!deleteData) return { success: false, message: 'notification not deleted' };
+            if (!deleteData) return { success: false, message: 'Notification not deleted' };
 
-            return { success: true, message: 'notification Deleted', notificationData: deleteData }
+            const notificationData: NotificationForTransporterDTO = {
+                _id: deleteData._id as string,
+                userId: deleteData.userId.toString(),
+                userType: deleteData.userType,
+                title: deleteData.title,
+                message: deleteData.message,
+                isRead: deleteData.isRead,
+                createdAt: deleteData.createdAt,
+            };
+
+            return { success: true, message: 'Notification deleted', notificationData };
 
         } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
+            throw new Error(error instanceof Error ? error.message : String(error));
         }
     }
+
 
     async fetchWalletData(tranpsorterId: string): Promise<WalletForTransporterDTO | null> {
         try {

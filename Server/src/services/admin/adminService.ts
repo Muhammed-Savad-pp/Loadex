@@ -24,6 +24,8 @@ import { TransporterForAdminDTO } from "../../dtos/transporter/transporter.dto";
 import { getPresignedDownloadUrl } from "../../config/s3Config";
 import { ShipperForAdminDTO } from "../../dtos/shipper/shipper.dto";
 import { TripForAdminDTO } from "../../dtos/trip/trip.for.transporter.dto";
+import { RequestedTruckForAdminDTO } from "../../dtos/truck/truck.forAdmin.dto";
+import { LoadForAdminDTO } from "../../dtos/load/load.dto";
 
 configDotenv()
 
@@ -385,10 +387,43 @@ export class AdminService implements IAdminService {
         }
     }
 
-    async getRequestedTrucks(): Promise<ITruck[]> {
+    async getRequestedTrucks(): Promise<RequestedTruckForAdminDTO[]> {
         try {
 
-            return await this._truckRepository.getRequestedTrucks();
+            const trucks = await this._truckRepository.getRequestedTrucks();
+
+            const mappedTrucks: RequestedTruckForAdminDTO[] = await Promise.all(
+                trucks.map(async truck => {
+                    const truckImageUrl = truck.truckImage ? await getPresignedDownloadUrl(truck.truckImage) : '';
+                    const rcBookUrl = truck.rcBook ? await getPresignedDownloadUrl(truck.rcBook) : '';
+                    const driverLicenseUrl = truck.driverLicense ? await getPresignedDownloadUrl(truck.driverLicense) : '';
+
+                    return {
+                        _id: truck._id as string,
+                        transporterId: truck.transporterId?.toString() || "",
+                        truckOwnerName: truck.truckOwnerName ?? '',
+                        truckOwnerMobileNo: truck.truckOwnerMobileNo ?? '',
+                        truckNo: truck.truckNo ?? '',
+                        truckType: truck.truckType ?? '',
+                        capacity: truck.capacity ?? '',
+                        tyres: truck.tyres ?? '',
+                        driverName: truck.driverName ?? '',
+                        driverMobileNo: truck.driverMobileNo ?? '',
+                        currentLocation: truck.currentLocation ?? '',
+                        pickupLocation: truck.pickupLocation ?? '',
+                        dropLocation: truck.dropLocation ?? '',
+                        verificationStatus: truck.verificationStatus ?? '',
+                        operatingStates: truck.operatingStates ?? [],
+                        rcBook: rcBookUrl ?? '',
+                        driverLicense: driverLicenseUrl ?? '',
+                        available: truck.available ?? false,
+                        createdAt: truck.createdAt ? new Date(truck.createdAt) : new Date(),
+                        rcValidity: truck.rcValidity ? new Date(truck.rcValidity) : new Date(),
+                        truckImage: truckImageUrl ?? '',
+                    };
+                })
+            );
+            return mappedTrucks;
 
         } catch (error) {
             console.log(error);
@@ -423,7 +458,7 @@ export class AdminService implements IAdminService {
         }
     }
 
-    async getLoads(page: number, limit: number, search: string, startDate: string, endDate: string): Promise<{ loadData: ILoad[] | null, totalPages: number }> {
+    async getLoads(page: number, limit: number, search: string, startDate: string, endDate: string): Promise<{ loadData: LoadForAdminDTO[] | null, totalPages: number }> {
         try {
 
             const skip = (page - 1) * limit;
@@ -449,7 +484,16 @@ export class AdminService implements IAdminService {
 
             const response = await this._loadRepository.find(filter, {}, skip, limit, { createdAt: -1 });
             const totalcounts = await this._loadRepository.count(filter)
-            return { loadData: response, totalPages: Math.ceil(totalcounts / limit) };
+
+            const mappedLoads: LoadForAdminDTO[] = response.map(load => ({
+                material: load.material ?? '',
+                quantity: load.quantity ?? '',
+                transportationRent: load.transportationRent ?? '',
+                createdAt: load.createdAt ? new Date(load.createdAt) : new Date(),
+            }));
+
+
+            return { loadData: mappedLoads, totalPages: Math.ceil(totalcounts / limit) };
 
         } catch (error) {
             console.log(error);
@@ -722,7 +766,7 @@ export class AdminService implements IAdminService {
 
     async fetchPaymentHistory(searchTerm: string, paymentStatus: string, userType: string, paymentfor: string, page: number, limit: number): Promise<{ paymentData: AdminPaymentDTO[] | null, totalPages: number }> {
         try {
-            
+
             const skip = (page - 1) * limit
 
             const filter: any = {};

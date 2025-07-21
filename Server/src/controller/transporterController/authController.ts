@@ -82,7 +82,7 @@ class AuthController implements ITransporterAuthController {
                         maxAge: 3 * 24 * 60 * 1000
                     }
                 )
-                .json({success: true, message: 'Logged in successfully', accessToken: respone.accessToken, role:'transporter', data:respone.data})
+                .json({success: true, message: 'Logged in successfully', accessToken: respone.accessToken, role:'transporter'})
             } else {
                 res.status(HTTP_STATUS.BAD_REQUEST).json(respone)
             }
@@ -229,7 +229,7 @@ class AuthController implements ITransporterAuthController {
                         maxAge: 3 * 24 * 60 * 1000
                     }
                 )
-                .json({success: true, message: 'Logged in successfully', accessToken: response.accessToken, role:'transporter', data:response.transporterData})
+                .json({success: true, message: 'Logged in successfully', accessToken: response.accessToken, role:'transporter',})
             } else {
                 res.status(HTTP_STATUS.BAD_REQUEST).json(response)
             }

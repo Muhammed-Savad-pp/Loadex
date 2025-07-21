@@ -35,54 +35,54 @@ export const updateTransporterBlockandUnblock = async (id: string) => {
 
 export const getRequestTransporter = async () => {
 
-    const response = await apiClient.get('/admin/fetchRequestTransporter');
+    const response = await apiClient.get('/admin/RequestTransporter');
     return response.data;
 
 }
 
 export const changeVerificationStatus = async (id: string,status: string) =>{
 
-    const response = await apiClient.patch('/admin/changeVerificationStatus', {id, status});
+    const response = await apiClient.patch('/admin/VerificationStatus', {id, status});
     return response.data;
 
 }
 
 export const getShipper = async (search: string, page: number, limit: number) => {
 
-    const response = await apiClient.get(`/admin/fetchShipper?search=${search}&page=${page}&limit=${limit}`);
+    const response = await apiClient.get(`/admin/Shipper?search=${search}&page=${page}&limit=${limit}`);
     return response.data;
 }
 
 export const updateSipperStatus = async (id: string) =>{
 
-    const response = await apiClient.patch('/admin/changeShipperStatus', {id})
+    const response = await apiClient.patch('/admin/ShipperStatus', {id})
     return response.data
 }
 
 export const getRequestedShipper = async () => {
 
-    const response = await apiClient.get('/admin/fetchRequestShipper');
+    const response = await apiClient.get('/admin/RequestShipper');
     return response.data;
 
 }
 
 export const changeShipperVerificationStatus = async (id: string, status: string) => {
 
-    const response = await apiClient.patch('/admin/changeShipperVerificationStatus', { id, status })
+    const response = await apiClient.patch('/admin/ShipperVerificationStatus', { id, status })
     return response.data;
     
 }
 
 export const getRequestedTrucks = async () => {
 
-    const response = await apiClient.get('/admin/fetchRequestTrucks');
+    const response = await apiClient.get('/admin/RequestTrucks');
     return response.data;
 
 }
 
 export const changeTruckVerificationStatus = async (id: string, status: string) => {
 
-    const response = await apiClient.patch('/admin/changeTruckVerificationStatus', { id, status});
+    const response = await apiClient.patch('/admin/TruckVerificationStatus', { id, status});
     return response.data;
 
 }
@@ -90,14 +90,14 @@ export const changeTruckVerificationStatus = async (id: string, status: string) 
 
 export const getLoads = async (page: number, limit: number, search: string, startDate: string, endDate: string) => {
     
-    const response = await apiClient.get(`/admin/fetchLoads?page=${page}&limit=${limit}&search=${search}&startDate=${startDate}&endDate=${endDate}`);
+    const response = await apiClient.get(`/admin/Loads?page=${page}&limit=${limit}&search=${search}&startDate=${startDate}&endDate=${endDate}`);
     return response.data;
     
 }
 
 export const fetchDashBoardDatas = async () => {
 
-    const response = await apiClient.get('/admin/fetchDashboardDatas');    
+    const response = await apiClient.get('/admin/DashboardDatas');    
     return response.data;
 }
 

@@ -47,11 +47,11 @@ mongoose
 
  
 
-app.use('/transporter/auth', transporterAuth_route)
-app.use('/shipper/auth', shipperAuth_rote)
-app.use('/transporter', transporter_route);
-app.use('/shipper', shipper_route);
-app.use('/admin', admin_route);
+app.use('/api/transporter/auth', transporterAuth_route)
+app.use('/api/shipper/auth', shipperAuth_rote)
+app.use('/api/transporter', transporter_route);
+app.use('/api/shipper', shipper_route);
+app.use('/api/admin', admin_route);
     
 // app.use('*', (req, res) => {
 //     logger.warn(`404 - Route not found: ${req.originalUrl}`);

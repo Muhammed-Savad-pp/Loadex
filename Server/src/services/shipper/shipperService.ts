@@ -37,12 +37,14 @@ import { IShipperPayment } from "../../models/ShipperPaymentModel";
 import { startOfDay, subDays } from "date-fns";
 import { IAdminPaymentRepository } from "../../repositories/interface/IAdminPaymentRepository";
 import { BidForShipperDTO } from "../../dtos/bids/bid.for.shipper.dto";
-import { ShipperDTO, TransporterForShipperDTO } from "../../dtos/shipper/shipper.dto";
+import { ShipperDTO, ShipperPaymentDTO, TransporterForShipperDTO } from "../../dtos/shipper/shipper.dto";
 import config from "../../config";
 import { LoadForShipperDTO } from "../../dtos/load/load.dto";
 import { TripForShipperDTO } from "../../dtos/trip/trip.for.transporter.dto";
 import { TruckForShipperDTO } from "../../dtos/truck/truck.for.shipper.dto";
 import { ChatForShipperDTO } from "../../dtos/chat/chat.dto";
+import { ReviewForShipperDTO } from "../../dtos/reviews/review.dto";
+import { NotificationForShipper } from "../../dtos/notifications/notification.dto";
 
 configDotenv()
 
@@ -202,7 +204,7 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async shipperLogin(userData: { email: string, password: string }): Promise<{ success: boolean, message: string, data?: Partial<IShipper>, accessToken?: string, refreshToken?: string }> {
+    async shipperLogin(userData: { email: string, password: string }): Promise<{ success: boolean, message: string, accessToken?: string, refreshToken?: string }> {
 
         const { email, password } = userData;
 
@@ -232,11 +234,11 @@ export class ShipperService implements IShipperService {
         const accessToken = await generateAcessToken(data._id as string, 'shipper');
         const refreshToken = await generateRefreshToken(data._id as string, 'shipper');
 
-        return { success: true, message: "Logged SuccessFully", data: shippperData, accessToken, refreshToken }
+        return { success: true, message: "Logged SuccessFully", accessToken, refreshToken }
 
     }
 
-    async shipperGoogleLoging(name: string, email: string): Promise<{ success: boolean; message: string; data?: Partial<IShipper> | null; accessToken?: string; refreshToken?: string; }> {
+    async shipperGoogleLoging(name: string, email: string): Promise<{ success: boolean; message: string; accessToken?: string; refreshToken?: string; }> {
         try {
 
             const existingShipper = await this._shipperRepositories.findShipperByEmail(email);
@@ -253,7 +255,7 @@ export class ShipperService implements IShipperService {
                 const accessToken = await generateAcessToken(savedShipper._id as string, 'shipper');
                 const refreshToken = await generateRefreshToken(savedShipper._id as string, 'shipper');
 
-                return { success: true, message: "Logged SuccessFully", data: existingShipper, accessToken, refreshToken }
+                return { success: true, message: "Logged SuccessFully", accessToken, refreshToken }
             }
 
 
@@ -267,7 +269,7 @@ export class ShipperService implements IShipperService {
             const accessToken = await generateAcessToken(data._id as string, 'shipper');
             const refreshToken = await generateRefreshToken(data._id as string, 'shipper');
 
-            return { success: true, message: "Logged SuccessFully", data: existingShipper, accessToken, refreshToken }
+            return { success: true, message: "Logged SuccessFully", accessToken, refreshToken }
 
 
         } catch (error) {
@@ -336,7 +338,7 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async registerKyc(shipperId: string, companyName: string, panNumber: string, gstNumber: string, aadhaarFront?: Express.Multer.File, aadhaarBack?: Express.Multer.File): Promise<{ success: boolean; message: string; shipperData?: Partial<IShipper>; }> {
+    async registerKyc(shipperId: string, companyName: string, panNumber: string, gstNumber: string, aadhaarFront?: Express.Multer.File, aadhaarBack?: Express.Multer.File): Promise<{ success: boolean; message: string; shipperData?: ShipperDTO; }> {
         try {
 
             let aadhaarFrontKey: string | undefined;
@@ -366,7 +368,7 @@ export class ShipperService implements IShipperService {
                 aadhaarBackKey = await uploadToS3(aadhaarBack, 'aadhaar-back');
             }
 
-            const updateShipper = await this._shipperRepositories.updateShipperById(
+            const updatedShipper = await this._shipperRepositories.updateShipperById(
                 shipperId,
                 {
                     companyName,
@@ -378,21 +380,44 @@ export class ShipperService implements IShipperService {
                 }
             )
 
-            if (!updateShipper) {
+            if (!updatedShipper) {
                 return { success: false, message: 'Shipper not found' }
             }
 
             return {
-                success: true, message: 'Kyc verification completed',
+                success: true,
+                message: "KYC verification completed",
                 shipperData: {
-                    companyName: updateShipper.companyName,
-                    gstNumber: updateShipper.gstNumber,
-                    panNumber: updateShipper.panNumber,
-                    aadhaarFront: updateShipper.aadhaarFront,
-                    aadhaarBack: updateShipper.aadhaarBack,
-                    verificationStatus: updateShipper.verificationStatus
-                }
-            }
+                    shipperName: updatedShipper.shipperName ?? "",
+                    email: updatedShipper.email ?? "",
+                    phone: updatedShipper.phone ?? "",
+                    verificationStatus: updatedShipper.verificationStatus ?? "pending",
+                    panNumber: updatedShipper.panNumber ?? "",
+                    aadhaarFront: updatedShipper.aadhaarFront ?? "",
+                    aadhaarBack: updatedShipper.aadhaarBack ?? "",
+                    companyName: updatedShipper.companyName ?? "",
+                    gstNumber: updatedShipper.gstNumber ?? "",
+                    profileImage: updatedShipper.profileImage ?? "",
+                    followers: updatedShipper.followers ?? [],
+                    followings: updatedShipper.followings ?? [],
+                    subscription: {
+                        planId: updatedShipper.subscription?.planId ?? "",
+                        planName: updatedShipper.subscription?.planName ?? "",
+                        status: updatedShipper.subscription?.status ?? "",
+                        startDate: updatedShipper.subscription?.startDate
+                            ? new Date(updatedShipper.subscription.startDate)
+                            : null,
+                        endDate: updatedShipper.subscription?.endDate
+                            ? new Date(updatedShipper.subscription.endDate)
+                            : null,
+                        isActive: updatedShipper.subscription?.isActive ?? false,
+                        createdAt: updatedShipper.subscription?.createdAt
+                            ? new Date(updatedShipper.subscription.createdAt)
+                            : null,
+                        paidAmount: updatedShipper.subscription?.paidAmount ?? 0,
+                    },
+                },
+            };
 
         } catch (error) {
             console.error(error, 'error in service')
@@ -633,7 +658,7 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async updateBidStatus(bidId: string, status: string): Promise<{ success: boolean, message: string, bidData?: IBid }> {
+    async updateBidStatus(bidId: string, status: string): Promise<{ success: boolean, message: string }> {
         try {
 
             const updateBid = await this._bidRepositories.updateBidStatus(bidId, status);
@@ -744,8 +769,8 @@ export class ShipperService implements IShipperService {
                     },
                 ],
                 mode: 'payment',
-                success_url: `https://loadex.savad.online/shipper/success?transactionId={CHECKOUT_SESSION_ID}`,
-                cancel_url: `https://loadex.savad.online/failed?transactionId={CHECKOUT_SESSION_ID}`,
+                success_url: `${config.frontEndUrl}/shipper/success?transactionId={CHECKOUT_SESSION_ID}`,
+                cancel_url: `${config.frontEndUrl}/failed?transactionId={CHECKOUT_SESSION_ID}`,
             })
 
 
@@ -823,15 +848,15 @@ export class ShipperService implements IShipperService {
 
             const skip = (page - 1) * limit;
 
-            const filter: any= {
-                 shipperId: shipperId 
+            const filter: any = {
+                shipperId: shipperId
             };
 
-            if(status !== 'all') {
+            if (status !== 'all') {
                 filter.tripStatus = status
             }
 
-            
+
 
             const trips = await this._tripRepositories.findTrips(
                 filter,
@@ -845,7 +870,7 @@ export class ShipperService implements IShipperService {
                 limit,
             );
 
-            
+
 
             const tripsCount = await this._tripRepositories.count(filter);
 
@@ -905,7 +930,7 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async updateProfile(shipperId: string, shipperName: string, phone: string, profileImage?: Express.Multer.File): Promise<{ success: boolean; message: string; shipperData?: Partial<IShipper>; }> {
+    async updateProfile(shipperId: string, shipperName: string, phone: string, profileImage?: Express.Multer.File): Promise<{ success: boolean; message: string; shipperData?: ShipperDTO; }> {
         try {
 
             let profileImageKey: string | undefined
@@ -930,25 +955,63 @@ export class ShipperService implements IShipperService {
                 profileImageKey = await uploadToS3(profileImage, 'profileImage')
             }
 
-            const updateShipper = await this._shipperRepositories.updateShipperById(shipperId, {
+            const updatedShipper = await this._shipperRepositories.updateShipperById(shipperId, {
                 shipperName: shipperName,
                 phone: phone,
                 profileImage: profileImageKey,
             })
 
-            if (!updateShipper) {
+            if (!updatedShipper) {
                 return { success: false, message: 'Shipper Profile not Updated' }
             }
 
+            const profileImageUrl = updatedShipper.profileImage
+                ? await getPresignedDownloadUrl(updatedShipper.profileImage)
+                : "";
 
-            return { success: true, message: 'Shipper Profile Updated SuccessFully', shipperData: updateShipper }
+            const aadhaarFrontUrl = updatedShipper.aadhaarFront ? await getPresignedDownloadUrl(updatedShipper.aadhaarFront) : '';
+            const aadhaarBackUrl = updatedShipper.aadhaarBack ? await getPresignedDownloadUrl(updatedShipper.aadhaarBack) : '';
 
+            return {
+                success: true,
+                message: "Shipper Profile Updated Successfully",
+                shipperData: {
+                    shipperName: updatedShipper.shipperName ?? "",
+                    email: updatedShipper.email ?? "",
+                    phone: updatedShipper.phone ?? "",
+                    verificationStatus: updatedShipper.verificationStatus ?? "pending",
+                    panNumber: updatedShipper.panNumber ?? "",
+                    aadhaarFront: aadhaarFrontUrl ?? "",
+                    aadhaarBack: aadhaarBackUrl ?? "",
+                    companyName: updatedShipper.companyName ?? "",
+                    gstNumber: updatedShipper.gstNumber ?? "",
+                    profileImage: profileImageUrl ?? '',
+                    followers: updatedShipper.followers ?? [],
+                    followings: updatedShipper.followings ?? [],
+                    subscription: {
+                        planId: updatedShipper.subscription?.planId ?? "",
+                        planName: updatedShipper.subscription?.planName ?? "",
+                        status: updatedShipper.subscription?.status ?? "",
+                        startDate: updatedShipper.subscription?.startDate
+                            ? new Date(updatedShipper.subscription.startDate)
+                            : null,
+                        endDate: updatedShipper.subscription?.endDate
+                            ? new Date(updatedShipper.subscription.endDate)
+                            : null,
+                        isActive: updatedShipper.subscription?.isActive ?? false,
+                        createdAt: updatedShipper.subscription?.createdAt
+                            ? new Date(updatedShipper.subscription.createdAt)
+                            : null,
+                        paidAmount: updatedShipper.subscription?.paidAmount ?? 0,
+                    },
+                },
+            };
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
     }
 
-    async fetchTransporterDetails(shipperId: string, transporterId: string): Promise<{ transporterData: TransporterForShipperDTO; isFollow: boolean; truckCount: number; tripsCount: number; reviews: Partial<IRatingReview>[]; averageRating: number, isReview: boolean }> {
+    async fetchTransporterDetails(shipperId: string, transporterId: string): Promise<{ transporterData: TransporterForShipperDTO; isFollow: boolean; truckCount: number; tripsCount: number; reviews: ReviewForShipperDTO[]; averageRating: number, isReview: boolean }> {
         try {
 
             const transporter = await this._transporterRepositories.findTransporterById(transporterId);
@@ -966,7 +1029,7 @@ export class ShipperService implements IShipperService {
 
             const trucks = await this._truckRepositories.count({ verificationStatus: 'approved' });
             const trips = await this._tripRepositories.count({ transporterId: transporterId, tripStatus: 'completed' });
-            const reviews = await this._reviewRatingRepositories.findWithPopulates(
+            const rawReviews = await this._reviewRatingRepositories.findWithPopulates(
                 { "to.id": transporterId, "to.role": "Transporter" },
                 [
                     { path: 'from.id', select: 'shipperName profileImage' }
@@ -974,7 +1037,7 @@ export class ShipperService implements IShipperService {
             )
 
             const shipperObjectId = new mongoose.Types.ObjectId(shipperId);
-            let isReview = reviews.some(val => val.from.id.equals(shipperObjectId))
+            let isReview = rawReviews.some(val => val.from.id.equals(shipperObjectId))
 
             const AverageRatingPipeline = [
                 { $match: { "to.id": new mongoose.Types.ObjectId(transporterId) } },
@@ -1006,6 +1069,38 @@ export class ShipperService implements IShipperService {
                 followings: transporter.followings?.map((f: any) => f.toString()) ?? []
             };
 
+            const reviews: ReviewForShipperDTO[] = await Promise.all(
+                rawReviews.map(async (review: any) => {
+                    let profileImageUrl = '';
+                    if (review.from?.id?.profileImage) {
+                        try {
+                            profileImageUrl = await getPresignedDownloadUrl(review.from.id.profileImage) ?? '';
+                        } catch (error) {
+                            console.error("Error generating presigned URL for review profileImage:", error);
+                        }
+                    }
+
+                    return {
+                        _id: review._id,
+                        from: {
+                            id: {
+                                _id: review.from.id._id.toString(),
+                                shipperName: review.from.id.shipperName,
+                                profileImage: profileImageUrl
+                            },
+                            role: review.from.role
+                        },
+                        to: {
+                            id: review.to.id.toString(),
+                            role: review.to.role
+                        },
+                        rating: review.rating,
+                        review: review.review,
+                        createdAt: review.createdAt
+                    }
+                })
+            );
+
             return { transporterData: mappedTransporter, isFollow: isFollow, truckCount: trucks, tripsCount: trips, reviews: reviews, averageRating: averageRating, isReview };
 
         } catch (error) {
@@ -1013,23 +1108,18 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async followTransporter(shipperId: string, tranpsorterId: string): Promise<{ success: boolean; transporterData: ITransporter; isFollow: boolean; }> {
+    async followTransporter(shipperId: string, tranpsorterId: string): Promise<{ success: boolean; transporterData: TransporterForShipperDTO; isFollow: boolean; }> {
         try {
-
             const updateTransporter = await this._transporterRepositories.follow(tranpsorterId, 'followers', shipperId);
 
             if (!updateTransporter) {
-                throw new Error('Transporter not found or Update Failed')
+                throw new Error('Transporter not found or Update Failed');
             }
-
-
 
             const updateShipper = await this._shipperRepositories.follow(shipperId, 'followings', tranpsorterId);
 
-
-
             if (!updateShipper) {
-                throw new Error('Shipper not found or Update Failed')
+                throw new Error('Shipper not found or Update Failed');
             }
 
             await this._notificationRepository.createNotification({
@@ -1037,50 +1127,79 @@ export class ShipperService implements IShipperService {
                 userType: 'transporter',
                 title: 'New Follower',
                 message: `${updateShipper.shipperName} has started following you. Check your followers list to connect.`
-            })
+            });
 
-            let isFollow;
-            if (updateTransporter.followers?.includes(shipperId)) {
-                isFollow = true;
-            } else {
-                isFollow = false
+            const isFollow = updateTransporter.followers?.includes(shipperId) ?? false;
+
+            // Get presigned profile image
+            let profileImageUrl = '';
+            if (updateTransporter.profileImage) {
+                try {
+                    profileImageUrl = await getPresignedDownloadUrl(updateTransporter.profileImage) ?? '';
+                } catch (error) {
+                    console.error("Error generating presigned URL for transporter profile:", error);
+                }
             }
 
-            return { success: true, transporterData: updateTransporter, isFollow: isFollow };
+            const transporterData: TransporterForShipperDTO = {
+                _id: updateTransporter._id as string,
+                transporterName: updateTransporter.transporterName,
+                email: updateTransporter.email,
+                profileImage: profileImageUrl,
+                followers: updateTransporter.followers?.map((id: any) => id.toString()) ?? [],
+                followings: updateTransporter.followings?.map((id: any) => id.toString()) ?? []
+            };
+
+            return { success: true, transporterData, isFollow };
 
         } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
+            throw new Error(error instanceof Error ? error.message : String(error));
         }
     }
 
-    async unFollowTransporter(shipperId: string, transporterId: string): Promise<{ success: boolean; transporterData: ITransporter; isFollow: boolean; }> {
-        try {
 
+    async unFollowTransporter(shipperId: string, transporterId: string): Promise<{ success: boolean; transporterData: TransporterForShipperDTO; isFollow: boolean; }> {
+        try {
             const updateTransporter = await this._transporterRepositories.unFollow(transporterId, 'followers', shipperId);
 
             if (!updateTransporter) {
-                throw new Error('Transporter not found or Update failed')
+                throw new Error('Transporter not found or Update failed');
             }
 
             const updateShipper = await this._shipperRepositories.unFollow(shipperId, 'followings', transporterId);
 
             if (!updateShipper) {
-                throw new Error('Shipper not found or Update failed')
-            };
-
-            let isFollow;
-            if (updateTransporter.followers?.includes(shipperId)) {
-                isFollow = true;
-            } else {
-                isFollow = false
+                throw new Error('Shipper not found or Update failed');
             }
 
-            return { success: true, transporterData: updateTransporter, isFollow: isFollow };
+            const isFollow = updateTransporter.followers?.includes(shipperId) ?? false;
+
+            // Generate presigned URL for profileImage if exists
+            let profileImageUrl = '';
+            if (updateTransporter.profileImage) {
+                try {
+                    profileImageUrl = await getPresignedDownloadUrl(updateTransporter.profileImage) ?? '';
+                } catch (error) {
+                    console.error("Error generating presigned URL for transporter profile:", error);
+                }
+            }
+
+            const transporterData: TransporterForShipperDTO = {
+                _id: updateTransporter._id as string,
+                transporterName: updateTransporter.transporterName,
+                email: updateTransporter.email,
+                profileImage: profileImageUrl,
+                followers: updateTransporter.followers?.map((id: any) => id.toString()) ?? [],
+                followings: updateTransporter.followings?.map((id: any) => id.toString()) ?? []
+            };
+
+            return { success: true, transporterData, isFollow };
 
         } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
+            throw new Error(error instanceof Error ? error.message : String(error));
         }
     }
+
 
     async postReview(shipperId: string, tranpsorterId: string, rating: number, comment: string): Promise<{ success: boolean, reviewData?: IRatingReview }> {
         try {
@@ -1230,10 +1349,10 @@ export class ShipperService implements IShipperService {
             const existing = await this._shipperPaymentRepositories.findOne({
                 planId: planId,
                 shipperId: shipperId,
-                createdAt: { $gte: fiveMinutesAgo}
+                createdAt: { $gte: fiveMinutesAgo }
             })
 
-            if(existing) {
+            if (existing) {
                 return { success: false, message: 'You recently initiated a payment for this plan. Please wait a few minutes.' };
             }
 
@@ -1258,8 +1377,8 @@ export class ShipperService implements IShipperService {
                         quantity: 1
                     }
                 ],
-                success_url: `https://loadex.savad.online/shipper/subscription-success?session_id={CHECKOUT_SESSION_ID}&planId=${plan.id}`,
-                cancel_url: `https://loadex.savad.online/shipper/subscription-failed`,
+                success_url: `${config.frontEndUrl}/shipper/subscription-success?session_id={CHECKOUT_SESSION_ID}&planId=${plan.id}`,
+                cancel_url: `${config.frontEndUrl}/shipper/subscription-failed`,
             });
 
             const shipperObjectId = new mongoose.Types.ObjectId(shipperId)
@@ -1349,7 +1468,7 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async updateLoad(formData: Partial<ILoad>): Promise<{ success: boolean; message: string; updateData?: Partial<ILoad>; }> {
+    async updateLoad(formData: Partial<ILoad>): Promise<{ success: boolean; message: string; updateData?: LoadForShipperDTO; }> {
         try {
 
             const { pickupCoordinates, dropCoordinates, _id, shipperId, pickupLocation, dropLocation, material, quantity, scheduledDate,
@@ -1397,7 +1516,7 @@ export class ShipperService implements IShipperService {
             }
 
 
-            const updateData = await this._loadRepositories.updateById(loadId, {
+            const updated = await this._loadRepositories.updateById(loadId, {
                 pickupLocation,
                 dropLocation,
                 material,
@@ -1414,7 +1533,27 @@ export class ShipperService implements IShipperService {
                 distanceInKm: distances
             })
 
-            if (!updateData) return { success: false, message: 'Load not updated' }
+            if (!updated) return { success: false, message: 'Load not updated' }
+
+            const updateData: LoadForShipperDTO = {
+                _id: updated._id as string,
+                pickupLocation: updated.pickupLocation,
+                dropLocation: updated.dropLocation,
+                material: updated.material,
+                quantity: updated.quantity,
+                length: updated.length ?? '',
+                truckType: updated.truckType,
+                transportationRent: updated.transportationRent,
+                height: updated.height ?? '',
+                breadth: updated.breadth ?? '',
+                status: updated.status,
+                scheduledDate: updated.scheduledDate,
+                createdAt: updated.createdAt,
+                descriptions: updated.descriptions ?? '',
+                pickupCoordinates: updated.pickupCoordinates,
+                dropCoordinates: updated.dropCoordinates
+            };
+
 
             return { success: true, message: 'Load updated Successfully', updateData: updateData };
 
@@ -1423,21 +1562,45 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async deleteLoadByLoadId(loadId: string): Promise<{ success: boolean; message: string; loadData?: ILoad; }> {
+    async deleteLoadByLoadId(loadId: string): Promise<{ success: boolean; message: string; loadData?: LoadForShipperDTO; }> {
         try {
-
-            if (!loadId) return { success: false, message: 'LoadId not found' }
+            if (!loadId) return { success: false, message: 'LoadId not found' };
 
             const deleteLoad = await this._loadRepositories.deleteById(loadId);
-            console.log(deleteLoad, 'deleteLoad');
+            if (!deleteLoad) return { success: false, message: 'Load not found or already deleted' };
 
+            const loadData: LoadForShipperDTO = {
+                _id: deleteLoad._id as string,
+                pickupLocation: deleteLoad.pickupLocation,
+                dropLocation: deleteLoad.dropLocation,
+                material: deleteLoad.material,
+                quantity: deleteLoad.quantity,
+                length: deleteLoad.length ?? '',
+                truckType: deleteLoad.truckType,
+                transportationRent: deleteLoad.transportationRent,
+                height: deleteLoad.height ?? '',
+                breadth: deleteLoad.breadth ?? '',
+                status: deleteLoad.status,
+                scheduledDate: deleteLoad.scheduledDate,
+                createdAt: deleteLoad.createdAt,
+                descriptions: deleteLoad.descriptions ?? '',
+                pickupCoordinates: {
+                    latitude: deleteLoad.pickupCoordinates.latitude,
+                    longitude: deleteLoad.pickupCoordinates.longitude
+                },
+                dropCoordinates: {
+                    latitude: deleteLoad.dropCoordinates.latitude,
+                    longitude: deleteLoad.dropCoordinates.longitude
+                }
+            };
 
-            return { success: true, message: 'Load Deleted', loadData: deleteLoad as ILoad }
+            return { success: true, message: 'Load Deleted', loadData };
 
         } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
+            throw new Error(error instanceof Error ? error.message : String(error));
         }
     }
+
 
     async startChat(shipperId: string, transporterId: string): Promise<{ success: boolean; chatData: IChat; }> {
         try {
@@ -1561,117 +1724,174 @@ export class ShipperService implements IShipperService {
         }
     }
 
-    async fetchNotifications(shipperId: string, status: string): Promise<INotification[]> {
+    async fetchNotifications(shipperId: string, status: string): Promise<NotificationForShipper[]> {
         try {
-
             const filter: any = {
                 userId: shipperId,
                 userType: 'shipper'
-            }
+            };
 
             if (status !== 'all') {
-                if (status === 'unread') {
-                    filter.isRead = false
-                } else if (status === 'read') {
-                    filter.isRead = true
-                }
+                filter.isRead = status === 'unread' ? false : true;
             }
 
-            const response = await this._notificationRepository.find(filter, {}, 0, 0, { createdAt: -1 })
-            return response;
+            const response = await this._notificationRepository.find(filter, {}, 0, 0, { createdAt: -1 });
+
+            const notifications: NotificationForShipper[] = response.map((notification) => ({
+                _id: notification._id as string,
+                userId: notification.userId.toString(),
+                userType: notification.userType,
+                title: notification.title,
+                message: notification.message,
+                isRead: notification.isRead,
+                createdAt: notification.createdAt,
+            }));
+
+            return notifications;
 
         } catch (error) {
             console.error(error);
-            throw new Error(error instanceof Error ? error.message : String(error))
+            throw new Error(error instanceof Error ? error.message : String(error));
         }
     }
 
-    async updateNotificationAsRead(notificationId: string): Promise<{ success: boolean; message: string; notificationData?: INotification; }> {
+
+    async updateNotificationAsRead(notificationId: string): Promise<{ success: boolean; message: string; notificationData?: NotificationForShipper; }> {
         try {
-
             const updateData = await this._notificationRepository.updateById(notificationId, { isRead: true });
-            if (!updateData) return { success: false, message: 'Notification not updated' }
+            if (!updateData) return { success: false, message: 'Notification not updated' };
 
-            return { success: true, message: 'Mark notification as read', notificationData: updateData }
+            const notificationData: NotificationForShipper = {
+                _id: updateData._id as string,
+                userId: updateData.userId.toString(),
+                userType: updateData.userType,
+                title: updateData.title,
+                message: updateData.message,
+                isRead: updateData.isRead,
+                createdAt: updateData.createdAt,
+            };
+
+            return { success: true, message: 'Mark notification as read', notificationData };
 
         } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
+            throw new Error(error instanceof Error ? error.message : String(error));
         }
     }
 
-    async deleteNotification(notificationId: string): Promise<{ success: boolean; message: string; notificationData?: INotification; }> {
+
+    async deleteNotification(notificationId: string): Promise<{ success: boolean; message: string; notificationData?: NotificationForShipper; }> {
         try {
-
             const deleteData = await this._notificationRepository.deleteById(notificationId);
-
             if (!deleteData) return { success: false, message: 'notification not deleted' };
 
-            return { success: true, message: 'notification Deleted', notificationData: deleteData }
+            const notificationData: NotificationForShipper = {
+                _id: deleteData._id as string,
+                userId: deleteData.userId.toString(),
+                userType: deleteData.userType,
+                title: deleteData.title,
+                message: deleteData.message,
+                isRead: deleteData.isRead,
+                createdAt: deleteData.createdAt,
+            };
+
+            return { success: true, message: 'notification Deleted', notificationData };
 
         } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
+            throw new Error(error instanceof Error ? error.message : String(error));
         }
     }
 
-    async fetchPaymentHistory(shipperId: string, status: string, type: string, date: string, page: number, limit: number, search: string):
-        Promise<{ paymentData: IShipperPayment[]; totalPages: number; totalEarnings: number; bidPayments: number; subscriptionPayment: number; pendingAmount: number; }> {
+    async fetchPaymentHistory(
+        shipperId: string,
+        status: string,
+        type: string,
+        date: string,
+        page: number,
+        limit: number,
+        search: string
+    ): Promise<{
+        paymentData: ShipperPaymentDTO[];
+        totalPages: number;
+        totalEarnings: number;
+        bidPayments: number;
+        subscriptionPayment: number;
+        pendingAmount: number;
+    }> {
         try {
+            const allPayments = await this._shipperPaymentRepositories.find({ shipperId });
 
-            const paymentData = await this._shipperPaymentRepositories.find({ shipperId: shipperId })
-            const totalEarnings = paymentData
+            const totalEarnings = allPayments
                 .filter(p => p.paymentStatus === 'success')
-                .reduce((sum, p) => sum + p.amount, 0)
+                .reduce((sum, p) => sum + p.amount, 0);
 
-            const pendingAmount = paymentData
+            const pendingAmount = allPayments
                 .filter(p => p.paymentStatus === 'pending')
-                .reduce((sum, p) => sum + p.amount, 0)
+                .reduce((sum, p) => sum + p.amount, 0);
 
-            const bidPayments = paymentData.filter(p => p.paymentType === 'bid').length;
-            const subscriptionPayment = paymentData.filter(p => p.paymentType === 'subscription').length;
-
+            const bidPayments = allPayments.filter(p => p.paymentType === 'bid').length;
+            const subscriptionPayment = allPayments.filter(p => p.paymentType === 'subscription').length;
 
             const skip = (page - 1) * limit;
 
-            const filter: any = {
-                shipperId: shipperId
-            }
+            const filter: any = { shipperId };
 
             if (status !== 'all') {
-                filter.paymentStatus = status
+                filter.paymentStatus = status;
             }
 
             if (type !== 'all') {
-                filter.paymentType = type
+                filter.paymentType = type;
             }
 
             const now = new Date();
             let fromDate: Date | null = null;
 
             if (date === 'today') {
-                fromDate = startOfDay(now)
+                fromDate = startOfDay(now);
             } else if (date === 'week') {
                 fromDate = subDays(now, 7);
             } else if (date === 'month') {
                 fromDate = subDays(now, 30);
             }
 
-            if (date !== 'all') {
-                filter.createdAt = { $gte: fromDate }
+            if (date !== 'all' && fromDate) {
+                filter.createdAt = { $gte: fromDate };
             }
 
             if (search) {
-                filter.transactionId = { $regex: search, $options: "i"}
+                filter.transactionId = { $regex: search, $options: "i" };
             }
 
             const payment = await this._shipperPaymentRepositories.find(filter, {}, skip, limit, { createdAt: -1 });
             const totalPayment = await this._shipperPaymentRepositories.count(filter);
 
-            return { paymentData: payment, totalPages: Math.ceil(totalPayment / limit), totalEarnings, bidPayments, subscriptionPayment, pendingAmount };
+            const paymentData: ShipperPaymentDTO[] = payment.map(p => ({
+                _id: p._id as string,
+                transactionId: p.transactionId || '',
+                bidId: p.bidId?.toString() || '',
+                planId: p.planId?.toString() || '',
+                shipperId: p.shipperId.toString(),
+                paymentType: p.paymentType || '', 
+                amount: p.amount || 0,
+                paymentStatus: p.paymentStatus || '',
+                createdAt: p.createdAt || '',
+                transactionType: p.transactionType || ''
+            }));
+
+            return {
+                paymentData,
+                totalPages: Math.ceil(totalPayment / limit),
+                totalEarnings,
+                bidPayments,
+                subscriptionPayment,
+                pendingAmount
+            };
 
         } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
+            throw new Error(error instanceof Error ? error.message : String(error));
         }
     }
+
 
     async checkAndRefundExpiredBids(): Promise<{ success: boolean; }> {
         try {

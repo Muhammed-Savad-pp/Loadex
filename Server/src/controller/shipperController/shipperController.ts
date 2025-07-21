@@ -103,7 +103,7 @@ class ShipperController implements IShipperController {
                             maxAge: 7 * 24 * 60 * 1000
                         }
                     )
-                    .json({ success: true, message: "Logged in successFully", accessToken: response.accessToken, role: "shipper", data: response.data });
+                    .json({ success: true, message: "Logged in successFully", accessToken: response.accessToken, role: "shipper", });
             } else {
                 res.status(HTTP_STATUS.BAD_REQUEST).json(response)
             }
@@ -133,7 +133,7 @@ class ShipperController implements IShipperController {
                             maxAge: 7 * 24 * 60 * 1000
                         }
                     )
-                    .json({ success: true, message: "Logged in successFully", accessToken: response.accessToken, role: "shipper", data: response.data });
+                    .json({ success: true, message: "Logged in successFully", accessToken: response.accessToken, role: "shipper" });
             } else {
                 res.status(HTTP_STATUS.BAD_REQUEST).json(response)
             }

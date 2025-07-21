@@ -51,3 +51,11 @@ export interface LoadForShipperDTO {
     pickupCoordinates: LoadPickupCoordinatesDTO
     dropCoordinates: LoadDropCoordinatesDTO
 }
+
+
+export interface LoadForAdminDTO {
+    material: string,
+    quantity: string,
+    transportationRent: string,
+    createdAt: Date,
+}

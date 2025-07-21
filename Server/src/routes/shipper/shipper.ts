@@ -51,13 +51,13 @@ shipper_route.post('/kycRegister', authenticateToken, checkRole('shipper'), uplo
 
 shipper_route.post('/postLoad', authenticateToken, checkRole('shipper'), shipperController.postLoad.bind(shipperController));
 
-shipper_route.get('/getVerificationStatus', authenticateToken, checkRole('shipper'), shipperController.getVerificationstatus.bind(shipperController));
+shipper_route.get('/VerificationStatus', authenticateToken, checkRole('shipper'), shipperController.getVerificationstatus.bind(shipperController));
 
-shipper_route.get('/fetchBids', authenticateToken, checkRole('shipper'), shipperController.fetchBids.bind(shipperController));
+shipper_route.get('/Bids', authenticateToken, checkRole('shipper'), shipperController.fetchBids.bind(shipperController));
 
-shipper_route.patch('/updateBidStatus', authenticateToken, checkRole('shipper'), shipperController.updateBidStatus.bind(shipperController));
+shipper_route.patch('/BidStatus', authenticateToken, checkRole('shipper'), shipperController.updateBidStatus.bind(shipperController));
 
-shipper_route.get('/fetchLoads', authenticateToken, checkRole('shipper'), shipperController.fetchLoads.bind(shipperController));
+shipper_route.get('/Loads', authenticateToken, checkRole('shipper'), shipperController.fetchLoads.bind(shipperController));
 
 shipper_route.post('/checkout-session', authenticateToken, checkRole('shipper'), shipperController.checkoutSession.bind(shipperController));
 
@@ -65,7 +65,7 @@ shipper_route.post('/verifyPayment', authenticateToken, checkRole('shipper'), sh
 
 shipper_route.get('/trips', authenticateToken, checkRole('shipper'), shipperController.fetchTrips.bind(shipperController));
 
-shipper_route.post('/updateProfile', authenticateToken, checkRole('shipper'), upload.fields([{name: 'profileImage'}]), shipperController.updateProfile.bind(shipperController));
+shipper_route.post('/Profile', authenticateToken, checkRole('shipper'), upload.fields([{name: 'profileImage'}]), shipperController.updateProfile.bind(shipperController));
 
 shipper_route.get('/transporterDetails/:transporterId', authenticateToken, checkRole('shipper'), shipperController.fetchTransporterDetails.bind(shipperController));
 
@@ -73,11 +73,11 @@ shipper_route.post('/followTransporter', authenticateToken, checkRole('shipper')
 
 shipper_route.post('/unfollowTransporter', authenticateToken, checkRole('shipper'), shipperController.unFollowTransporter.bind(shipperController));
 
-shipper_route.post('/postReview', authenticateToken, checkRole('shipper'), shipperController.postReview.bind(shipperController));
+shipper_route.post('/Review', authenticateToken, checkRole('shipper'), shipperController.postReview.bind(shipperController));
 
-shipper_route.get('/fetchTransporters', authenticateToken, checkRole('shipper'), shipperController.fetchTransportes.bind(shipperController));
+shipper_route.get('/transporters', authenticateToken, checkRole('shipper'), shipperController.fetchTransportes.bind(shipperController));
 
-shipper_route.get('/fetchTrucks', authenticateToken, checkRole('shipper'), shipperController.fetchTrucks.bind(shipperController));
+shipper_route.get('/trucks', authenticateToken, checkRole('shipper'), shipperController.fetchTrucks.bind(shipperController));
 
 shipper_route.get('/subscriptionPlans', authenticateToken, checkRole('shipper'), shipperController.getShipperSubscriptionPlan.bind(shipperController))
 
@@ -85,23 +85,23 @@ shipper_route.post('/subscription/create-checkout-session', authenticateToken, c
 
 shipper_route.get('/subscription-success', authenticateToken, checkRole('shipper'), shipperController.handleSubscriptionSuccess.bind(shipperController));
 
-shipper_route.put('/updateLoad', authenticateToken, checkRole('shipper'), shipperController.updateLoad.bind(shipperController));
+shipper_route.put('/load', authenticateToken, checkRole('shipper'), shipperController.updateLoad.bind(shipperController));
 
 shipper_route.delete('/load', authenticateToken, checkRole('shipper'), shipperController.deleteLoad.bind(shipperController));
 
-shipper_route.post('/create-chat', authenticateToken, checkRole('shipper'), shipperController.createChat.bind(shipperController));
+shipper_route.post('/chat', authenticateToken, checkRole('shipper'), shipperController.createChat.bind(shipperController));
 
-shipper_route.get('/fetch-chats', authenticateToken, checkRole('shipper'), shipperController.fetchChats.bind(shipperController))
+shipper_route.get('/chats', authenticateToken, checkRole('shipper'), shipperController.fetchChats.bind(shipperController))
 
 shipper_route.get('/messages/:chatId', authenticateToken, checkRole('shipper'), shipperController.fetchMessages.bind(shipperController));
 
-shipper_route.post('/create-message', authenticateToken, checkRole('shipper'), shipperController.sendMessage.bind(shipperController));
+shipper_route.post('/message', authenticateToken, checkRole('shipper'), shipperController.sendMessage.bind(shipperController));
 
 shipper_route.get('/me', authenticateToken, checkRole('shipper'), shipperController.getCurrentShipperId.bind(shipperController));
 
 shipper_route.patch('/message-mark-as-read/:chatId', authenticateToken, checkRole('shipper'), shipperController.upateMessageAsRead.bind(shipperController))
 
-shipper_route.get('/fetchNotifications', authenticateToken, checkRole('shipper'), shipperController.fetchNotifications.bind(shipperController))
+shipper_route.get('/notifications', authenticateToken, checkRole('shipper'), shipperController.fetchNotifications.bind(shipperController))
 
 shipper_route.patch('/notification-mark-as-read', authenticateToken, checkRole('shipper'), shipperController.updateNotificationAsRead.bind(shipperController));
 

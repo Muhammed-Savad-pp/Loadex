@@ -12,7 +12,7 @@ import { IMessage } from "../../models/Message";
 import { INotification } from "../../models/NotificationModel";
 import { ITransporterWallet } from "../../models/TransporterWallet";
 import { BidForTransporterDTO } from "../../dtos/bids/bid.for.transporter.dto";
-import { ShipperForTransporterDirectoryDTO, ShipperForTransporterDTO, TransporterDTO } from "../../dtos/transporter/transporter.dto";
+import { ShipperForTransporterDirectoryDTO, ShipperForTransporterDTO, TransporterDTO, TransporterPaymentDTO } from "../../dtos/transporter/transporter.dto";
 import { TruckDTO } from "../../dtos/truck/truck.for.transporter.dto";
 import { TripForTransporterDTO } from "../../dtos/trip/trip.for.transporter.dto";
 import { LoadForTransporterDTO } from "../../dtos/load/load.dto";
@@ -34,7 +34,7 @@ export interface ITransporterService {
     
     getLoads(page: number, limit: number): Promise<{loads: LoadForTransporterDTO[] | null, currentPage: number, totalPages: number, totalItems: number}>
     findTrucks(id: string, status: string, page: number, limit: number): Promise<{trucks:TruckDTO[] | null; totalPages: number}>
-    updateTruckAvailable(formData: Partial<ITruck>, driverLicensefile?: Express.Multer.File) : Promise <{success: boolean, truckData?: ITruck, message: string}>;
+    updateTruckAvailable(formData: Partial<ITruck>, driverLicensefile?: Express.Multer.File) : Promise <{success: boolean, truckData?: TruckDTO, message: string}>;
     sendBid(formData: {truckNo: string, rent: string, loadId: string, shipperId: string}, transporterId: string): Promise<{success: boolean, message: string}>;
     fetchAllBids(transporterid: string, page: number, limit: number, status: string): Promise<{ bidDatas: BidForTransporterDTO[] | null, totalPages: number}>
     bidCheckoutSession(bidID: string): Promise<{success: boolean, message: string, sessionId?: string}>;
@@ -55,15 +55,15 @@ export interface ITransporterService {
     fetchActiveTrucks(transporterId: string): Promise<ITruck[] | null>
     updateBid(bidId: string, truckId: string, price: string): Promise<{success: boolean, message: string, updateBid?: BidForTransporterDTO}>
     deleteBidById(bidId: string): Promise<{success: boolean, message: string, BidData?: IBid}>;
-    fetchPaymentHistory(transporterId: string, status: string, type: string, date: string, page: number, limit: number): Promise<{paymentData:ITransporterPayment[], totalPages: number, totalEarnings: number, bidPayments: number, subscriptionPayment: number, pendingAmount: number}>;
+    fetchPaymentHistory(transporterId: string, status: string, type: string, date: string, page: number, limit: number): Promise<{paymentData:TransporterPaymentDTO[], totalPages: number, totalEarnings: number, bidPayments: number, subscriptionPayment: number, pendingAmount: number}>;
     startChat(transporterId: string, shipperId: string): Promise<{success: boolean, chatData: IChat}>;
     fetchChats(transporterId: string): Promise< ChatForTransporterDTO[]>;
     sendMessage(transporterId: string , chatId: string , shipperId: string, content: string): Promise<{success: boolean, messageData?: IMessage}>;
     fetchMessages(chatId: string): Promise<IMessage[]>;
     updateMessageAsRead(chatId: string, transporeterId: string): Promise<{success: boolean}>;
     fetchNotifications(transporterId: string, status: string): Promise<NotificationForTransporterDTO[]>;
-    updateNotificationAsRead(notificationId: string): Promise<{success: boolean, message: string, notificationData?:INotification}>;
-    deleteNotification(notificationId: string): Promise<{success: boolean, message: string, notificationData?: INotification}>;
+    updateNotificationAsRead(notificationId: string): Promise<{success: boolean, message: string, notificationData?:NotificationForTransporterDTO}>;
+    deleteNotification(notificationId: string): Promise<{success: boolean, message: string, notificationData?: NotificationForTransporterDTO}>;
     fetchWalletData(tranpsorterId: string): Promise<WalletForTransporterDTO | null>;
     bidPaymentByWallet(transporterId: string, bidId: string): Promise<{success: boolean, message: string}>;
     findUnreadNotificationCount(transporeterId: string): Promise<number>;

@@ -131,7 +131,7 @@ export class AuthService implements ITransporterAuthService {
         } 
     }
 
-    async transporterLogin(userData:{email: string, password: string}): Promise<{success: boolean, message: string, data?:Partial<ITransporter>,   accessToken?: string, refreshToken?: string}> {
+    async transporterLogin(userData:{email: string, password: string}): Promise<{success: boolean, message: string, accessToken?: string, refreshToken?: string}> {
 
         const {email, password} = userData;
 
@@ -164,7 +164,7 @@ export class AuthService implements ITransporterAuthService {
         const accessToken = await generateAcessToken(data._id as string, 'transporter');
         const refreshToken = await generateRefreshToken(data._id as string, 'transporter');
         
-        return {success: true, message:"Logged SuccessFully",data: transporterData, accessToken, refreshToken}
+        return {success: true, message:"Logged SuccessFully", accessToken, refreshToken}
         
 
     }
@@ -269,7 +269,7 @@ export class AuthService implements ITransporterAuthService {
         }
     }
 
-    async googleLogin(name: string, email: string): Promise<{ success: boolean; message: string; transporterData?: Partial<ITransporter> | null; accessToken?: string; refreshToken?: string; }> {
+    async googleLogin(name: string, email: string): Promise<{ success: boolean; message: string; accessToken?: string; refreshToken?: string; }> {
         try {
 
             const existingTransporter = await this._transporterRepository.findTransporterByEmail(email);
@@ -299,7 +299,7 @@ export class AuthService implements ITransporterAuthService {
             const refreshToken = await generateRefreshToken(data._id as string, 'transporter');
 
             
-            return {success: true, message:"Logged SuccessFully",transporterData: existingTransporter, accessToken, refreshToken}
+            return {success: true, message:"Logged SuccessFully", accessToken, refreshToken}
             
         } catch (error) {
             console.log(error);

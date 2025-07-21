@@ -48,3 +48,16 @@ export interface ShipperForAdminDTO {
     aadhaarBack: string;
     profileImage: string;
 }
+
+export interface ShipperPaymentDTO {
+    _id: string
+    transactionId: string
+    bidId: string
+    planId: string
+    shipperId: string
+    paymentType: string;
+    amount: number
+    paymentStatus: string;
+    createdAt: Date;
+    transactionType: string
+}

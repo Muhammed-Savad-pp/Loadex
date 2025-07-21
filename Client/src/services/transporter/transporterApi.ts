@@ -102,7 +102,7 @@ export const registerTruck = async (formDataToSend: FormData) => {
 
     
 
-    const response = await apiClient.post('/transporter/registerTruck', formDataToSend, {
+    const response = await apiClient.post('/transporter/truck', formDataToSend, {
         headers: {
             'Content-type': 'multipart/form-data',
         },
@@ -113,7 +113,7 @@ export const registerTruck = async (formDataToSend: FormData) => {
 
 export const fetchLoads = async (page: number , limit: number) => {
 
-    const response = await apiClient.get(`/transporter/fetchLoads?page=${page}&limit=${limit}`);
+    const response = await apiClient.get(`/transporter/loads?page=${page}&limit=${limit}`);
     return response.data;
 
 }
@@ -122,7 +122,7 @@ export const fetchTrucks = async (status: string, page: number, limit: number) =
 
     console.log(limit, 'asdfa');
     
-    const response = await apiClient.get(`/transporter/fetchTrucks?status=${status}&page=${page}&limit=${limit}`);
+    const response = await apiClient.get(`/transporter/trucks?status=${status}&page=${page}&limit=${limit}`);
     return response.data;
 }
 
@@ -158,7 +158,7 @@ export const sendBid = async (formData: FormData) => {
 
 export const fetchBids = async (page: number, limit: number, status: string) => {
 
-    const response = await apiClient.get(`/transporter/fetchBids?page=${page}&limit=${limit}&status=${status}`);
+    const response = await apiClient.get(`/transporter/bids?page=${page}&limit=${limit}&status=${status}`);
     return response.data;
 
 }
@@ -193,7 +193,7 @@ export const updateTripStatus = async (tripId: string, newStatus: string) => {
 
 export const updateProfile = async (formData: FormData) => {
 
-    const response = await apiClient.post('/transporter/updateProfile', formData, {
+    const response = await apiClient.post('/transporter/profile', formData, {
         headers: {
             'Content-type': 'multipart/form-data'
         }
@@ -225,21 +225,21 @@ export const unfollowShipper = async (shipperId: string) => {
 
 export const postReview = async (shipperId: string, rating: number, comment: string) => {
 
-    const response = await apiClient.post('/transporter/postReview', {shipperId, rating, comment});
+    const response = await apiClient.post('/transporter/review', {shipperId, rating, comment});
     return response.data;
     
 }
 
 export const listShipper = async (page: number, limit: number, search: string) => {
 
-    const response = await apiClient.get(`/transporter/fetchShippers?page=${page}&limit=${limit}&search=${search}`);
+    const response = await apiClient.get(`/transporter/shippers?page=${page}&limit=${limit}&search=${search}`);
     return response.data;
 
 }
 
 export const fetchFollowerAndFollowingDetails = async (status: string, search: string, page: number, limit: number) => {
 
-    const response = await apiClient.get(`/transporter/fetchFollowersDetails?status=${status}&search=${search}&page=${page}&limit=${limit}`);
+    const response = await apiClient.get(`/transporter/followersDetails?status=${status}&search=${search}&page=${page}&limit=${limit}`);
     return response.data;
     
 }
@@ -274,7 +274,7 @@ export const fetchActiveTruck = async () => {
 
 export const updateBid = async (bidId: string, truckId: string, price: string) => {
 
-    const response = await apiClient.put('/transporter/updateBid', { bidId, truckId, price })
+    const response = await apiClient.put('/transporter/bid', { bidId, truckId, price })
     return response.data;    
 }
 
@@ -292,19 +292,19 @@ export const fetchPaymentHistory = async (statusFilter: string, typeFilter: stri
 
 export const createChat = async (shipperId: string) => {
 
-    const response = await apiClient.post('/transporter/create-chat', { shipperId });
+    const response = await apiClient.post('/transporter/chat', { shipperId });
     return response.data;
 }
 
 export const fetchChats = async () => {
 
-    const response = await apiClient.get('/transporter/fetch-chats');
+    const response = await apiClient.get('/transporter/chats');
     return response.data;
 }
 
 export const sendMessages = async (chatId: string, shipperId: string, message: string) => {
 
-    const response = await apiClient.post('/transporter/create-message', {chatId, shipperId, message});
+    const response = await apiClient.post('/transporter/message', {chatId, shipperId, message});
     return response.data;
 }
 

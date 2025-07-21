@@ -22,3 +22,22 @@ export interface ReviewForTransporter {
     review: string;
     createdAt: Date;
 }
+
+export interface ReviewForShipperDTO {
+    _id: string;
+    from: {
+        id: {
+            _id: string;
+            shipperName: string;
+            profileImage: string;
+        };
+        role: string
+    }
+    to: {
+        id: string;
+        role: string;
+    };
+    rating: number;
+    review: string;
+    createdAt: Date
+}

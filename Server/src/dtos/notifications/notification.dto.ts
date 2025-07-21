@@ -9,3 +9,13 @@ export interface NotificationForTransporterDTO {
     isRead: boolean;
     createdAt: Date;
 }
+
+export interface NotificationForShipper {
+  _id: string;
+  userId: string;
+  userType: 'shipper' | 'transporter';
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: Date;
+}

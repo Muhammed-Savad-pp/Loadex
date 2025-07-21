@@ -7,11 +7,12 @@ import TripStatusStepper from '../../components/tranporter/TripStatusStepper';
 import ProfileComponent from '../../components/tranporter/ProfileComponent';
 import { useNavigate } from 'react-router-dom';
 import LocationTrackingComponent from '../../components/tranporter/LocationTrackingComponent';
+import toast from 'react-hot-toast';
 
 
 
 interface ITripData {
-  _id: string; 
+  _id: string;
   shipperId: {
     _id: string;
     shipperName: string;
@@ -423,17 +424,31 @@ export default function Trips() {
 
   const handleStatusUpdate = async (tripId: string, newStatus: TripStatus) => {
     try {
-      await updateTripStatus(tripId, newStatus);
+      const response: any = await updateTripStatus(tripId, newStatus);
 
-      setTripDatas(prevTrips =>
-        prevTrips.map(trip =>
-          trip._id === tripId ? { ...trip, tripStatus: newStatus } : trip
-        )
-      );
+      if (response.success) {
+
+        setTripDatas(prevTrips =>
+          prevTrips.map(trip =>
+            trip._id === tripId ? { ...trip, tripStatus: newStatus } : trip
+          )
+        );
+
+      } else {
+        setLoading(true);
+        toast.error(response.message)
+        const responses: any = await fetchTrips(filter, page, limit);
+        setTripDatas(responses.trips as ITripData[]);
+        setTotalPages(responses.totalPages)
+      }
+
     } catch (error) {
       console.error("Failed to update trip status:", error);
       throw error;
+    } finally {
+      setLoading(false);
     }
+
   };
 
   return (

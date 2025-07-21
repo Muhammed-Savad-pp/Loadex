@@ -84,7 +84,7 @@ export const postLoad = async (formData: IFormData) => {
 
 export const getShipperVerificatinStatus = async () => {
 
-    const response = await api.get('/shipper/getVerificationStatus');
+    const response = await api.get('/shipper/VerificationStatus');
     return response.data;
 
 }
@@ -105,21 +105,21 @@ export const shipperNewPasswordSet = async (email: string, password: string) => 
 
 export const fetchBids = async (page: number, limit: number, status: string) => {
 
-    const response = await api.get(`/shipper/fetchBids?page=${page}&limit=${limit}&status=${status}`);
+    const response = await api.get(`/shipper/Bids?page=${page}&limit=${limit}&status=${status}`);
     return response.data;
 
 }
 
 export const updateBidStatus = async (bidId: string, status: string) => {
 
-    const response = await api.patch('/shipper/updateBidStatus', {bidId, status})
+    const response = await api.patch('/shipper/BidStatus', {bidId, status})
     return response.data;
 
 }
 
 export const fetchLoads = async (page: number, limit: number) => {
 
-    const response = await api.get(`/shipper/fetchLoads?page=${page}&limit=${limit}`);
+    const response = await api.get(`/shipper/Loads?page=${page}&limit=${limit}`);
     return response.data;
     
 }
@@ -147,7 +147,7 @@ export const fetchTrips = async (page: number, limit: number, filterStatus: stri
 
 export const updateProfile = async (formData: FormData) => {
 
-    const response = await api.post('/shipper/updateProfile', formData, {
+    const response = await api.post('/shipper/Profile', formData, {
         headers: {
            'Content-Type': 'multipart/form-data',
         }
@@ -180,20 +180,20 @@ export const unFollowTransporter = async (transporterId: string) => {
 
 export const postReview = async (transporterId: string, rating: number, comment: string) => {    
 
-    const response = await api.post('/shipper/postReview', {transporterId, rating, comment});
+    const response = await api.post('/shipper/Review', {transporterId, rating, comment});
     return response.data;
 
 }
 
 export const fetchTransporters = async (page: number, limit: number, searchTerm: string) => {
 
-    const response = await api.get(`/shipper/fetchTransporters?page=${page}&limit=${limit}&search=${searchTerm}`);
+    const response = await api.get(`/shipper/transporters?page=${page}&limit=${limit}&search=${searchTerm}`);
     return response.data
 }
 
 export const fetchTrucks = async (page: number, limit: number) => {
 
-    const response = await api.get(`/shipper/fetchTrucks?page=${page}&limit=${limit}`);
+    const response = await api.get(`/shipper/trucks?page=${page}&limit=${limit}`);
     return response.data;
 
 }
@@ -221,7 +221,7 @@ export const subscriptionSuccess = async (sessionId: string, planId: string) => 
 
 export const updateLoad = async (formData: LoadData) => {
         
-    const response = await api.put('/shipper/updateLoad', {formData});
+    const response = await api.put('/shipper/load', {formData});
     return response.data;
 
 }
@@ -235,13 +235,13 @@ export const deleteLoad = async (loadId: string) => {
 
 export const createChat = async (transporterId: string) => {
 
-    const response = await api.post('/shipper/create-chat', {transporterId});
+    const response = await api.post('/shipper/chat', {transporterId});
     return response.data;
 }
 
 export const fetchChats = async () => {
 
-    const response = await api.get('/shipper/fetch-chats');
+    const response = await api.get('/shipper/chats');
     return response.data;
 
 }
@@ -254,7 +254,7 @@ export const fetchMessages = async (chatId: string) => {
 
 export const sendMessages = async (chatId: string, transporterId: string, message: string) => {
 
-    const response = await api.post('/shipper/create-message', { chatId, transporterId, message});    
+    const response = await api.post('/shipper/message', { chatId, transporterId, message});    
     return response.data;
 
 }
@@ -273,7 +273,7 @@ export const updateMessageAsRead = async (chatId: string) => {
 
 export const fecthShipperNotifications = async (filter: string) => {
     
-    const response = await api.get(`/shipper/fetchNotifications?filter=${filter}`);
+    const response = await api.get(`/shipper/notifications?filter=${filter}`);
     return response.data;
 
 }

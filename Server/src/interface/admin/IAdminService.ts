@@ -8,6 +8,8 @@ import { AdminPaymentDTO } from "../../dtos/admin/admin.payment.history.dto";
 import { TransporterForAdminDTO } from "../../dtos/transporter/transporter.dto";
 import { ShipperForAdminDTO } from "../../dtos/shipper/shipper.dto";
 import { TripForAdminDTO } from "../../dtos/trip/trip.for.transporter.dto";
+import { RequestedTruckForAdminDTO } from "../../dtos/truck/truck.forAdmin.dto";
+import { LoadForAdminDTO } from "../../dtos/load/load.dto";
 
 export interface IAdminService {
     login(email: string, passwrod: string) : Promise<{accessToken?: string, refreshToken?: string, success: boolean, message: string}>;
@@ -19,9 +21,9 @@ export interface IAdminService {
     changeShipperStatus(id: string): Promise<string>;
     getRequestedShipper(): Promise<ShipperForAdminDTO[]>;
     changeShipperVerificationStatus(id: string, status: IShipper['verificationStatus']) : Promise<string>;
-    getRequestedTrucks(): Promise<ITruck[]>;
+    getRequestedTrucks(): Promise<RequestedTruckForAdminDTO[]>;
     changeTruckVerificationStatus(id: string, status:ITruck['verificationStatus']):Promise<string>;
-    getLoads(page: number, limit: number, search: string, startDate: string, endDate: string): Promise<{loadData: ILoad[] | null, totalPages: number}>;
+    getLoads(page: number, limit: number, search: string, startDate: string, endDate: string): Promise<{loadData: LoadForAdminDTO[] | null, totalPages: number}>;
     fetchDashboardDatas(): Promise<{userCount: number, loadCount: number, tripCount: number, totalEarning: number}>
     fetchTrips(page: number, limit: number, search: string, status: string): Promise<{tripsData: TripForAdminDTO[], totalPages: number}>;
     sendTripAmountToTransporter(tripId: string): Promise<{success: boolean, message: string}>;

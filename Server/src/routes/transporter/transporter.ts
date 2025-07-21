@@ -46,11 +46,11 @@ transporter_route.get('/profile', authenticateToken, checkRole('transporter'), t
 
 transporter_route.post('/kyc', authenticateToken, checkRole('transporter'), upload.fields([{name: 'aadhaarFront'} , {name: 'aadhaarBack'}]) ,transporterController.kycVerification.bind(transporterController));
 
-transporter_route.post('/registerTruck', authenticateToken, checkRole('transporter'), upload.fields([{name: 'rcBook'}, {name: 'driverLicense'}, {name: 'truckImage'}]),  transporterController.registerTruck.bind(transporterController));
+transporter_route.post('/truck', authenticateToken, checkRole('transporter'), upload.fields([{name: 'rcBook'}, {name: 'driverLicense'}, {name: 'truckImage'}]),  transporterController.registerTruck.bind(transporterController));
 
-transporter_route.get('/fetchLoads', authenticateToken, checkRole('transporter'), transporterController.fetchLoads.bind(transporterController));
+transporter_route.get('/loads', authenticateToken, checkRole('transporter'), transporterController.fetchLoads.bind(transporterController));
 
-transporter_route.get('/fetchTrucks', authenticateToken, checkRole('transporter'), transporterController.findTrucks.bind(transporterController));
+transporter_route.get('/trucks', authenticateToken, checkRole('transporter'), transporterController.findTrucks.bind(transporterController));
 
 transporter_route.put('/activateTruck', authenticateToken, checkRole('transporter'), (req, res, next) => {
     // Extract non-file fields before Multer processes
@@ -61,7 +61,7 @@ transporter_route.put('/activateTruck', authenticateToken, checkRole('transporte
 
 transporter_route.post('/sendBid', authenticateToken, checkRole('transporter'), transporterController.sendBid.bind(transporterController));
 
-transporter_route.get('/fetchBids' ,authenticateToken, checkRole('transporter'), transporterController.fetchBids.bind(transporterController));
+transporter_route.get('/bids' ,authenticateToken, checkRole('transporter'), transporterController.fetchBids.bind(transporterController));
 
 transporter_route.post('/bid-checkout-session', authenticateToken, checkRole('transporter'), transporterController.bidCheckoutSession.bind(transporterController));
 
@@ -71,7 +71,7 @@ transporter_route.get('/trips', authenticateToken, checkRole('transporter'), tra
 
 transporter_route.patch('/trip-status', authenticateToken, checkRole('transporter'), transporterController.updateTripStatus.bind(transporterController));
 
-transporter_route.post('/updateProfile', authenticateToken, checkRole('transporter'), upload.fields([{name: 'profileImage'}]), transporterController.updateProfile.bind(transporterController));
+transporter_route.post('/profile', authenticateToken, checkRole('transporter'), upload.fields([{name: 'profileImage'}]), transporterController.updateProfile.bind(transporterController));
 
 transporter_route.get('/shipperProfileData/:shipperId', authenticateToken, checkRole('transporter'), transporterController.fetchShipperProfileData.bind(transporterController));
 
@@ -79,11 +79,11 @@ transporter_route.post('/followShipper', authenticateToken, checkRole('transport
 
 transporter_route.post('/unfollowShipper', authenticateToken, checkRole('transporter'), transporterController.unfollowShipper.bind(transporterController));
 
-transporter_route.post('/postReview', authenticateToken, checkRole('transporter'), transporterController.postReview.bind(transporterController));
+transporter_route.post('/review', authenticateToken, checkRole('transporter'), transporterController.postReview.bind(transporterController));
 
-transporter_route.get('/fetchShippers', authenticateToken, checkRole('transporter'), transporterController.fetchShippers.bind(transporterController));
+transporter_route.get('/shippers', authenticateToken, checkRole('transporter'), transporterController.fetchShippers.bind(transporterController));
 
-transporter_route.get('/fetchFollowersDetails', authenticateToken, checkRole('transporter'), transporterController.fetchFollowersAndFollowings.bind(transporterController));
+transporter_route.get('/followersDetails', authenticateToken, checkRole('transporter'), transporterController.fetchFollowersAndFollowings.bind(transporterController));
 
 transporter_route.get('/subscriptionPlans', authenticateToken, checkRole('transporter'), transporterController.fetchSubscriptionPlans.bind(transporterController));
 
@@ -93,17 +93,17 @@ transporter_route.put('/subscription-success', authenticateToken, checkRole('tra
 
 transporter_route.get('/activeTruck', authenticateToken, checkRole('transporter'), transporterController.fetchActiveTruck.bind(transporterController));
 
-transporter_route.put('/updateBid', authenticateToken, checkRole('transporter'), transporterController.updateBid.bind(transporterController))
+transporter_route.put('/bid', authenticateToken, checkRole('transporter'), transporterController.updateBid.bind(transporterController))
 
 transporter_route.delete('/bid', authenticateToken, checkRole('transporter'), transporterController.deleteBidById.bind(transporterController));
 
 transporter_route.get('/paymentHistory', authenticateToken, checkRole('transporter'), transporterController.fetchPaymentHistory.bind(transporterController));
 
-transporter_route.post('/create-chat', authenticateToken, checkRole('transporter'), transporterController.createChat.bind(transporterController))
+transporter_route.post('/chat', authenticateToken, checkRole('transporter'), transporterController.createChat.bind(transporterController))
 
-transporter_route.get('/fetch-chats', authenticateToken, checkRole('transporter'), transporterController.fetchChat.bind(transporterController))
+transporter_route.get('/chats', authenticateToken, checkRole('transporter'), transporterController.fetchChat.bind(transporterController))
 
-transporter_route.post('/create-message', authenticateToken, checkRole('transporter'), transporterController.sendMessage.bind(transporterController))
+transporter_route.post('/message', authenticateToken, checkRole('transporter'), transporterController.sendMessage.bind(transporterController))
 
 transporter_route.get('/messages/:chatId', authenticateToken, checkRole('transporter'), transporterController.fetchMessages.bind(transporterController))
 

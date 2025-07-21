@@ -52,3 +52,16 @@ export interface TransporterForAdminDTO {
     aadhaarFront: string;
     aadhaarBack: string;
 }
+
+export interface TransporterPaymentDTO {
+    _id: string
+    transactionId: string
+    bidId: string
+    planId: string
+    transporterId: string
+    paymentType: string
+    amount: number
+    paymentStatus: string
+    createdAt: Date
+    transactionType: string
+}
