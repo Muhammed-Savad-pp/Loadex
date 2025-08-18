@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Navbar from '../../components/Common/Navbar/Navbar';
-import { fetchTrucks } from '../../services/shipper/shipperService';
 import ProfileComponent from '../../components/shipper/ProfileComponent';
+import { fetchTrucksForShipper } from '../../services/truck/truckApi';
 
 interface ITrucks {
     _id: string;
@@ -30,7 +30,7 @@ function TruckBoard() {
 
     useEffect(() => {
         const listTrucks = async () => {
-            const response: any = await fetchTrucks(page, limit);
+            const response: any = await fetchTrucksForShipper(page, limit);
             setTrucks(response.truckData);
             setTotalPages(response.totalPages)
         }

@@ -1,4 +1,3 @@
-import { ITransporter } from "../../models/TransporterModel";
 
 export interface ITransporterAuthService {
 

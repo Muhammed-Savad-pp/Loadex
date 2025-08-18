@@ -17,16 +17,16 @@ import { Server } from "socket.io";
 import { setupSocket } from "./sockets/chatSocket";
 import runCheckLoadExpired from "./cron-job/loadExpired";
 import { logger, morganStream } from "./Middleware/logger";
-
-
+import truck_route from "./routes/truck/truckRoute";
+import load_route from "./routes/load/loadRoute";
+import bid_route from "./routes/bid/bidRoutes";
+import trip_route from "./routes/trip/tripRoutes";
 
 const app = Express();
 
 app.use(morgan("combined", { stream: morganStream}));
 
 app.use(Express.json())
-console.log(config.frontEndUrl, 'cors frontend url');
-
 
 app.use(cors({
     origin: config.frontEndUrl,
@@ -52,6 +52,10 @@ app.use('/api/shipper/auth', shipperAuth_rote)
 app.use('/api/transporter', transporter_route);
 app.use('/api/shipper', shipper_route);
 app.use('/api/admin', admin_route);
+app.use('/api/trucks', truck_route);
+app.use('/api/loads', load_route);
+app.use('/api/bid', bid_route);
+app.use('/api/trips', trip_route);
     
 // app.use('*', (req, res) => {
 //     logger.warn(`404 - Route not found: ${req.originalUrl}`);
@@ -72,6 +76,10 @@ setupSocket(server)
 //     console.log("server is running");
 //     console.log('http://localhost:4000');    
 // })
+
+app.use('/', (req, res) => {
+    console.log("",req.originalUrl)
+})
 
 server.listen(config.port, () => {
     // console.log(`🚀 Server running at http://localhost:${config.port}`)

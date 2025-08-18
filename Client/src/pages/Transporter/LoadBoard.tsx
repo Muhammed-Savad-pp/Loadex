@@ -1,9 +1,10 @@
 import React, { FormEvent, useEffect, useState } from "react";
 import Navbar from "../../components/Common/Navbar/Navbar";
-import { fetchLoads } from "../../services/transporter/transporterApi";
 import Footer from "../../components/Common/footer/Footer";
 import toast from "react-hot-toast";
-import { sendBid, fetchActiveTruck } from "../../services/transporter/transporterApi";
+import { fetchActiveTruck } from "../../services/truck/truckApi";
+import { fetchLoadsForTransporter } from "../../services/load/loadApi";
+import { sendBid } from "../../services/bid/bidApi";
 
 interface LoadItem {
     _id: string;
@@ -68,7 +69,7 @@ const LoadBoard: React.FC = () => {
 
     useEffect(() => {
         const findLoads = async () => {
-            const response: any = await fetchLoads(page, limit);
+            const response: any = await fetchLoadsForTransporter(page, limit);
             setLoads(response.loads);
             setTotalPages(response.totalPages);
 

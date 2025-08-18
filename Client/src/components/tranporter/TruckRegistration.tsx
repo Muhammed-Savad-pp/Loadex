@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { FaLocationDot } from "react-icons/fa6";
-import { registerTruck } from '../../services/transporter/transporterApi';
+import { registerTruck } from '../../services/truck/truckApi';
 import toast from 'react-hot-toast';
 import { validateTruckForm } from '../../validations/truckValidation';
 import { debounce } from 'lodash';
@@ -237,6 +237,9 @@ const VehicleRegistration = () => {
             return { ...prevState, selectedLocations: updatedLocations };
         });
     };
+
+    console.log(formData.vehicleNumber, 'formdata');
+    
 
     const locations = [
         'All India permitted', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar',

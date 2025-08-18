@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Navbar from "../../components/Common/Navbar/Navbar";
 import ProfileSidebar from "../../components/tranporter/ProfileSidebar";
-import { fetchTrucks, activateTruck, updateTruck } from "../../services/transporter/transporterApi";
+import { activateTruck } from "../../services/truck/truckApi";
 import toast from "react-hot-toast";
 import { debounce } from "lodash";
 const MAP_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY;
@@ -9,6 +9,7 @@ import { MapPinIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from "react-router-dom";
 import { Pencil } from "lucide-react";
 import EditTruck from "../../components/tranporter/EditTruck";
+import { fetchTrucks, updateTruck } from "../../services/truck/truckApi";
 
 
 interface TruckData {
@@ -70,6 +71,7 @@ const MyTrucks: React.FC = () => {
   const [locationSuggestions, setLocationSuggestions] = useState<Location[]>([])
   const [currentLocation, setCurrentLocation] = useState(selectTruckActive?.currentLocation);
   const [isCurrentLocationDropdown, setIsCurrentLocationDropdown] = useState<boolean>(false);
+  const [selectedUpdateTruck, setSelectedUpdateTruck] = useState<TruckData | null>(null)
   const [formError, setFormError] = useState<Partial<FormDataType>>();
   const [isOpenEditTruck, setIsOpenEditTruck] = useState<boolean>(false)
   const [formData, setFormData] = useState<FormDataType>({
@@ -85,6 +87,8 @@ const MyTrucks: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(
     typeof formData.licenseImage === 'string' ? formData.licenseImage : null
   );
+
+  console.log(selectTruckActive, 'selected load activate')
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const limit = 4;
@@ -319,8 +323,8 @@ const MyTrucks: React.FC = () => {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {!loading && trucks.map(truck => (
-                <div key={truck.truckNo} className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 hover:shadow-md transition-shadow">
+              {!loading && trucks.map((truck, i) => (
+                <div key={i} className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 hover:shadow-md transition-shadow">
                   <div className="flex flex-col space-y-3">
                     {/* Header row with truck type, number and status */}
                     <div className="flex items-center justify-between">
@@ -339,7 +343,7 @@ const MyTrucks: React.FC = () => {
                       </span>
                       {truck.status !== 'in-transit' && (
                         <div>
-                          <Pencil className="w-8 h-6 text-blue-700" onClick={() => setIsOpenEditTruck(true)} />
+                          <Pencil className="w-8 h-6 text-blue-700" onClick={() => {setIsOpenEditTruck(true), setSelectedUpdateTruck(truck)}} />
                         </div>
                       )}
                     </div>
@@ -424,7 +428,7 @@ const MyTrucks: React.FC = () => {
 
                     {isOpenEditTruck && (
                       <EditTruck
-                        initialData={truck}
+                        initialData={selectedUpdateTruck}
                         onUpdateTruck={(updatedData) => {
                           handleEditTruckSubmit(updatedData)
                         }}

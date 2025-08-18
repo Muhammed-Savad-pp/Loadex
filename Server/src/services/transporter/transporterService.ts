@@ -1,47 +1,28 @@
-import { ITransporter } from "../../models/TransporterModel";
-import transporterRepository from "../../repositories/implementaion/transporterRepository";
 import { configDotenv } from 'dotenv';
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3, getPresignedDownloadUrl } from "../../config/s3Config";
 import { ITransporterRepository } from "../../repositories/interface/ITransporterRepository";
 import { ITransporterService } from "../../interface/transporter/ITransporterService";
-import { ILoad } from "../../models/LoadModel";
-import { ITruck } from "../../models/TruckModel";
-import { HTTP_STATUS } from "../../enums/httpStatus";
-import { IBid } from "../../models/BidModel";
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 import { ITruckRepository } from "../../repositories/interface/ITruckRepository";
 import { IBidRepository } from "../../repositories/interface/IBidRepository";
 import { ILoadRepository } from "../../repositories/interface/ILoadRepository";
 import Stripe from "stripe";
 import { ITransporterPaymentRepository } from "../../repositories/interface/ITransporterPayment";
 import { ITripRepository } from "../../repositories/interface/ITripRepository";
-import { ITrip } from "../../models/TripModel";
-import { IShipper } from "../../models/ShipperModel";
 import { IShipperRepository } from "../../repositories/interface/IShipperRepository";
-import { IRatingReview } from "../../models/ReviewRatingModel";
 import { IReviewRatingRepository } from "../../repositories/interface/IReviewRatingRepository";
-import { error } from "console";
-import shipperRepositories from "../../repositories/implementaion/shipperRepositories";
 import { TRANSPORTER_SUBSCRIPTION_PLANS } from "../../config/transporterPlans";
-import { ITransporterPayment } from "../../models/TransporterPayment";
 import { startOfDay, subDays } from "date-fns";
 import { IChat } from "../../models/Chat";
 import { IChatRepository } from "../../repositories/interface/IChatRepository";
-import path from "path";
 import { IMessage } from "../../models/Message";
 import { IMessageRepository } from "../../repositories/interface/IMessageRepository";
-import { INotification } from "../../models/NotificationModel";
 import { INotificationRepository } from "../../repositories/interface/INotificationRepository";
-import { ITransporterWallet } from "../../models/TransporterWallet";
 import { ITransporterWalletRepository } from "../../repositories/interface/ITransporterWalletRepository";
 import { IAdminPaymentRepository } from "../../repositories/interface/IAdminPaymentRepository";
-import { BidForTransporterDTO } from "../../dtos/bids/bid.for.transporter.dto";
 import { ShipperForTransporterDirectoryDTO, ShipperForTransporterDTO, TransporterDTO, TransporterPaymentDTO } from "../../dtos/transporter/transporter.dto";
-import { TruckDTO } from "../../dtos/truck/truck.for.transporter.dto";
-import { TripForTransporterDTO } from "../../dtos/trip/trip.for.transporter.dto";
 import config from "../../config";
-import { LoadForTransporterDTO } from "../../dtos/load/load.dto";
 import { ReviewForTransporter } from "../../dtos/reviews/review.dto";
 import { NotificationForTransporterDTO } from "../../dtos/notifications/notification.dto";
 import { WalletForTransporterDTO } from "../../dtos/wallet/wallet.dto";
@@ -49,14 +30,11 @@ import { ChatForTransporterDTO } from "../../dtos/chat/chat.dto";
 
 configDotenv()
 
-
 const stripe = new Stripe(config.stripeSecretKey, {
     apiVersion: '2025-04-30.basil',
 })
 
-
 function calculateCommission(distance: number): number {
-
     const ratePerKm = 3;
     return distance * ratePerKm;
 }
@@ -80,26 +58,16 @@ export class TransporterService implements ITransporterService {
     ) { };
 
     async verificationStatus(id: string): Promise<{ success: boolean, message: string, verificationStatus?: string }> {
-
-        console.log('herer');
-
         const transporter = await this._transporterRepository.findById(id)
-        console.log(transporter?.verificationStatus, 'verification status');
-
         if (!transporter) {
             return { success: false, message: 'Transporter not signUp' }
         }
 
-
         return { success: true, message: 'Transporter verification Status', verificationStatus: transporter.verificationStatus }
-
     }
 
     async getProfileData(id: string): Promise<{ success: boolean, message: string, transporterData?: TransporterDTO }> {
-
-
         const transporterDatas = await this._transporterRepository.findById(id);
-
         if (!transporterDatas) {
             return { success: false, message: 'No Transporter' }
         }
@@ -108,37 +76,18 @@ export class TransporterService implements ITransporterService {
         const aadhaarBackUrl = transporterDatas.aadhaarBack ? await getPresignedDownloadUrl(transporterDatas.aadhaarBack) : '';
         const profileIamgeUrl = transporterDatas.profileImage ? await getPresignedDownloadUrl(transporterDatas.profileImage) : ''
 
-        const transporterDatos: TransporterDTO = {
-            transporterName: transporterDatas.transporterName,
-            email: transporterDatas.email,
-            phone: transporterDatas.phone,
-            verificationStatus: transporterDatas.verificationStatus ?? '',
-            panNumber: transporterDatas.panNumber ?? '',
-            aadhaarFront: aadhaarFrontUrl || '',
-            aadhaarBack: aadhaarBackUrl ?? '',
-            profileImage: profileIamgeUrl ?? '',
-            followers: transporterDatas.followers ?? [],
-            followings: transporterDatas.followings ?? [],
-            subscription: {
-                status: (transporterDatas.subscription as any).status,
-                isActive: (transporterDatas.subscription as any).isActive,
-                planId: (transporterDatas.subscription as any).planId,
-                planName: (transporterDatas.subscription as any).planName,
-                endDate: (transporterDatas.subscription as any).endDate,
-                startDate: (transporterDatas.subscription as any).startDate
-            }
-        }
+        transporterDatas.aadhaarFront = aadhaarFrontUrl;
+        transporterDatas.aadhaarBack = aadhaarBackUrl;
+        transporterDatas.profileImage = profileIamgeUrl
 
-        return { success: true, message: 'success', transporterData: transporterDatos }
+        return { success: true, message: 'success', transporterData: TransporterDTO.from(transporterDatas) }
     }
 
     async kycVerification(transporterId: string, panNumber: string, aadhaarFront?: Express.Multer.File, aadhaarBack?: Express.Multer.File): Promise<{ success: boolean, message: string, transporterData?: Partial<TransporterDTO> }> {
-
         try {
 
             let aadhaarFrontUrl: string | undefined;
             let aadhaarBackUrl: string | undefined
-
             const uploadToS3 = async (file: Express.Multer.File, folder: string): Promise<string> => {
 
                 const key = `${folder}/transporter/${Date.now()}_${file.originalname}`;
@@ -156,13 +105,9 @@ export class TransporterService implements ITransporterService {
             if (aadhaarFront) {
                 aadhaarFrontUrl = await uploadToS3(aadhaarFront, "aadhaar-front");
             }
-
-
             if (aadhaarBack) {
                 aadhaarBackUrl = await uploadToS3(aadhaarBack, 'aadhaar-back');
             }
-
-
             const updateTransporter = await this._transporterRepository.updateTransporterById(
                 transporterId,
                 {
@@ -186,531 +131,16 @@ export class TransporterService implements ITransporterService {
                     verificationStatus: updateTransporter.verificationStatus
                 }
             }
-
         } catch (error) {
             console.error(error);
             return { success: false, message: 'KYC verification failed due to an error' }
         }
     }
 
-
-    async registerTruck(transporterId: string,
-        truckData: {
-            vehicleNumber: string,
-            ownerName: string,
-            ownerMobileNo: string,
-            type: string,
-            capacity: string,
-            tyres: string,
-            driverName: string,
-            driverMobileNumber: string,
-            currentLocation: string,
-            from: string,
-            to: string,
-            selectedLocations: string[],
-            currentLocationCoords: { lat: number, lng: number },
-            fromCoords: { lat: number, lng: number },
-            toCoords: { lat: number, lng: number },
-            rcValidity: string,
-        }, rcBook: Express.Multer.File, driverLicense: Express.Multer.File, truckImage: Express.Multer.File): Promise<{ success: boolean, message: string }> {
-
-        try {
-
-            const { vehicleNumber, ownerName, ownerMobileNo, type, capacity, tyres, driverName,
-                driverMobileNumber, currentLocation, from, to, selectedLocations, currentLocationCoords, fromCoords, toCoords, rcValidity } = truckData;
-
-            const transporter = await this._transporterRepository.findById(transporterId);
-            const trucksCount = await this._truckRepository.count({ transporterId: transporterId });
-
-            if (!transporter?.subscription?.isActive && trucksCount >= 1) {
-                return { success: false, message: 'You can register only one truck with a free account. Please subscribe to add more trucks.' }
-            }
-
-            const rcValidityDate = new Date(rcValidity)
-
-            const ExistTruck = await this._truckRepository.findTruckByRcno(vehicleNumber)
-
-            if (ExistTruck) {
-                console.log('Truck already exits');
-                return { success: false, message: 'Truck already Exits' }
-            }
-
-            let rcBookKey: string | undefined;
-            let driverLicenseKey: string | undefined;
-            let truckImageKey: string | undefined;
-
-            const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
-                const key = `${folder}/transporter/${Date.now()}_${file.originalname}`
-                const s3Params = {
-                    Bucket: config.awsBucketName,
-                    Key: key,
-                    Body: file.buffer,
-                    ContentType: file.mimetype
-                };
-
-                const command = new PutObjectCommand(s3Params)
-                await s3.send(command)
-
-                return key;
-            }
-
-            if (rcBook) {
-                rcBookKey = await uploadToS3(rcBook, 'rcBook')
-            }
-
-            if (driverLicense) {
-                driverLicenseKey = await uploadToS3(driverLicense, 'driverLicense')
-            }
-
-            if (truckImage) {
-                truckImageKey = await uploadToS3(truckImage, 'truckImage')
-            }
-
-            // Parse selectedLocations if it's a stringified array
-            let selectedLocationsParsed: string[] = [];
-
-            if (typeof truckData.selectedLocations === 'string') {
-                try {
-                    selectedLocationsParsed = JSON.parse(truckData.selectedLocations);
-                    if (!Array.isArray(selectedLocationsParsed)) {
-                        throw new Error();
-                    }
-                } catch (err) {
-                    return { success: false, message: 'Invalid selected locations format' };
-                }
-            } else {
-                selectedLocationsParsed = truckData.selectedLocations;
-            }
-
-
-            const createTruck = await this._truckRepository.createTruck({
-                transporterId: transporterId,
-                truckOwnerName: ownerName,
-                truckOwnerMobileNo: ownerMobileNo,
-                truckNo: vehicleNumber,
-                truckType: type,
-                capacity: capacity,
-                tyres: tyres,
-                driverName: driverName,
-                driverMobileNo: driverMobileNumber,
-                currentLocation: currentLocation,
-                pickupLocation: from,
-                dropLocation: to,
-                operatingStates: selectedLocationsParsed,
-                rcBook: rcBookKey,
-                driverLicense: driverLicenseKey,
-                currentLocationCoords: currentLocationCoords,
-                pickupLocationCoords: fromCoords,
-                dropLocationCoords: toCoords,
-                rcValidity: rcValidityDate,
-                truckImage: truckImageKey,
-
-            })
-
-            if (!createTruck) {
-                return { success: false, message: 'Failed to register the truck. Please try again later.' }
-            }
-
-            return { success: true, message: 'Truck registered! Waiting for admin approval.' }
-
-        } catch (error) {
-            console.log(error)
-            return { success: false, message: 'An error occurred while registering the truck. Please try again.' }
-        }
-    }
-
-    async getLoads(page: number, limit: number): Promise<{ loads: LoadForTransporterDTO[] | null, currentPage: number, totalPages: number, totalItems: number }> {
-        try {
-
-            const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-
-            const skip = (page - 1) * limit;
-
-            const loads = await this._loadRepository.getLoads(
-                { status: 'active', createdAt: { $gte: threeDaysAgo } },
-                [
-                    { path: 'shipperId', select: 'companyName shipperName _id' },
-                ],
-                skip,
-                limit
-            )
-
-            const total = await this._loadRepository.count({ status: 'active' });
-
-            const loadDatos: LoadForTransporterDTO[] = (loads || []).map((load: ILoad) => ({
-                _id: load._id as string,
-                shipperId: {
-                    _id: (load.shipperId as any)._id.toString(),
-                    companyName: (load.shipperId as any).companyName,
-                    shipperName: (load.shipperId as any).shipperName,
-                },
-                pickupLocation: load.pickupLocation ?? '',
-                dropLocation: load.dropLocation ?? '',
-                material: load.material ?? '',
-                quantity: load.quantity ?? '',
-                scheduledDate: load.scheduledDate,
-                length: load.length ?? '',
-                truckType: load.truckType ?? '',
-                transportationRent: load.transportationRent ?? '',
-                height: load.height ?? '',
-                breadth: load.breadth ?? '',
-                descriptions: load.descriptions ?? '',
-                pickupCoordinates: {
-                    longitude: (load.pickupCoordinates as any).longitude,
-                    latitude: (load.pickupCoordinates as any).latitude,
-                },
-                dropCoordinates: {
-                    longitude: (load.dropCoordinates as any).longitude,
-                    latitude: (load.dropCoordinates as any).latitude,
-                },
-                distanceInKm: load.distanceInKm ?? 0
-            }))
-
-            return { loads: loadDatos, currentPage: page, totalPages: Math.ceil(total / limit), totalItems: total };
-
-        } catch (error: any) {
-            throw new Error(error instanceof Error ? error.message : String(error))
-        }
-    }
-
-    async findTrucks(id: string, status: string, page: number, limit: number): Promise<{ trucks: TruckDTO[] | null; totalPages: number }> {
-        try {
-
-            const skip = (page - 1) * limit;
-
-            const projection = {
-                truckOwnerName: 1,
-                truckOwnerMobileNo: 1,
-                truckNo: 1,
-                truckType: 1,
-                capacity: 1,
-                tyres: 1,
-                driverName: 1,
-                driverMobileNo: 1,
-                currentLocation: 1,
-                pickupLocation: 1,
-                dropLocation: 1,
-                verificationStatus: 1,
-                operatingStates: 1,
-                available: 1,
-                driverLicense: 1,
-                status: 1,
-                truckImage: 1,
-                rcValidity: 1
-            }
-
-            const trucks = await this._truckRepository.find({ transporterId: id, status: status }, projection, skip, limit, { createdAt: -1 });
-            const total = await this._truckRepository.count({ transporterId: id, status: status });
-
-
-
-
-            const truckDatos: TruckDTO[] = await Promise.all(
-                trucks.map(async (truck: ITruck) => {
-
-                    let trukImageUrl = '';
-                    let driverLicenseUrl = ''
-
-                    if (truck.truckImage) {
-                        try {
-                            trukImageUrl = await getPresignedDownloadUrl(truck.truckImage) ?? '';
-                        } catch (err) {
-                            console.error(`Error generating URL for ${truck.truckImage}:`, err);
-                        }
-                    }
-
-
-                    if (truck.driverLicense) {
-                        try {
-                            driverLicenseUrl = await getPresignedDownloadUrl(truck.driverLicense) ?? ''
-                        } catch (error) {
-                            console.error(`error generating URL for ${truck.driverLicense}:`, error)
-                        }
-                    }
-
-                    return {
-                        _id: truck._id as string,
-                        available: truck.available ?? false,
-                        currentLocation: truck.currentLocation ?? "",
-                        driverMobileNo: truck.driverMobileNo ?? "",
-                        driverName: truck.driverName ?? "",
-                        dropLocation: truck.dropLocation ?? "",
-                        operatingStates: truck.operatingStates ?? [],
-                        pickupLocation: truck.pickupLocation ?? "",
-                        truckNo: truck.truckNo ?? "",
-                        truckOwnerMobileNo: truck.truckOwnerMobileNo ?? "",
-                        truckOwnerName: truck.truckOwnerName ?? "",
-                        truckType: truck.truckType ?? "",
-                        tyres: truck.tyres ?? '0',
-                        verificationStatus: truck.verificationStatus ?? "",
-                        capacity: truck.capacity ?? "",
-                        driverLicense: driverLicenseUrl,
-                        status: truck.status ?? "inactive",
-                        truckImage: trukImageUrl,
-                        rcValidity: truck.rcValidity
-                    };
-                })
-            );
-
-            return { trucks: truckDatos, totalPages: Math.ceil(total / limit) }
-
-        } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
-        }
-    }
-
-    async updateTruckAvailable(formData: Partial<ITruck>, driverLicensefile?: Express.Multer.File): Promise<{ success: boolean, truckData?: TruckDTO, message: string }> {
-        try {
-
-            const { id, driverName, driverMobileNo, currentLocation, driverLicense, currentLocationCoords } = formData;
-
-            let driverLicenseNewKey: string | undefined;
-
-
-            const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
-
-                const key = `${folder}/transporter/${Date.now()}_${file.originalname}`
-
-                const s3Params = {
-                    Bucket: config.awsBucketName,
-                    Key: key,
-                    Body: file.buffer,
-                    ContentType: file.mimetype
-                };
-
-                const command = new PutObjectCommand(s3Params)
-                await s3.send(command)
-
-                return key;
-            }
-
-            if (driverLicensefile) {
-                driverLicenseNewKey = await uploadToS3(driverLicensefile, 'driverLicense')
-            } else {
-                driverLicenseNewKey = driverLicense
-            }
-
-            const truck = await this._truckRepository.findTruckById(id);
-
-            if (!truck) {
-                const error: any = new Error('Truck not found')
-                error.status = HTTP_STATUS.NOT_FOUND;
-                throw error
-            }
-
-            const today = new Date();
-
-            if (truck.rcValidity <= today) {
-                return { success: false, message: `This truck's RC expired on ${new Date(truck.rcValidity).toLocaleDateString()}. Please update the validity.` }
-            }
-
-            const updateTruck = await this._truckRepository.updateTruckById(id, {
-                driverName,
-                driverMobileNo,
-                currentLocation,
-                currentLocationCoords,
-                driverLicense: driverLicenseNewKey,
-                available: true,
-                status: 'active'
-            });
-
-            if (!updateTruck) {
-                return { success: false, message: "Truck not activated" }
-            }
-
-            const truckData: TruckDTO = {
-                _id: updateTruck._id as string,
-                available: updateTruck.available ?? false,
-                currentLocation: updateTruck.currentLocation ?? '',
-                driverMobileNo: updateTruck.driverMobileNo ?? '',
-                driverName: updateTruck.driverName ?? '',
-                dropLocation: updateTruck.dropLocation ?? '',
-                operatingStates: updateTruck.operatingStates ?? [],
-                pickupLocation: updateTruck.pickupLocation ?? '',
-                truckNo: updateTruck.truckNo ?? '',
-                truckOwnerMobileNo: updateTruck.truckOwnerMobileNo ?? '',
-                truckOwnerName: updateTruck.truckOwnerName ?? '',
-                truckType: updateTruck.truckType ?? '',
-                tyres: updateTruck.tyres ?? '',
-                verificationStatus: updateTruck.verificationStatus ?? '',
-                capacity: updateTruck.capacity ?? '',
-                driverLicense: updateTruck.driverLicense ?? '',
-                status: updateTruck.status ?? '',
-                truckImage: updateTruck.truckImage ?? '',
-                rcValidity: updateTruck.rcValidity ?? '',
-            };
-
-            return { success: true, message: 'Truck Active SuccessFully', truckData: truckData }
-
-        } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
-        }
-    }
-
-    async sendBid(formData: { truckNo: string, rent: string, loadId: string, shipperId: string }, transporterId: string): Promise<{ success: boolean; message: string; }> {
-        try {
-
-            const transporter = await this._transporterRepository.findById(transporterId);
-            const today = new Date()
-
-            if (transporter?.subscription?.isActive && transporter.subscription.status === 'active' && transporter.subscription.endDate < today) {
-                console.log('Transporter Subscrition updated');
-                await this._transporterRepository.updateById(transporterId, { 'subscription.status': 'expired', 'subscription.isActive': false })
-            }
-
-            const startOfToday = new Date();
-            startOfToday.setHours(0, 0, 0, 0);
-
-            const endOfToday = new Date();
-            endOfToday.setHours(23, 59, 59, 999);
-
-            const todayBidCount = await this._bidRepository.count({ transporterId: transporterId, createAt: { $gte: startOfToday, $lte: endOfToday } });
-
-            if (todayBidCount >= 2 && !transporter?.subscription?.isActive) {
-                return { success: false, message: 'You can only send up to 2 bids per day. To send unlimited bids, please subscribe to a premium plan.' }
-            }
-
-
-            const truck = await this._truckRepository.findTruckByRcno(formData.truckNo);
-
-            if (!truck || truck.verificationStatus !== 'approved' || truck.status !== 'active') {
-                return { success: false, message: 'Truck not Available' }
-            }
-
-            if (truck?.rcValidity <= today) {
-                await this._truckRepository.updateById(truck?._id as string, { status: 'in-active' });
-                return { success: false, message: `This truck's RC expired on ${new Date(truck.rcValidity).toLocaleDateString()}. Please update the validity.` }
-            }
-
-            const trucksCount = await this._truckRepository.count({ transporterId: truck?.transporterId, status: 'active' })
-            const currentBidCont = await this._bidRepository.count({ transporterId: truck?.transporterId });
-
-            // if(currentBidCont >= trucksCount) {
-            //     return {success: false, message: 'You not send bid. not available truck'}
-            // }
-
-
-
-            if (
-                !mongoose.Types.ObjectId.isValid(formData.shipperId) ||
-                !mongoose.Types.ObjectId.isValid(formData.loadId) ||
-                !mongoose.Types.ObjectId.isValid(transporterId)
-            ) {
-                return { success: false, message: 'Invalid ID format in input' };
-            }
-
-            const shipperObjectId = new mongoose.Types.ObjectId(formData.shipperId);
-            const loadObjectId = new mongoose.Types.ObjectId(formData.loadId);
-            const transporterObjectId = new mongoose.Types.ObjectId(transporterId)
-            const truckObjectId = truck._id as mongoose.Types.ObjectId;
-
-            const bid = await this._bidRepository.createBid({
-                shipperId: shipperObjectId,
-                loadId: loadObjectId,
-                transporterId: transporterObjectId,
-                truckId: truckObjectId,
-                price: formData.rent,
-
-            })
-
-            if (!bid) {
-                return { success: false, message: 'bid not created' }
-            }
-
-            return { success: true, message: 'Bid send Successfully' }
-
-
-        } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
-        }
-    }
-
-    async fetchAllBids(transporterid: string, page: number, limit: number, status: string): Promise<{ bidDatas: BidForTransporterDTO[] | null, totalPages: number }> {
-        try {
-
-            const skip = (page - 1) * limit
-
-            const filter: any = {
-                transporterId: transporterid
-            }
-
-            if (status !== 'all') {
-                filter.status = status
-            }
-
-            // const bids = await this._bidRepository.findBidsForTransporter(transporterid);
-            const bids = await this._bidRepository.findWithPopulate(
-                filter,
-                [
-                    { path: 'shipperId', select: 'shipperName profileImage' },
-                    { path: 'truckId', select: 'truckNo truckType capacity' },
-                    { path: 'loadId', select: 'pickupLocation dropLocation material quantity scheduledDate ' }
-                ],
-                skip,
-                limit,
-                { createAt: -1 }
-            )
-
-            const totalDocumentCount = await this._bidRepository.count({ transporterId: transporterid });
-
-            const bidDtos: BidForTransporterDTO[] = await Promise.all(
-                bids.map(async (bid: IBid) => {
-                    let profileImageUrl: string | null = null;
-
-                    if ((bid.shipperId as any).profileImage) {
-                        profileImageUrl = await getPresignedDownloadUrl((bid.shipperId as any).profileImage) ?? '';
-                    }
-
-                    return {
-                        _id: bid._id as string,
-                        shipperId: {
-                            _id: (bid.shipperId as any)._id.toString(),
-                            shipperName: (bid.shipperId as any).shipperName,
-                            profileImage: profileImageUrl ?? '',
-                        },
-                        transporterId: bid.transporterId.toString(),
-                        loadId: {
-                            _id: (bid.loadId as any)._id.toString(),
-                            pickupLocation: (bid.loadId as any).pickupLocation,
-                            dropLocation: (bid.loadId as any).dropLocation,
-                            material: (bid.loadId as any).material,
-                            quantity: (bid.loadId as any).quantity,
-                            scheduledDate: (bid.loadId as any).scheduledDate,
-                        },
-                        truckId: {
-                            _id: (bid.truckId as any)._id.toString(),
-                            truckNo: (bid.truckId as any).truckNo,
-                            truckType: (bid.truckId as any).truckType,
-                            capacity: (bid.truckId as any).capacity,
-                            truckImage: (bid.truckId as any).truckImage,
-                        },
-                        price: bid.price,
-                        status: bid.status,
-                        createAt: bid.createAt,
-                        shipperPayment: bid.shipperPayment,
-                        transporterPayment: bid.transporterPayment,
-                    };
-                })
-            );
-
-
-            return { bidDatas: bidDtos, totalPages: Math.ceil(totalDocumentCount / limit) }
-
-        } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
-        }
-    }
-
     async bidCheckoutSession(bidID: string): Promise<{ success: boolean; message: string; sessionId?: string; }> {
         try {
-
             const bidObjectId = new mongoose.Types.ObjectId(bidID);
-
             const existingPayment = await this._transporterPaymentRepository.findOne({ bidId: bidObjectId });
-
-            console.log(existingPayment, 'existing payment');
-
-
             if (existingPayment && (existingPayment.paymentStatus === 'success' || existingPayment.paymentStatus === 'pending')) {
                 return { success: false, message: 'Payment is already in progress or completed for this bid.' };
             }
@@ -719,13 +149,9 @@ export class TransporterService implements ITransporterService {
             if (!bid) return { success: false, message: 'Bid not Found' }
 
             const loadId = String(bid.loadId);
-
             const load = await this._loadRepository.findLoadById(loadId);
-
             const distanceInKm = load?.distanceInKm;
             const commission = calculateCommission(distanceInKm || 0);
-
-
             const session = await stripe.checkout.sessions.create({
                 payment_method_types: ['card'],
                 line_items: [
@@ -735,7 +161,6 @@ export class TransporterService implements ITransporterService {
                             product_data: {
                                 name: 'Transport Platform Commission',
                                 description: `Commision for bid ${bidID}`,
-
                             },
                             unit_amount: Math.round(commission * 100),
                         },
@@ -766,11 +191,7 @@ export class TransporterService implements ITransporterService {
                 paymentFor: 'bid',
                 bidId: bidObjectId,
             })
-
-
             return { success: true, message: 'success', sessionId: session.id }
-
-
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
@@ -778,18 +199,13 @@ export class TransporterService implements ITransporterService {
 
     async verifyBidPayment(transactionId: string, status: string): Promise<{ success: boolean; message: string; }> {
         try {
-
             if (status === 'success') {
 
                 const payment = await this._transporterPaymentRepository.findTransporterPaymentByTransactionIdAndUpdate(transactionId, status);
                 await this._adminPaymentRepository.updateBytransactionId(transactionId, status);
-
                 const bidId = String(payment?.bidId)
-
                 const bid = await this._bidRepository.findBidAndUpdate(bidId, { transporterPayment: true });
-
                 if (bid?.shipperPayment && bid.transporterPayment) {
-
                     const trip = await this._tripRepository.createTrip(
                         {
                             transporterId: bid.transporterId,
@@ -799,208 +215,32 @@ export class TransporterService implements ITransporterService {
                             price: bid.price,
                         }
                     )
-
                     if (trip) {
-
                         await this._bidRepository.updateBids({ loadId: bid.loadId, _id: { $ne: bid._id } }, { status: 'rejected' })
-
-                        const updateLoad = await this._loadRepository.findLoadByIdAndUpdate(String(bid.loadId), { status: 'in-Transit' })
-
-                        const updateTruck = await this._truckRepository.updateTruckById(String(bid.truckId), { status: 'in-transit' });
-
+                        await this._loadRepository.findLoadByIdAndUpdate(String(bid.loadId), { status: 'in-Transit' })
+                        await this._truckRepository.updateTruckById(String(bid.truckId), { status: 'in-transit' });
                         const shipperid = String(trip.shipperId)
-
                         await this._notificationRepository.createNotification({
                             userId: shipperid,
                             userType: 'shipper',
                             title: 'Trip Started',
                             message: 'The transporter has completed the payment. Your shipment is now on its way.'
                         })
-
                     }
-
                     return { success: true, message: 'Trip Confirmed.' }
-
                 }
             }
-
             const failedPayment = await this._transporterPaymentRepository.findTransporterPaymentByTransactionIdAndUpdate(transactionId, status);
-
             return { success: true, message: 'Payment verification failed. Invalid status.' }
-
-
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
-        }
-    }
-
-    async fetchTrips(transporterId: string, status: string, page: number, limit: number): Promise<{ trips: TripForTransporterDTO[] | null, totalPages: number }> {
-        try {
-
-            const filter: any = { transporterId: transporterId }
-
-            if (status && status !== '') {
-                filter.tripStatus = status;
-            }
-
-            const skip = (page - 1) * limit
-
-            const trips = await this._tripRepository.findWithPopulate(
-                filter,
-                [
-                    { path: 'transporterId', select: 'transporterName' },
-                    { path: 'shipperId', select: 'shipperName phone companyName profileImage' },
-                    { path: 'loadId', select: 'pickupLocation dropLocation material quantity scheduledDate length height breadth descriptions distanceInKm dropCoordinates' },
-                    { path: 'truckId', select: 'truckNo truckType capacity driverName driverMobileNo status' }
-                ],
-                skip,
-                limit,
-                { confirmedAt: -1 }
-            )
-            const tripDatos: TripForTransporterDTO[] = await Promise.all(
-                trips.map(async (trip) => {
-                    let profileImageUrl = '';
-                    const imageKey = (trip.shipperId as any).profileImage;
-
-                    if (imageKey) {
-                        try {
-                            profileImageUrl = await getPresignedDownloadUrl(imageKey) ?? '';
-                        } catch (error) {
-                            console.error(`Error generating pre-signed URL for profile image: ${imageKey}`, error);
-                        }
-                    }
-
-                    return {
-                        _id: trip._id as string,
-                        shipperId: {
-                            _id: (trip.shipperId as any)._id.toString(),
-                            shipperName: (trip.shipperId as any).shipperName ?? "",
-                            phone: (trip.shipperId as any).phone ?? "",
-                            companyName: (trip.shipperId as any).companyName ?? "",
-                            profileImage: profileImageUrl, // pre-signed URL here
-                        },
-                        transporterId: {
-                            _id: (trip.transporterId as any)._id.toString(),
-                            transporterName: (trip.transporterId as any).transporterName ?? "",
-                        },
-                        loadId: {
-                            _id: (trip.loadId as any)._id.toString(),
-                            breadth: (trip.loadId as any).breadth ?? "",
-                            distanceInKm: (trip.loadId as any).distanceInKm ?? 0,
-                            dropLocation: (trip.loadId as any).dropLocation ?? "",
-                            height: (trip.loadId as any).height ?? "",
-                            length: (trip.loadId as any).length ?? "",
-                            material: (trip.loadId as any).material ?? "",
-                            pickupLocation: (trip.loadId as any).pickupLocation ?? "",
-                            quantity: (trip.loadId as any).quantity ?? "",
-                            scheduledDate: (trip.loadId as any).scheduledDate,
-                            dropCoordinates: {
-                                latitude: (trip.loadId as any).dropCoordinates?.latitude ?? 0,
-                                longitude: (trip.loadId as any).dropCoordinates?.longitude ?? 0,
-                            },
-                        },
-                        truckId: {
-                            capacity: (trip.truckId as any).capacity ?? "",
-                            driverMobileNo: (trip.truckId as any).driverMobileNo ?? "",
-                            driverName: (trip.truckId as any).driverName ?? "",
-                            truckNo: (trip.truckId as any).truckNo ?? "",
-                            truckType: (trip.truckId as any).truckType ?? "",
-                        },
-                        tripStatus: trip.tripStatus ?? "",
-                        price: trip.price ?? "",
-                        confirmedAt: trip.confirmedAt ?? null,
-                        progressAt: trip.progressAt ?? null,
-                        arrivedAt: trip.arrivedAt ?? null,
-                        completedAt: trip.completedAt ?? null,
-                    };
-                })
-            );
-
-
-            const total = await this._tripRepository.count(filter)
-
-            return { trips: tripDatos, totalPages: Math.ceil(total / limit) };
-
-        } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
-        }
-    }
-
-    async updateTripStatus(
-        tripId: string,
-        newStatus: 'confirmed' | 'inProgress' | 'arrived' | 'completed'
-    ): Promise<{ success: boolean; message: string }> {
-        try {
-            const currentDate = new Date();
-
-            // Always fetch fresh trip data before any operation
-            const trip = await this._tripRepository.findOne({ _id: tripId });
-            if (!trip) return { success: false, message: "Trip not found." }
-
-            // Re-check the current status from DB
-            switch (newStatus) {
-                case 'confirmed':
-                    break; // no condition needed
-
-                case 'inProgress':
-                    if (trip.tripStatus !== 'confirmed') {
-                        return { success: false, message: `Trip already in ${trip.tripStatus} status` }
-                    }
-                    break;
-
-                case 'arrived':
-                    if (trip.tripStatus !== 'inProgress') {
-                        return { success: false, message: `Trip already in ${trip.tripStatus} status` };
-                    }
-                    break;
-
-                case 'completed':
-                    if (trip.tripStatus !== 'arrived') {
-                        return { success: false, message: `Trip already in ${trip.tripStatus} status` };
-                    }
-                    break;
-
-                default:
-                    return { success: false, message: 'Invalid Status.' }
-            }
-
-            // Apply status update
-            const updateFields: any = { tripStatus: newStatus };
-            if (newStatus === 'confirmed') updateFields.confirmedAt = currentDate;
-            if (newStatus === 'inProgress') updateFields.progressAt = currentDate;
-            if (newStatus === 'arrived') updateFields.arrivedAt = currentDate;
-            if (newStatus === 'completed') updateFields.completedAt = currentDate;
-
-            const updateData = await this._tripRepository.findByIdAndUpdate(tripId, updateFields);
-            if (!updateData) return { success: false, message: 'Update failed' }
-
-            const shipperId = String(updateData?.shipperId);
-            await this._notificationRepository.createNotification({
-                userId: shipperId,
-                userType: 'shipper',
-                title: 'Trip Status Updated',
-                message: `${tripId} Trip Status has been updated to ${newStatus}`
-            });
-
-            if (newStatus === 'completed') {
-                await this._truckRepository.updateTruckById(String(updateData.truckId), { status: 'in-active' });
-                await this._loadRepository.findLoadByIdAndUpdate(String(updateData.loadId), { status: 'completed' });
-            }
-
-            return { success: true, message: "Trip Status Updated." }
-
-        } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error));
         }
     }
 
     async updateProfile(transporterId: string, transporterName: string, phone: string, profileImage: Express.Multer.File): Promise<{ success: boolean; message: string; transporterData?: TransporterDTO; }> {
         try {
-
             let profileImagekey: string | undefined;
-
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
-
                 const key = `${folder}/transporter/${Date.now()}_${file.originalname}`
                 const s3Params = {
                     Bucket: config.awsBucketName,
@@ -1011,15 +251,12 @@ export class TransporterService implements ITransporterService {
 
                 const command = new PutObjectCommand(s3Params)
                 await s3.send(command)
-
                 return key;
             }
 
             if (profileImage) {
                 profileImagekey = await uploadToS3(profileImage, 'profileImage')
             }
-
-
             const updateTransporter = await this._transporterRepository.updateTransporterById(transporterId,
                 {
                     transporterName: transporterName,
@@ -1032,29 +269,15 @@ export class TransporterService implements ITransporterService {
                 return { success: false, message: 'Profile Not Updated' }
             }
 
-            const transporterDatos: TransporterDTO = {
-                transporterName: updateTransporter.transporterName,
-                email: updateTransporter.email,
-                phone: updateTransporter.phone,
-                verificationStatus: updateTransporter.verificationStatus ?? '',
-                panNumber: updateTransporter.panNumber ?? '',
-                aadhaarFront: updateTransporter.aadhaarFront ?? '',
-                aadhaarBack: updateTransporter.aadhaarBack ?? '',
-                profileImage: updateTransporter.profileImage ?? '',
-                followers: updateTransporter.followers ?? [],
-                followings: updateTransporter.followings ?? [],
-                subscription: {
-                    status: (updateTransporter.subscription as any).status,
-                    isActive: (updateTransporter.subscription as any).isActive,
-                    planId: (updateTransporter.subscription as any).planId,
-                    planName: (updateTransporter.subscription as any).planName,
-                    endDate: (updateTransporter.subscription as any).endDate,
-                    startDate: (updateTransporter.subscription as any).startDate
-                }
-            }
+            const aadhaarFrontUrl = updateTransporter.aadhaarFront ? await getPresignedDownloadUrl(updateTransporter.aadhaarFront) : '';
+            const aadhaarBackUrl = updateTransporter.aadhaarBack ? await getPresignedDownloadUrl(updateTransporter.aadhaarBack) : '';
+            const profileIamgeUrl = updateTransporter.profileImage ? await getPresignedDownloadUrl(updateTransporter.profileImage) : ''
 
-            return { success: true, message: 'Updated SuccessFully', transporterData: transporterDatos };
+            updateTransporter.aadhaarFront = aadhaarFrontUrl;
+            updateTransporter.aadhaarBack = aadhaarBackUrl;
+            updateTransporter.profileImage = profileIamgeUrl
 
+            return { success: true, message: 'Updated SuccessFully', transporterData: TransporterDTO.from(updateTransporter) };
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
@@ -1062,9 +285,7 @@ export class TransporterService implements ITransporterService {
 
     async fetchShipperProfileData(transporterId: string, shipperId: string): Promise<{ shipperData: ShipperForTransporterDTO, isFollow: boolean, loadsCount: number, tripsCount: number, reviews: ReviewForTransporter[]; averageRating: number, isReview: boolean }> {
         try {
-
             const shipper = await this._shipperRepository.findShipperById(shipperId);
-
             if (!shipper) {
                 throw new Error('Shipper not found')
             }
@@ -1087,7 +308,6 @@ export class TransporterService implements ITransporterService {
 
             const transporterObjectId = new mongoose.Types.ObjectId(transporterId);
             const isReview = reviews.some(val => val.from.id.equals(transporterObjectId));
-
             const averageRatingPipeline = [
                 { $match: { 'to.id': new mongoose.Types.ObjectId(shipperId) } },
                 {
@@ -1100,19 +320,8 @@ export class TransporterService implements ITransporterService {
 
             const averageRatingResult = await this._reviewRepository.aggregate(averageRatingPipeline);
             const averageRating = averageRatingResult[0]?.avgRating ?? 0;
-
-            let profileImageUrl = '',
-
-                profileIamgeUrl = shipper.profileImage ? await getPresignedDownloadUrl(shipper.profileImage) : ''
-
-            const shipperDatos: ShipperForTransporterDTO = {
-                _id: shipper._id as string,
-                shipperName: shipper.shipperName,
-                companyName: shipper.companyName ?? '',
-                profileImage: profileIamgeUrl ?? '',
-                followers: shipper.followers ?? [],
-                followings: shipper.followings ?? [],
-            }
+            let profileImageUrl = shipper.profileImage ? await getPresignedDownloadUrl(shipper.profileImage) : '';
+            shipper.profileImage = profileImageUrl;
 
             const reviewDatos: ReviewForTransporter[] = await Promise.all(
                 reviews.map(async (review) => {
@@ -1126,7 +335,6 @@ export class TransporterService implements ITransporterService {
                     if (populatedFromId.profileImage) {
                         profileImageUrl = await getPresignedDownloadUrl(populatedFromId.profileImage) ?? '';
                     }
-
                     return {
                         _id: review._id as string,
                         from: {
@@ -1148,8 +356,7 @@ export class TransporterService implements ITransporterService {
                 })
             );
 
-            return { shipperData: shipperDatos, isFollow: isFollow, tripsCount: tripsCompletedcount, loadsCount: loadscount, reviews: reviewDatos, averageRating: averageRating, isReview: isReview };
-
+            return { shipperData: ShipperForTransporterDTO.from(shipper), isFollow: isFollow, tripsCount: tripsCompletedcount, loadsCount: loadscount, reviews: reviewDatos, averageRating: averageRating, isReview: isReview };
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
@@ -1157,9 +364,7 @@ export class TransporterService implements ITransporterService {
 
     async followShipper(transporterId: string, shipperId: string): Promise<{ success: boolean; shipperData: ShipperForTransporterDTO; isFollow: boolean }> {
         try {
-
             const updateTransporter = await this._transporterRepository.follow(transporterId, 'followings', shipperId);
-
             if (!updateTransporter) {
                 throw new Error('Transporter not found or update failed')
             }
@@ -1170,30 +375,20 @@ export class TransporterService implements ITransporterService {
                 title: 'New follower',
                 message: `${updateTransporter.transporterName} has followed you`
             })
-
             const updateShipper = await this._shipperRepository.follow(shipperId, 'followers', transporterId);
-
             if (!updateShipper) throw new Error('Shipper not found or Update failed')
 
             let isFollow;
-
             if (updateShipper.followers?.includes(transporterId)) {
                 isFollow = true
             } else {
                 isFollow = false
             }
 
-            const shipperDatos: ShipperForTransporterDTO = {
-                _id: updateShipper._id as string,
-                shipperName: updateShipper.shipperName,
-                companyName: updateShipper.companyName ?? '',
-                profileImage: updateShipper.profileImage ?? '',
-                followers: updateShipper.followers ?? [],
-                followings: updateShipper.followings ?? [],
-            }
+            let profileImageUrl = updateShipper.profileImage ? await getPresignedDownloadUrl(updateShipper.profileImage) : '';
+            updateShipper.profileImage = profileImageUrl;
 
-            return { success: true, shipperData: shipperDatos, isFollow: isFollow };
-
+            return { success: true, shipperData: ShipperForTransporterDTO.from(updateShipper), isFollow: isFollow };
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
@@ -1201,13 +396,10 @@ export class TransporterService implements ITransporterService {
 
     async unFollowShipper(transporterId: string, shipperId: string): Promise<{ success: boolean; shipperData: ShipperForTransporterDTO; isFollow: boolean; }> {
         try {
-
             const updateTransporter = await this._transporterRepository.unFollow(transporterId, 'followings', shipperId)
-
             if (!updateTransporter) throw new Error('Transporter not found')
 
             const updateShipper = await this._shipperRepository.unFollow(shipperId, 'followers', transporterId);
-
             if (!updateShipper) throw new Error('Shipper not found');
 
             let isFollow;
@@ -1217,17 +409,10 @@ export class TransporterService implements ITransporterService {
                 isFollow = false
             }
 
-            const shipperDatos: ShipperForTransporterDTO = {
-                _id: updateShipper._id as string,
-                shipperName: updateShipper.shipperName,
-                companyName: updateShipper.companyName ?? '',
-                profileImage: updateShipper.profileImage ?? '',
-                followers: updateShipper.followers ?? [],
-                followings: updateShipper.followings ?? [],
-            }
+            let profileImageUrl = updateShipper.profileImage ? await getPresignedDownloadUrl(updateShipper.profileImage) : '';
+            updateShipper.profileImage = profileImageUrl;
 
-            return { success: true, shipperData: shipperDatos, isFollow: isFollow };
-
+            return { success: true, shipperData: ShipperForTransporterDTO.from(updateShipper), isFollow: isFollow };
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
@@ -1238,7 +423,6 @@ export class TransporterService implements ITransporterService {
 
             const transporterObjectId = new mongoose.Types.ObjectId(transporterId);
             const shipperObjectId = new mongoose.Types.ObjectId(shipperId);
-
             const review = await this._reviewRepository.createReview({
                 from: { id: transporterObjectId, role: 'Transporter' },
                 to: { id: shipperObjectId, role: 'Shipper' },
@@ -1275,11 +459,7 @@ export class TransporterService implements ITransporterService {
                 createdAt: review.createdAt
             };
 
-
-
-
             return { success: true, reviewData: reviewDatos };
-
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
@@ -1287,9 +467,7 @@ export class TransporterService implements ITransporterService {
 
     async fetchShippers(page: number, limit: number, search: string): Promise<{ shipper: ShipperForTransporterDirectoryDTO[] | null, totalPages: number, totalItems: number }> {
         try {
-
             const skip = (page - 1) * limit;
-
             const projection = {
                 _id: 1,
                 profileImage: 1,
@@ -1306,131 +484,23 @@ export class TransporterService implements ITransporterService {
 
             const shippers = await this._shipperRepository.find(filter, projection, skip, limit)
             const total = await this._shipperRepository.count(filter);
-
-            const shipperDatos: ShipperForTransporterDirectoryDTO[] = await Promise.all(
+            const newShippers = await Promise.all(
                 shippers.map(async (shipper) => {
-                    let profileImageUrl: string = '';
+                    const plainShipper = shipper.toObject();
 
-                    if (shipper.profileImage) {
-                        profileImageUrl = await getPresignedDownloadUrl(shipper.profileImage) ?? '';
-                    }
-
-                    return {
-                        _id: shipper._id as string,
-                        shipperName: shipper.shipperName ?? '',
-                        companyName: shipper.companyName ?? '',
-                        email: shipper.email,
-                        profileImage: profileImageUrl,
-                    };
+                    const profileIamgeUrl = plainShipper.profileImage ? await getPresignedDownloadUrl(plainShipper.profileImage) : '';
+                    plainShipper.profileImage = profileIamgeUrl;
+                    return ShipperForTransporterDirectoryDTO.from(plainShipper)
                 })
-            );
+            )
 
-
-            return { shipper: shipperDatos, totalPages: Math.ceil(total / limit), totalItems: total }
-
+            return { shipper: newShippers, totalPages: Math.ceil(total / limit), totalItems: total }
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
     }
 
     async fetchTransporterFollowersandFollowings(transporterId: string, status: string, search: string, page: number, limit: number): Promise<{ datas: any[], followersCount: number, followingsCount: number, totalPages: number }> {
-        // try {
-
-        //     const skip = (page - 1) * limit;
-        //     const transporter = await this._transporterRepository.findById(transporterId);
-
-        //     if (!transporterRepository) {
-        //         throw new Error('Transporter not found')
-        //     }
-
-        //     const projection = {
-        //         _id: 1,
-        //         shipperName: 1,
-        //         profileImage: 1,
-        //         followers: 1,
-        //         followings: 1
-        //     }
-
-        //     type ShipperWithfollowesBack = {
-        //         _doc?: any;
-        //         followsBack: boolean;
-        //     }
-
-        //     const followersLength = transporter?.followers?.length ?? 0
-        //     const followingsLength = transporter?.followings?.length ?? 0;
-
-        //     let cleanedResult;
-        //     let total = 0;;
-
-        //     if (status === 'followers') {
-
-        //         // * ---- findFollowers ----*
-        //         const followersIds = transporter?.followers;
-        //         // const followersSet = new Set(followersIds);
-        //         total = transporter?.followers?.length as number
-
-        //         const filter: any = {
-        //             _id: { $in: followersIds }
-        //         }
-
-        //         if (search) {
-        //             filter.shipperName = { $regex: search, $options: 'i' }
-        //         }
-
-        //         const shippers = await this._shipperRepository.find(filter, projection, skip, limit);
-
-        //         const result = shippers.map(shipper => ({
-        //             ...shipper,
-        //             followsBack: shipper.followers?.includes(transporterId)
-        //         }))
-
-        //         cleanedResult = result.map(val => {
-        //             const { _doc, followsBack } = val as ShipperWithfollowesBack;
-        //             return {
-        //                 ..._doc,
-        //                 followsBack,
-        //             }
-        //         })
-
-        //     } else {
-
-        //         // * ---- findFollowings ----- *
-
-        //         const followingsIds = transporter?.followings;
-        //         // const followingsSet = new Set(followersIds);
-        //         total = transporter?.followings?.length as number;
-
-        //         const filter: any = {
-        //             _id: { $in: followingsIds }
-        //         }
-
-        //         if (search) {
-        //             filter.shipperName = { $regex: search, $options: 'i' }
-        //         }
-
-        //         const followingShipper = await this._shipperRepository.find(filter, projection, skip, limit);
-
-        //         const followingResult = followingShipper.map(shipper => ({
-        //             ...shipper,
-        //             followsBack: shipper.followers?.includes(transporterId)
-        //         }))
-
-        //         cleanedResult = followingResult.map(val => {
-        //             const { _doc, followsBack } = val as ShipperWithfollowesBack;
-        //             return {
-        //                 ..._doc,
-        //                 followsBack,
-        //             }
-        //         })
-        //     }
-        //     return { datas: cleanedResult, followersCount: followersLength, followingsCount: followingsLength, totalPages: Math.ceil(total / limit) }
-
-        // } catch (error) {
-        //     console.log(error);
-
-        //     throw new Error(error instanceof Error ? error.message : String(error))
-        // }
-
         try {
             const skip = (page - 1) * limit;
             const transporter = await this._transporterRepository.findById(transporterId);
@@ -1454,7 +524,6 @@ export class TransporterService implements ITransporterService {
             let total = 0;
             const validIds = (ids: string[]) => ids?.filter(id => id && id.trim() !== "");
 
-
             if (status === 'followers') {
                 const followersIds = validIds(transporter?.followers ?? []);
                 total = followersIds.length;
@@ -1469,18 +538,15 @@ export class TransporterService implements ITransporterService {
                 const filter: any = {
                     _id: { $in: followersIds }
                 };
-
                 if (search) {
                     filter.shipperName = { $regex: search, $options: 'i' };
                 }
 
                 const shippers = await this._shipperRepository.find(filter, projection, skip, limit);
-
                 const result = await Promise.all(shippers.map(async shipper => {
                     const presignedUrl = shipper.profileImage
                         ? await getPresignedDownloadUrl(shipper.profileImage)
                         : null;
-
                     return {
                         ...shipper,
                         profileImage: presignedUrl,
@@ -1488,14 +554,10 @@ export class TransporterService implements ITransporterService {
                     };
                 }));
 
-                // ❗ Don't use `const` again here
                 cleanedResult = result.map(({ _doc, ...rest }: any) => ({
                     ..._doc,
                     ...rest,
                 }));
-
-
-
             } else {
                 const followingsIds = validIds(transporter?.followings ?? []);
                 total = followingsIds.length;
@@ -1510,18 +572,15 @@ export class TransporterService implements ITransporterService {
                 const filter: any = {
                     _id: { $in: followingsIds }
                 };
-
                 if (search) {
                     filter.shipperName = { $regex: search, $options: 'i' };
                 }
 
                 const followingShipper = await this._shipperRepository.find(filter, projection, skip, limit);
-
                 const result = await Promise.all(followingShipper.map(async shipper => {
                     const presignedUrl = shipper.profileImage
                         ? await getPresignedDownloadUrl(shipper.profileImage)
                         : null;
-
                     return {
                         ...shipper,
                         profileImage: presignedUrl,
@@ -1529,7 +588,6 @@ export class TransporterService implements ITransporterService {
                     };
                 }));
 
-                // ❗ Don't use `const` again here
                 cleanedResult = result.map(({ _doc, ...rest }: any) => ({
                     ..._doc,
                     ...rest,
@@ -1550,9 +608,7 @@ export class TransporterService implements ITransporterService {
 
     async fetchSubscriptionPlans(): Promise<{ subscriptionPlans: {}; }> {
         try {
-
             return { subscriptionPlans: TRANSPORTER_SUBSCRIPTION_PLANS };
-
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
@@ -1560,12 +616,10 @@ export class TransporterService implements ITransporterService {
 
     async subscriptionCheckoutSession(transporterId: string, planId: string): Promise<{ success: boolean; sessionId?: string; message: string }> {
         try {
-
             const plan = TRANSPORTER_SUBSCRIPTION_PLANS.find(p => p.id === planId);
             if (!plan) return { success: false, message: 'Invalid Plan' }
 
             const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-
             const existing = await this._transporterPaymentRepository.findOne({
                 planId: planId,
                 transporterId: transporterId,
@@ -1600,7 +654,6 @@ export class TransporterService implements ITransporterService {
             })
 
             const transporterObjectId = new mongoose.Types.ObjectId(transporterId)
-
             await this._transporterPaymentRepository.createPayment({
                 transactionId: session.id,
                 planId,
@@ -1620,9 +673,7 @@ export class TransporterService implements ITransporterService {
                 subscriptionId: planId,
 
             })
-
             return { success: true, message: 'Checkout Created', sessionId: session.id }
-
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
@@ -1630,7 +681,6 @@ export class TransporterService implements ITransporterService {
 
     async subscriptionSuccess(transporterId: string, sessionId: string, planId: string): Promise<{ success: boolean; message: string; planName?: string; endDate?: Date; }> {
         try {
-
             const plan = TRANSPORTER_SUBSCRIPTION_PLANS.find(p => p.id === planId);
             if (!plan) return { success: false, message: 'Invalid plan' }
 
@@ -1638,7 +688,6 @@ export class TransporterService implements ITransporterService {
             const endDate = new Date(startDate);
 
             endDate.setDate(endDate.getDate() + plan.planDurationInDays);
-
             const updateTransporter = await this._transporterRepository.updateById(transporterId, {
                 subscription: {
                     planId: plan.id,
@@ -1661,7 +710,6 @@ export class TransporterService implements ITransporterService {
             })
 
             return { success: true, message: 'Subscription Activated', planName: plan.name, endDate }
-
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
@@ -1669,87 +717,8 @@ export class TransporterService implements ITransporterService {
 
     async checkExpiredSubscription(): Promise<void> {
         try {
-
             const today = new Date();
             const result = await this._transporterRepository.subscriptionExpiredUpdate(today);
-
-            console.log(`Subscription Expired ${result.modifiedCount}`);
-
-
-        } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
-        }
-    }
-
-    async fetchActiveTrucks(transporterId: string): Promise<ITruck[] | null> {
-        try {
-
-            const trucks = await this._truckRepository.find({ transporterId: transporterId, status: 'active', verificationStatus: 'approved' }, { truckNo: 1 })
-            return trucks;
-
-        } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
-        }
-    }
-
-    async updateBid(bidId: string, truckId: string, price: string): Promise<{ success: boolean, message: string, updateBid?: BidForTransporterDTO }> {
-        try {
-
-            const truck = await this._truckRepository.findById(truckId);
-            if (!truck || truck.status !== 'active') return { success: false, message: 'Truck not available' }
-
-            const updateData = await this._bidRepository.updateById(bidId, { truckId: truck._id, price: price });
-
-            if (!updateData) return { success: false, message: 'Bid not updated' };
-
-            const bidDatos: BidForTransporterDTO = {
-                _id: updateData._id as string,
-                shipperId: {
-                    _id: (updateData.shipperId as any)._id.toString(),
-                    shipperName: (updateData.shipperId as any).shipperName,
-                    profileImage: (updateData.shipperId as any).profileImage
-                },
-                transporterId: updateData.transporterId.toString(),
-                loadId: {
-                    _id: (updateData.loadId as any)._id.toString(),
-                    pickupLocation: (updateData.loadId as any).pickupLocation,
-                    dropLocation: (updateData.loadId as any).dropLocation,
-                    material: (updateData.loadId as any).material,
-                    quantity: (updateData.loadId as any).quantity,
-                    scheduledDate: (updateData.loadId as any).scheduledDate
-                },
-                truckId: {
-                    _id: (updateData.truckId as any)._id.toString(),
-                    truckNo: (updateData.truckId as any).truckNo,
-                    truckType: (updateData.truckId as any).truckType,
-                    capacity: (updateData.truckId as any).capacity,
-                    truckImage: (updateData.truckId as any).truckImage,
-                },
-                price: updateData.price,
-                status: updateData.status,
-                createAt: updateData.createAt,
-                shipperPayment: updateData.shipperPayment,
-                transporterPayment: updateData.transporterPayment
-            }
-
-            return { success: true, message: 'Bid Updated', updateBid: bidDatos }
-
-        } catch (error) {
-            throw new Error(error instanceof Error ? error.message : String(error))
-        }
-    }
-
-    async deleteBidById(bidId: string): Promise<{ success: boolean; message: string; BidData?: IBid; }> {
-        try {
-
-            const bid = await this._bidRepository.findBidById(bidId);
-            if (!bid) return { success: false, message: 'Bid not found' };
-
-            const deletedBid = await this._bidRepository.deleteById(bidId);
-            if (!deletedBid) return { success: false, message: 'Bid not deleted' }
-
-            return { success: true, message: 'Bid Deleted.', BidData: deletedBid };
-
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : String(error))
         }
@@ -1770,10 +739,7 @@ export class TransporterService implements ITransporterService {
 
             const bidPayments = paymentData.filter(p => p.paymentType === 'bid').length;
             const subscriptionPayment = paymentData.filter(p => p.paymentType === 'subscription').length;
-
-
             const skip = (page - 1) * limit;
-
             const filter: any = {
                 transporterId: transporterId
             }
@@ -1803,23 +769,8 @@ export class TransporterService implements ITransporterService {
 
             const payment = await this._transporterPaymentRepository.find(filter, {}, skip, limit, { createdAt: -1 });
             const totalPayment = await this._transporterPaymentRepository.count(filter);
-
-            const mappedPayments: TransporterPaymentDTO[] = payment.map((p) => ({
-                _id: p._id as string,
-                transactionId: p.transactionId ?? '',
-                bidId: p.bidId ? p.bidId.toString() : '',
-                planId: p.planId ?? '',
-                transporterId: p.transporterId.toString(),
-                paymentType: p.paymentType ?? '',
-                amount: p.amount ?? 0,
-                paymentStatus: p.paymentStatus ?? '',
-                createdAt: p.createdAt,
-                transactionType: p.transactionType ?? '',
-            }));
-
-
-            return { paymentData: mappedPayments, totalPages: Math.ceil(totalPayment / limit), totalEarnings, bidPayments, subscriptionPayment, pendingAmount };
-
+ 
+            return { paymentData: TransporterPaymentDTO.fromList(payment), totalPages: Math.ceil(totalPayment / limit), totalEarnings, bidPayments, subscriptionPayment, pendingAmount };
         } catch (error) {
             console.error(error);
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -1830,7 +781,6 @@ export class TransporterService implements ITransporterService {
         try {
 
             let chat = await this._chatRepository.findOne({ transporterId, shipperId })
-
             const transporterObjectId = new mongoose.Types.ObjectId(transporterId);
             const shipperObjectId = new mongoose.Types.ObjectId(shipperId);
 
@@ -1839,7 +789,6 @@ export class TransporterService implements ITransporterService {
             }
 
             return { success: true, chatData: chat }
-
         } catch (error) {
             console.error(error)
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -1848,7 +797,6 @@ export class TransporterService implements ITransporterService {
 
     async fetchChats(transporterId: string): Promise<ChatForTransporterDTO[]> {
         try {
-
             let chats = await this._chatRepository.findWithPopulate(
                 { transporterId: transporterId },
                 [
@@ -1863,14 +811,11 @@ export class TransporterService implements ITransporterService {
                         receiverId: transporterId,
                         isRead: false,
                     });
-
                     const chatObj = chat.toObject();
-
                     let profileImageUrl = '';
                     if (chatObj.shipperId?.profileImage) {
                         profileImageUrl = await getPresignedDownloadUrl(chatObj.shipperId.profileImage) ?? '';
                     }
-
                     return {
                         _id: chatObj._id.toString(),
                         transporterId: chatObj.transporterId.toString(),
@@ -1886,7 +831,6 @@ export class TransporterService implements ITransporterService {
             );
 
             return updatedChats
-
         } catch (error) {
             console.error('Error in Fetch chats', error);
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -1895,9 +839,7 @@ export class TransporterService implements ITransporterService {
 
     async sendMessage(transporterId: string, chatId: string, shipperId: string, content: string): Promise<{ success: boolean; messageData?: IMessage; }> {
         try {
-
             const chatObjectId = new mongoose.Types.ObjectId(chatId)
-
             const message = await this._messageRepository.createMessage({
                 chatId: chatObjectId,
                 senderId: transporterId,
@@ -1906,11 +848,9 @@ export class TransporterService implements ITransporterService {
             })
 
             await this._chatRepository.updateLastMessage(chatId, content);
-
             if (!message) return { success: false }
 
             return { success: true, messageData: message }
-
         } catch (error) {
             console.error(error);
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -1919,7 +859,6 @@ export class TransporterService implements ITransporterService {
 
     async fetchMessages(chatId: string): Promise<IMessage[]> {
         try {
-
             const messages = await this._messageRepository.findWithPopulate(
                 { chatId },
                 [
@@ -1928,7 +867,6 @@ export class TransporterService implements ITransporterService {
             )
 
             return messages;
-
         } catch (error) {
             console.error(error);
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -1937,11 +875,8 @@ export class TransporterService implements ITransporterService {
 
     async updateMessageAsRead(chatId: string, transporeterId: string): Promise<{ success: boolean; }> {
         try {
-
             await this._messageRepository.updateMany({ chatId, receiverId: transporeterId, isRead: false }, { isRead: true });
-
             return { success: true }
-
         } catch (error) {
             console.error(error);
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -1950,7 +885,6 @@ export class TransporterService implements ITransporterService {
 
     async fetchNotifications(transporterId: string, status: string): Promise<NotificationForTransporterDTO[]> {
         try {
-
             const filter: any = {
                 userId: transporterId,
                 userType: 'transporter'
@@ -1965,7 +899,6 @@ export class TransporterService implements ITransporterService {
             }
 
             const response = await this._notificationRepository.find(filter, {}, 0, 0, { createdAt: -1 })
-
             const notificationDatos: NotificationForTransporterDTO[] = response.map((notification) => ({
                 _id: notification._id as string,
                 userId: notification.userId,
@@ -1977,7 +910,6 @@ export class TransporterService implements ITransporterService {
             }))
 
             return notificationDatos;
-
         } catch (error) {
             console.error(error);
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -1987,7 +919,6 @@ export class TransporterService implements ITransporterService {
     async updateNotificationAsRead(notificationId: string): Promise<{ success: boolean; message: string; notificationData?: NotificationForTransporterDTO; }> {
         try {
             const updateData = await this._notificationRepository.updateById(notificationId, { isRead: true });
-
             if (!updateData) return { success: false, message: 'Notification not updated' };
 
             const notificationData: NotificationForTransporterDTO = {
@@ -2011,7 +942,6 @@ export class TransporterService implements ITransporterService {
     async deleteNotification(notificationId: string): Promise<{ success: boolean; message: string; notificationData?: NotificationForTransporterDTO; }> {
         try {
             const deleteData = await this._notificationRepository.deleteById(notificationId);
-
             if (!deleteData) return { success: false, message: 'Notification not deleted' };
 
             const notificationData: NotificationForTransporterDTO = {
@@ -2031,21 +961,15 @@ export class TransporterService implements ITransporterService {
         }
     }
 
-
     async fetchWalletData(tranpsorterId: string): Promise<WalletForTransporterDTO | null> {
         try {
-
             const walletData = await this._transporterWalletRepository.findOne({ transporterId: tranpsorterId });
-            console.log(walletData, 'walletdata');
-
             const walletDatos: WalletForTransporterDTO = {
                 _id: walletData?._id as string,
                 balance: walletData?.balance ?? 0
             }
 
             return walletDatos
-
-
         } catch (error) {
             console.log(error);
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -2054,27 +978,22 @@ export class TransporterService implements ITransporterService {
 
     async bidPaymentByWallet(transporterId: string, bidId: string): Promise<{ success: boolean; message: string; }> {
         try {
-
             const transporterWallet = await this._transporterWalletRepository.findOne({ transporterId: transporterId });
-
             if (!transporterWallet) return { success: false, message: 'Your Wallet not found' };
 
             const bid = await this._bidRepository.findBidById(bidId);
             if (!bid) return { success: false, message: 'Bid not Found' }
 
             const loadId = String(bid.loadId);
-
             const load = await this._loadRepository.findLoadById(loadId);
 
             const distanceInKm = load?.distanceInKm;
             const commission = calculateCommission(distanceInKm || 0);
-
             if (transporterWallet.balance < commission) {
                 return { success: false, message: 'Your Wallet no have money for this payment' }
             }
 
             const updateWallet = await this._transporterWalletRepository.decrementMoneyInWallet(transporterId, commission);
-
             if (!updateWallet) return { success: false, message: 'Payment not completed' }
 
             const transporterObjectId = new mongoose.Types.ObjectId(transporterId)
@@ -2089,7 +1008,6 @@ export class TransporterService implements ITransporterService {
                 paymentMethod: 'wallet',
             })
 
-
             await this._adminPaymentRepository.createAdminPaymentHistory({
                 transactionId: bidId,
                 userType: 'transporter',
@@ -2103,7 +1021,6 @@ export class TransporterService implements ITransporterService {
             })
 
             const updateBid = await this._bidRepository.findBidAndUpdate(bidId, { transporterPayment: true });
-
             if (updateBid?.shipperPayment && updateBid.transporterPayment) {
 
                 const trip = await this._tripRepository.createTrip(
@@ -2117,27 +1034,19 @@ export class TransporterService implements ITransporterService {
                 )
 
                 if (trip) {
-
                     await this._bidRepository.updateBids({ loadId: bid.loadId, _id: { $ne: updateBid._id } }, { status: 'rejected' })
-
                     const updateLoad = await this._loadRepository.findLoadByIdAndUpdate(String(updateBid.loadId), { status: 'in-Transit' })
-
                     const updateTruck = await this._truckRepository.updateTruckById(String(updateBid.truckId), { status: 'in-transit' });
-
                     const shipperid = String(trip.shipperId)
-
                     await this._notificationRepository.createNotification({
                         userId: shipperid,
                         userType: 'shipper',
                         title: 'Trip Started',
                         message: 'The transporter has completed the payment. Your shipment is now on its way.'
                     })
-
                 }
             }
-
             return { success: true, message: 'Trip Start' }
-
         } catch (error) {
             console.error(error)
             throw new Error(error instanceof Error ? error.message : String(error))
@@ -2146,100 +1055,11 @@ export class TransporterService implements ITransporterService {
 
     async findUnreadNotificationCount(transporeterId: string): Promise<number> {
         try {
-
             const notificationCount = await this._notificationRepository.count({ userType: 'transporter', userId: transporeterId, isRead: false });
-
             return notificationCount
-
         } catch (error) {
             console.error(error);
             throw new Error(error instanceof Error ? error.message : String(error))
         }
     }
-
-    async updateTruck(updateData: Partial<ITruck>, truckImage: Express.Multer.File): Promise<{ success: boolean; message: string; }> {
-        try {
-
-            const { _id, truckOwnerName, truckOwnerMobileNo, tyres, truckType, capacity, rcValidity, operatingStates } = updateData
-
-            console.log(_id);
-            console.log(truckOwnerName);
-            console.log(truckOwnerMobileNo);
-            console.log(tyres);
-            console.log(truckType);
-            console.log(capacity);
-            console.log(rcValidity);
-            console.log(operatingStates);
-            console.log(truckImage);
-
-            const truck = await this._truckRepository.findById(_id as string);
-            console.log(truck, 'truck');
-
-            if (!truck) {
-                return { success: false, message: 'Truck not found' }
-            }
-
-            let truckImageUrl: string | undefined;
-
-            const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
-                const s3Params = {
-                    Bucket: config.awsBucketName,
-                    Key: `${folder}/transporter/${Date.now()}_${file.originalname}`,
-                    Body: file.buffer,
-                    ContentType: file.mimetype
-                };
-
-                const command = new PutObjectCommand(s3Params)
-                await s3.send(command)
-
-                return `https://${config.awsBucketName}.s3.${config.awsRegion}.amazonaws.com/${s3Params.Key}`;
-            }
-
-            if (truckImage) {
-                truckImageUrl = await uploadToS3(truckImage, 'truckImage')
-            } else {
-                truckImageUrl = truck.truckImage;
-            }
-
-            let parsedOperatingStates: string[] = [];
-
-            if (typeof operatingStates === 'string') {
-                parsedOperatingStates = JSON.parse(operatingStates);
-            } else if (Array.isArray(operatingStates)) {
-                parsedOperatingStates = operatingStates;
-            }
-
-            let parsedRCValidity: Date | undefined = undefined;
-
-            if (rcValidity) {
-                parsedRCValidity = new Date(rcValidity);
-                if (isNaN(parsedRCValidity.getTime())) {
-                    throw new Error('Invalid RC Validity date')
-                }
-            }
-
-            const updateTruck = await this._truckRepository.updateTruckById(_id as string, {
-                truckOwnerName,
-                truckOwnerMobileNo,
-                tyres,
-                truckType,
-                capacity,
-                rcValidity: parsedRCValidity,
-                truckImage: truckImageUrl,
-                operatingStates: parsedOperatingStates,
-
-            })
-
-            if (!updateTruck) {
-                return { success: false, message: 'Truck update Failed' }
-            }
-
-            return { success: true, message: 'Truck updated successFully' }
-
-        } catch (error) {
-            console.error(error);
-            throw new Error(error instanceof Error ? error.message : String(error))
-        }
-    }
-
 }

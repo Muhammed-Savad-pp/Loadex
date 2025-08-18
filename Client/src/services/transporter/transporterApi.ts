@@ -98,70 +98,68 @@ export const transporterKYCSubmit = async (formData: FormData) => {
 }
 
 
-export const registerTruck = async (formDataToSend: FormData) => {
+// export const registerTruck = async (formDataToSend: FormData) => {
 
     
 
-    const response = await apiClient.post('/transporter/truck', formDataToSend, {
-        headers: {
-            'Content-type': 'multipart/form-data',
-        },
-    })
+//     const response = await apiClient.post('/transporter/truck', formDataToSend, {
+//         headers: {
+//             'Content-type': 'multipart/form-data',
+//         },
+//     })
 
-    return response.data
-}
+//     return response.data
+// }
 
-export const fetchLoads = async (page: number , limit: number) => {
+// export const fetchLoads = async (page: number , limit: number) => {
 
-    const response = await apiClient.get(`/transporter/loads?page=${page}&limit=${limit}`);
-    return response.data;
+//     const response = await apiClient.get(`/transporter/loads?page=${page}&limit=${limit}`);
+//     return response.data;
 
-}
+// }
 
-export const fetchTrucks = async (status: string, page: number, limit: number) => {
-
-    console.log(limit, 'asdfa');
+// export const fetchTrucks = async (status: string, page: number, limit: number) => {
     
-    const response = await apiClient.get(`/transporter/trucks?status=${status}&page=${page}&limit=${limit}`);
-    return response.data;
-}
+//     const response = await apiClient.get(`/transporter/trucks?status=${status}&page=${page}&limit=${limit}`);
+//     return response.data;
+// }
 
-export const activateTruck = async (formdata: FormData) => {
+// export const activateTruck = async (formdata: FormData) => {
 
-    formdata.forEach((val, ind) => {
-        console.log(val, ind, 'inservice');
-    })
+//     formdata.forEach((val, ind) => {
+//         console.log(val, ind, 'inservice');
+//     })
 
-    const response = await apiClient.put('/transporter/activateTruck', formdata, {
-        headers: {
-            'Content-type': 'multipart/form-data'
-        }
-    });
-    return response.data;
+//     const response = await apiClient.put('/transporter/activateTruck', formdata, {
+//         headers: {
+//             'Content-type': 'multipart/form-data'
+//         }
+//     });
+//     return response.data;
 
-}
+// }
 
-export const sendBid = async (formData: FormData) => {
+// export const sendBid = async (formData: FormData) => {
 
-    formData.forEach((val, ind) => {
-        console.log(val, ind, "in service");
+//     formData.forEach((val, ind) => {
+//         console.log(val, ind, "in service");
 
-    })
-    const response = await apiClient.post('/transporter/sendBid', formData, {
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    });
-    return response.data;
+//     })
+//     const response = await apiClient.post('/transporter/sendBid', formData, {
+//         headers: {
+//             'Content-Type': 'application/json',
+//         }
+//     });
+//     return response.data;
 
-}
+// }
 
-export const fetchBids = async (page: number, limit: number, status: string) => {
+// export const fetchBids = async (page: number, limit: number, status: string) => {
 
-    const response = await apiClient.get(`/transporter/bids?page=${page}&limit=${limit}&status=${status}`);
-    return response.data;
+//     const response = await apiClient.get(`/transporter/bids?page=${page}&limit=${limit}&status=${status}`);
+//     return response.data;
 
-}
+// }
 
 export const bidCheckoutSession = async (bidId: string) => {
 
@@ -177,19 +175,19 @@ export const bidVerifyPayment = async (transactionId: string | null, status: str
 
 }
 
-export const fetchTrips = async (status: string, page: number, limit: number) => {
+// export const fetchTrips = async (status: string, page: number, limit: number) => {
 
-    const response = await apiClient.get(`/transporter/trips?status=${status}&page=${page}&limit=${limit}`);
-    return response.data;
+//     const response = await apiClient.get(`/transporter/trips?status=${status}&page=${page}&limit=${limit}`);
+//     return response.data;
 
-}
+// }
 
-export const updateTripStatus = async (tripId: string, newStatus: string) => {
+// export const updateTripStatus = async (tripId: string, newStatus: string) => {
 
-    const response = await apiClient.patch('/transporter/trip-status', { tripId, newStatus });
-    return response.data
+//     const response = await apiClient.patch('/transporter/trip-status', { tripId, newStatus });
+//     return response.data
 
-}
+// }
 
 export const updateProfile = async (formData: FormData) => {
 
@@ -265,24 +263,24 @@ export const subscriptionSuccess = async (sessionId: string, planId: string) => 
 
 }
 
-export const fetchActiveTruck = async () => {
+// export const fetchActiveTruck = async () => {
 
-    const response = await apiClient.get('/transporter/activeTruck');
-    return response.data
+//     const response = await apiClient.get('/transporter/activeTruck');
+//     return response.data
     
-}
+// }
 
-export const updateBid = async (bidId: string, truckId: string, price: string) => {
+// export const updateBid = async (bidId: string, truckId: string, price: string) => {
 
-    const response = await apiClient.put('/transporter/bid', { bidId, truckId, price })
-    return response.data;    
-}
+//     const response = await apiClient.put('/transporter/bid', { bidId, truckId, price })
+//     return response.data;    
+// }
 
-export const deleteBid = async (bidId: string) => {
+// export const deleteBid = async (bidId: string) => {
     
-    const response = await apiClient.delete(`/transporter/bid?bidId=${bidId}`);
-    return response.data;
-}
+//     const response = await apiClient.delete(`/transporter/bid?bidId=${bidId}`);
+//     return response.data;
+// }
 
 export const fetchPaymentHistory = async (statusFilter: string, typeFilter: string, dateFilter: string, page: number, limit: number) => {
     
@@ -363,14 +361,14 @@ export const findTransporterUnreadNotificationCount = async () => {
 
 }
 
-export const updateTruck = async (updateData: FormData) => {
+// export const updateTruck = async (updateData: FormData) => {
 
-    console.log(updateData)
-    const response = await apiClient.put('/transporter/truck', updateData, {
-        headers: {
-            'Content-type': 'multipart/form-data',
-        }
-    });
+//     console.log(updateData)
+//     const response = await apiClient.put('/transporter/truck', updateData, {
+//         headers: {
+//             'Content-type': 'multipart/form-data',
+//         }
+//     });
 
-    return response.data;
-} 
+//     return response.data;
+// } 

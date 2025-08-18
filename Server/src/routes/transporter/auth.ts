@@ -3,7 +3,6 @@ import AuthController from "../../controller/transporterController/authControlle
 import { AuthService } from "../../services/transporter/authService";
 import transporterRepository from "../../repositories/implementaion/transporterRepository";
 import OtpRepository  from "../../repositories/implementaion/otpRepositories";
-import transporter_route from "./transporter";
 
 const transporterAuth_route = express.Router();
 

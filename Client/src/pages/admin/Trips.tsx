@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Eye, Phone, Mail, Truck, MapPin, Package, CreditCard, X, Check, Clock, AlertCircle } from 'lucide-react';
 import Sidebar from '../../components/admin/Sidebar';
-import { fetchTrips, sendTripAmountToTransporter } from '../../services/admin/adminapi';
 import toast from 'react-hot-toast';
 import { debounce } from 'lodash';
-
+import { fetchTripsForAdmin, sendTripAmountToTransporter } from '../../services/trip/tripApi';
 
 
 interface ITrips {
@@ -80,13 +79,16 @@ function Trips() {
 
   useEffect(() => {
     const getTrips = async () => {
-      const response: any = await fetchTrips(page, limit, debouncedSearch, filterStatus);
+      const response: any = await fetchTripsForAdmin(page, limit, debouncedSearch, filterStatus);
       setTrips(response.tripsData);
       setTotalPages(response.totalPages)
     }
 
     getTrips()
   }, [page, limit, debouncedSearch, filterStatus])
+
+  console.log(showPaymentModal, 'show payment modal');
+  console.log(selectedTrip, 'selected trip')
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -491,7 +493,7 @@ function Trips() {
 
         {/* Payment Modal */}
         {showPaymentModal && selectedTrip && (
-          <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 overflow-y-auto h-full w-full z-60">
+          <div className="fixed inset-0 backdrop-blur-sm  bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-gray-900">
               <div className="mt-3 text-center">
                 <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">

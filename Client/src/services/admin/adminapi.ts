@@ -73,12 +73,12 @@ export const changeShipperVerificationStatus = async (id: string, status: string
     
 }
 
-export const getRequestedTrucks = async () => {
+// export const getRequestedTrucks = async () => {
 
-    const response = await apiClient.get('/admin/RequestTrucks');
-    return response.data;
+//     const response = await apiClient.get('/admin/RequestTrucks');
+//     return response.data;
 
-}
+// }
 
 export const changeTruckVerificationStatus = async (id: string, status: string) => {
 
@@ -88,12 +88,12 @@ export const changeTruckVerificationStatus = async (id: string, status: string) 
 }
 
 
-export const getLoads = async (page: number, limit: number, search: string, startDate: string, endDate: string) => {
+// export const getLoads = async (page: number, limit: number, search: string, startDate: string, endDate: string) => {
     
-    const response = await apiClient.get(`/admin/Loads?page=${page}&limit=${limit}&search=${search}&startDate=${startDate}&endDate=${endDate}`);
-    return response.data;
+//     const response = await apiClient.get(`/admin/Loads?page=${page}&limit=${limit}&search=${search}&startDate=${startDate}&endDate=${endDate}`);
+//     return response.data;
     
-}
+// }
 
 export const fetchDashBoardDatas = async () => {
 
@@ -101,17 +101,17 @@ export const fetchDashBoardDatas = async () => {
     return response.data;
 }
 
-export const fetchTrips = async(page: number, limit: number, search: string, status: string) => {
+// export const fetchTrips = async(page: number, limit: number, search: string, status: string) => {
 
-    const response = await apiClient.get(`/admin/trips?page=${page}&limit=${limit}&search=${search}&status=${status}`);
-    return response.data;
-};
+//     const response = await apiClient.get(`/admin/trips?page=${page}&limit=${limit}&search=${search}&status=${status}`);
+//     return response.data;
+// };
 
-export const sendTripAmountToTransporter = async(tripId: string, amount: string) => {
+// export const sendTripAmountToTransporter = async(tripId: string, amount: string) => {
 
-    const response = await apiClient.post('/admin/sendTripAmountToTransporter', { tripId, amount});
-    return response.data
-}
+//     const response = await apiClient.post('/admin/sendTripAmountToTransporter', { tripId, amount});
+//     return response.data
+// }
 
 export const fetchPaymentHistory = async (searchTerm: string, paymentStatus: string, userType: string, paymentfor: string, page: number, limit: number) => {
 

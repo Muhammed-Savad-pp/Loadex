@@ -1,9 +1,7 @@
-import { Request,Response,NextFunction, response } from "express";
-import { AuthService } from "../../services/transporter/authService";
+import { Request,Response } from "express";
 import { HTTP_STATUS } from "../../enums/httpStatus";
 import { ITransporterAuthController } from "../../interface/transporter/ITransporterAuthController";
 import { ITransporterAuthService } from "../../interface/transporter/ITransporterAuthService";
-
 
 class AuthController implements ITransporterAuthController {
 
@@ -11,7 +9,6 @@ class AuthController implements ITransporterAuthController {
 
     async signUp(req:Request, res:Response){
         try {
-            
             const {name, email, phone, password, confirmPassword} = req.body;
 
             const respone = await this._transporterAuthService.transporterSignup(
@@ -23,13 +20,9 @@ class AuthController implements ITransporterAuthController {
             )
             
             if(!respone.success) {
-
                 res.status(HTTP_STATUS.BAD_REQUEST).json(respone);
-
             }else {
-
                 res.status(HTTP_STATUS.CREATED).json(respone)
-
             }
 
         } catch (error) {
@@ -40,27 +33,20 @@ class AuthController implements ITransporterAuthController {
 
     async verifyOtp(req: Request, res: Response) {
         try {
-
             const otp = req.body;
 
             const response = await this._transporterAuthService.verifyTransporterOtp(otp)
-            
             if(typeof response === "string"){
-
                 res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response)
                 return
-
             }else if (response?.success) {
-
                 res.status(HTTP_STATUS.CREATED).json(response);
                 return 
-
             }else {
                 res.status(HTTP_STATUS.BAD_REQUEST).json(response)
             }
             
         } catch (error) {
-
             res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: "otp verification faild"});
             return;
         }
@@ -69,7 +55,6 @@ class AuthController implements ITransporterAuthController {
     async signIn(req: Request, res: Response) {
         const formData = req.body;
         try {
-            
             const respone = await this._transporterAuthService.transporterLogin(formData)
 
             if(respone.success){
@@ -94,11 +79,9 @@ class AuthController implements ITransporterAuthController {
     }
 
     async resendOtp(req: Request, res: Response) {
-
         const email = req.body;
         
         try {
-
             const response = await this._transporterAuthService.resendOtp(email)
 
             if(typeof response === 'string') {
@@ -118,22 +101,14 @@ class AuthController implements ITransporterAuthController {
 
     async validateRefreshToken (req: Request, res: Response) {
         try {
-            console.log('controller');
             
-            console.log('req.cookies: ', req.cookies.refreshToken);
-
             if(!req.cookies.refreshToken) {
-                console.log('er');
-                
                 res.status(HTTP_STATUS.BAD_REQUEST).json({
                     success: false,
                     message: 'Refresh token not found'
                 })
                 return;
-            }
-
-            console.log('here');
-            
+            }            
 
             const {accessToken, refreshToken} = await this._transporterAuthService.validateRefreshToken(req.cookies.refreshToken); 
 
@@ -151,7 +126,6 @@ class AuthController implements ITransporterAuthController {
                 role: "transporter"
             })
             
-
         } catch (error: any) {
             
             if(error.status === 401) {
@@ -197,10 +171,7 @@ class AuthController implements ITransporterAuthController {
 
     async changeNewPassword(req: Request, res: Response) {
         try {
-            
             const {email, password} = req.body;
-            console.log(email, password, 'asfagh');
-
             const response = await this._transporterAuthService.setNewPassword(email, password);
 
             res.status(HTTP_STATUS.OK).json(response);
@@ -214,11 +185,9 @@ class AuthController implements ITransporterAuthController {
 
     async googleLogin(req: Request, res: Response): Promise<void> {
         try {
-            
             const {name, email} = req.body;
 
             const response = await this._transporterAuthService.googleLogin(name, email);
-
             if(response.success){
                 res.status(HTTP_STATUS.CREATED)
                 .cookie('refreshToken',response.refreshToken,

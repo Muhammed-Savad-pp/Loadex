@@ -46,30 +46,9 @@ transporter_route.get('/profile', authenticateToken, checkRole('transporter'), t
 
 transporter_route.post('/kyc', authenticateToken, checkRole('transporter'), upload.fields([{name: 'aadhaarFront'} , {name: 'aadhaarBack'}]) ,transporterController.kycVerification.bind(transporterController));
 
-transporter_route.post('/truck', authenticateToken, checkRole('transporter'), upload.fields([{name: 'rcBook'}, {name: 'driverLicense'}, {name: 'truckImage'}]),  transporterController.registerTruck.bind(transporterController));
-
-transporter_route.get('/loads', authenticateToken, checkRole('transporter'), transporterController.fetchLoads.bind(transporterController));
-
-transporter_route.get('/trucks', authenticateToken, checkRole('transporter'), transporterController.findTrucks.bind(transporterController));
-
-transporter_route.put('/activateTruck', authenticateToken, checkRole('transporter'), (req, res, next) => {
-    // Extract non-file fields before Multer processes
-    req.body.driverLicense = req.body.driverLicense || ''; 
-    next();
-  }, upload.fields([{name: 'driverLicenseFile'}]), transporterController.updateTruckAvailable.bind(transporterController));
-
-
-transporter_route.post('/sendBid', authenticateToken, checkRole('transporter'), transporterController.sendBid.bind(transporterController));
-
-transporter_route.get('/bids' ,authenticateToken, checkRole('transporter'), transporterController.fetchBids.bind(transporterController));
-
 transporter_route.post('/bid-checkout-session', authenticateToken, checkRole('transporter'), transporterController.bidCheckoutSession.bind(transporterController));
 
 transporter_route.post('/payment-bid-verification', authenticateToken,  checkRole('transporter'), transporterController.verifyBidPayment.bind(transporterController));
-
-transporter_route.get('/trips', authenticateToken, checkRole('transporter'), transporterController.fetchTrips.bind(transporterController));
-
-transporter_route.patch('/trip-status', authenticateToken, checkRole('transporter'), transporterController.updateTripStatus.bind(transporterController));
 
 transporter_route.post('/profile', authenticateToken, checkRole('transporter'), upload.fields([{name: 'profileImage'}]), transporterController.updateProfile.bind(transporterController));
 
@@ -90,12 +69,6 @@ transporter_route.get('/subscriptionPlans', authenticateToken, checkRole('transp
 transporter_route.post('/subscription/create-checkout-session', authenticateToken, checkRole('transporter'), transporterController.subscriptionCheckoutSession.bind(transporterController))
 
 transporter_route.put('/subscription-success', authenticateToken, checkRole('transporter'), transporterController.subscriptionSuccess.bind(transporterController))
-
-transporter_route.get('/activeTruck', authenticateToken, checkRole('transporter'), transporterController.fetchActiveTruck.bind(transporterController));
-
-transporter_route.put('/bid', authenticateToken, checkRole('transporter'), transporterController.updateBid.bind(transporterController))
-
-transporter_route.delete('/bid', authenticateToken, checkRole('transporter'), transporterController.deleteBidById.bind(transporterController));
 
 transporter_route.get('/paymentHistory', authenticateToken, checkRole('transporter'), transporterController.fetchPaymentHistory.bind(transporterController));
 
@@ -122,8 +95,6 @@ transporter_route.get('/wallet', authenticateToken, checkRole('transporter'), tr
 transporter_route.post('/bidPaymentByWallet', authenticateToken, checkRole('transporter'), transporterController.bidPaymentByWallet.bind(transporterController))
 
 transporter_route.get('/unreadNotificationCount', authenticateToken, checkRole('transporter'), transporterController.findUnreadNotificationCount.bind(transporterController))
-
-transporter_route.put('/truck', authenticateToken, checkRole('transporter'), upload.single('truckImage'), transporterController.updateTruck.bind(transporterController))
 
 
 export default transporter_route

@@ -2,8 +2,12 @@
 @tailwind components;
 @tailwind utilities; */
 
-@import "tailwindcss";
+/* @import "tailwindcss"; */
 @import "@fontsource/irish-grover";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 /* @import url('https://fonts.googleapis.com/css2?family=Irish+Grover&display=swap'); */
 
 

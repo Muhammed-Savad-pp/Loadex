@@ -1,6 +1,5 @@
-import { LoadData, userSignUp } from "../../interface/interface";
+import {  userSignUp } from "../../interface/interface";
 import { axiosInstance, publicApiClinet } from "../axiosInstance/axiosInstance";
-import { IFormData } from "../../pages/shipper/PostLoad";
 
 const publicApi = publicApiClinet;
 const api = axiosInstance;
@@ -73,14 +72,12 @@ export const shipperKycSumbit = async (formData: FormData) => {
     return response.data;
 }
 
-export const postLoad = async (formData: IFormData) => {
-
-    console.log(formData ,'formData');
+// export const postLoad = async (formData: IFormData) => {
     
-    const response = await api.post('/shipper/postLoad', {formData});
-    return response.data;
+//     const response = await api.post('/shipper/postLoad', {formData});
+//     return response.data;
     
-}
+// }
 
 export const getShipperVerificatinStatus = async () => {
 
@@ -103,26 +100,26 @@ export const shipperNewPasswordSet = async (email: string, password: string) => 
 
 }
 
-export const fetchBids = async (page: number, limit: number, status: string) => {
+// export const fetchBids = async (page: number, limit: number, status: string) => {
 
-    const response = await api.get(`/shipper/Bids?page=${page}&limit=${limit}&status=${status}`);
-    return response.data;
+//     const response = await api.get(`/shipper/Bids?page=${page}&limit=${limit}&status=${status}`);
+//     return response.data;
 
-}
+// }
 
-export const updateBidStatus = async (bidId: string, status: string) => {
+// export const updateBidStatus = async (bidId: string, status: string) => {
 
-    const response = await api.patch('/shipper/BidStatus', {bidId, status})
-    return response.data;
+//     const response = await api.patch('/shipper/BidStatus', {bidId, status})
+//     return response.data;
 
-}
+// }
 
-export const fetchLoads = async (page: number, limit: number) => {
+// export const fetchLoads = async (page: number, limit: number) => {
 
-    const response = await api.get(`/shipper/Loads?page=${page}&limit=${limit}`);
-    return response.data;
+//     const response = await api.get(`/shipper/Loads?page=${page}&limit=${limit}`);
+//     return response.data;
     
-}
+// }
 
 export const checkoutSession = async (bidId: string) => {
 
@@ -138,12 +135,12 @@ export const verifyBidPayment = async (sessionId: string |null, status:  string)
 
 }
 
-export const fetchTrips = async (page: number, limit: number, filterStatus: string) => {
+// export const fetchTrips = async (page: number, limit: number, filterStatus: string) => {
 
-    const response = await api.get(`/shipper/trips?page=${page}&limit=${limit}&status=${filterStatus}`);
-    return response.data;
+//     const response = await api.get(`/shipper/trips?page=${page}&limit=${limit}&status=${filterStatus}`);
+//     return response.data;
 
-}
+// }
 
 export const updateProfile = async (formData: FormData) => {
 
@@ -191,12 +188,12 @@ export const fetchTransporters = async (page: number, limit: number, searchTerm:
     return response.data
 }
 
-export const fetchTrucks = async (page: number, limit: number) => {
+// export const fetchTrucks = async (page: number, limit: number) => {
 
-    const response = await api.get(`/shipper/trucks?page=${page}&limit=${limit}`);
-    return response.data;
+//     const response = await api.get(`/shipper/trucks?page=${page}&limit=${limit}`);
+//     return response.data;
 
-}
+// }
 
 export const getShipperPlans = async () => {
     
@@ -219,19 +216,19 @@ export const subscriptionSuccess = async (sessionId: string, planId: string) => 
 
 }
 
-export const updateLoad = async (formData: LoadData) => {
+// export const updateLoad = async (formData: LoadData) => {
         
-    const response = await api.put('/shipper/load', {formData});
-    return response.data;
+//     const response = await api.put('/shipper/load', {formData});
+//     return response.data;
 
-}
+// }
 
-export const deleteLoad = async (loadId: string) => {
+// export const deleteLoad = async (loadId: string) => {
 
-    const response = await api.delete(`/shipper/load?loadId=${loadId}`);
-    return response.data;
+//     const response = await api.delete(`/shipper/load?loadId=${loadId}`);
+//     return response.data;
      
-}
+// }
 
 export const createChat = async (transporterId: string) => {
 

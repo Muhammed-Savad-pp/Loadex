@@ -23,7 +23,7 @@ interface TruckData {
 }
 
 interface EditTruckProps {
-  initialData?: TruckData;
+  initialData?: TruckData | null;
   onUpdateTruck?: (data: FormData) => void;
   onClose?: () => void;
 }

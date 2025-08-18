@@ -18,8 +18,6 @@ import messageRepository from "../../repositories/implementaion/messageRepositor
 import notificationRepository from "../../repositories/implementaion/notificationRepository";
 import adminPaymentRepository from "../../repositories/implementaion/adminPaymentRepository";
 
-
-
 const storage = multer.memoryStorage();
 const upload = multer({storage});
 
@@ -44,26 +42,15 @@ const shipperService = new ShipperService(
 const shipperController  = new ShipperController(shipperService);
 
 
-
 shipper_route.get('/profile',authenticateToken, checkRole('shipper'), shipperController.getProfileData.bind(shipperController));
 
 shipper_route.post('/kycRegister', authenticateToken, checkRole('shipper'), upload.fields([{name: 'aadhaarFront'}, {name: 'aadhaarBack'}]), shipperController.registerKyc.bind(shipperController));
 
-shipper_route.post('/postLoad', authenticateToken, checkRole('shipper'), shipperController.postLoad.bind(shipperController));
-
 shipper_route.get('/VerificationStatus', authenticateToken, checkRole('shipper'), shipperController.getVerificationstatus.bind(shipperController));
-
-shipper_route.get('/Bids', authenticateToken, checkRole('shipper'), shipperController.fetchBids.bind(shipperController));
-
-shipper_route.patch('/BidStatus', authenticateToken, checkRole('shipper'), shipperController.updateBidStatus.bind(shipperController));
-
-shipper_route.get('/Loads', authenticateToken, checkRole('shipper'), shipperController.fetchLoads.bind(shipperController));
 
 shipper_route.post('/checkout-session', authenticateToken, checkRole('shipper'), shipperController.checkoutSession.bind(shipperController));
 
 shipper_route.post('/verifyPayment', authenticateToken, checkRole('shipper'), shipperController.verifyPayment.bind(shipperController));
-
-shipper_route.get('/trips', authenticateToken, checkRole('shipper'), shipperController.fetchTrips.bind(shipperController));
 
 shipper_route.post('/Profile', authenticateToken, checkRole('shipper'), upload.fields([{name: 'profileImage'}]), shipperController.updateProfile.bind(shipperController));
 
@@ -77,17 +64,11 @@ shipper_route.post('/Review', authenticateToken, checkRole('shipper'), shipperCo
 
 shipper_route.get('/transporters', authenticateToken, checkRole('shipper'), shipperController.fetchTransportes.bind(shipperController));
 
-shipper_route.get('/trucks', authenticateToken, checkRole('shipper'), shipperController.fetchTrucks.bind(shipperController));
-
 shipper_route.get('/subscriptionPlans', authenticateToken, checkRole('shipper'), shipperController.getShipperSubscriptionPlan.bind(shipperController))
 
 shipper_route.post('/subscription/create-checkout-session', authenticateToken, checkRole('shipper'), shipperController.subscriptionCheckoutSession.bind(shipperController))
 
 shipper_route.get('/subscription-success', authenticateToken, checkRole('shipper'), shipperController.handleSubscriptionSuccess.bind(shipperController));
-
-shipper_route.put('/load', authenticateToken, checkRole('shipper'), shipperController.updateLoad.bind(shipperController));
-
-shipper_route.delete('/load', authenticateToken, checkRole('shipper'), shipperController.deleteLoad.bind(shipperController));
 
 shipper_route.post('/chat', authenticateToken, checkRole('shipper'), shipperController.createChat.bind(shipperController));
 

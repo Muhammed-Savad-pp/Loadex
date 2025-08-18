@@ -3,10 +3,10 @@ import Navbar from "../../components/Common/Navbar/Navbar";
 import ShipperProfileSidebar from "../../components/shipper/ShipperProfileSidebar";
 import { Truck, Package, MapPin, Calendar, ChevronDown, Ruler, Box, AlertTriangle, Weight, 
         Expand, FileText, Trash2, Pencil, X } from 'lucide-react';
-import { fetchLoads, updateLoad, deleteLoad } from "../../services/shipper/shipperService";
 import UpdateLoadModal from "../../components/shipper/UpdateLoadModal";
 import { LoadData, LoadFormData } from "../../interface/interface";
 import toast from "react-hot-toast";
+import { fetchLoadsForShipper, updateLoad, deleteLoad } from "../../services/load/loadApi";
 
 
 const MyLoads: React.FC = () => {
@@ -24,7 +24,7 @@ const MyLoads: React.FC = () => {
 
     useEffect(() => {
         const getLoads = async () => {
-            const response: any = await fetchLoads(page, limit);
+            const response: any = await fetchLoadsForShipper(page, limit);
             setLoads(response.loads as LoadData[])
             setTotalPages(response.totalPages);
         }

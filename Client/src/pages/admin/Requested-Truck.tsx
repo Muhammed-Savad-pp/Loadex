@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../../components/admin/Sidebar";
-import { getRequestedTrucks, changeTruckVerificationStatus } from "../../services/admin/adminapi";
 import { IoClose } from "react-icons/io5";
 import { FiUser, FiPhone, FiFileText, FiCheck, FiX, FiTruck, FiMapPin, FiInfo } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { GiTyre } from "react-icons/gi";
+import { getRequestedTrucksForAdmin, changeTruckVerificationStatusByAdmin } from "../../services/truck/truckApi";
 
 
 
@@ -41,7 +41,7 @@ const RequestTruck: React.FC = () => {
         const fetchTransporters = async () => {
             try {
                 setIsLoading(true);
-                const response: any = await getRequestedTrucks();
+                const response: any = await getRequestedTrucksForAdmin();
                 setTrucks(response || []);
             } catch (error) {
                 console.error("Error fetching transporters:", error);
@@ -58,13 +58,11 @@ const RequestTruck: React.FC = () => {
     const handleVerification = async (id: string, status: string) => {
         try {
 
-
-            const responses: any = await changeTruckVerificationStatus(id, status);
+            const responses: any = await changeTruckVerificationStatusByAdmin(id, status);
 
             toast.success(responses.response);
 
-
-            const response: any = await getRequestedTrucks()
+            const response: any = await getRequestedTrucksForAdmin()
             setTrucks(response || [])
 
             setSelectedTruck(null)

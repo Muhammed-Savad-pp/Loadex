@@ -47,7 +47,6 @@ export class AdminController implements IAdminController {
             const page = parseInt(req.query.page as string);
             const limit = parseInt(req.query.limit as string)
             const response = await this._adminService.getTransporter(search, page, limit);
-            // console.log('response', response)
 
             res.status(HTTP_STATUS.OK).json(response)
             
@@ -173,52 +172,6 @@ export class AdminController implements IAdminController {
         }
     }
 
-    async getRequestedTrucks(req: CustomeRequest, res: Response): Promise<void> {
-        try {
-
-            const response = await this._adminService.getRequestedTrucks();
-            
-            res.status(HTTP_STATUS.OK).json(response);
-            
-        } catch (error: any) {
-            console.log(error);
-            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message:  error.message})
-        }
-    }
-
-    async changeTruckVerificationStatus(req: CustomeRequest, res: Response): Promise<void> {
-        try {
-            
-            const {id, status} = req.body;
-            console.log(id, status);
-
-            const response = await this._adminService.changeTruckVerificationStatus(id, status);
-            res.status(HTTP_STATUS.OK).json({response});
-
-        } catch (error: any) {
-            console.error(error);
-            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: error.message})
-        }
-    }
-
-    async getLoads(req: CustomeRequest, res: Response): Promise<void> {
-        try {
-
-            const page = parseInt(req.query.page as string);
-            const limit = parseInt(req.query.limit as string);
-            const search = req.query.search as string;
-            const startDate = req.query.startDate as string;
-            const endDate = req.query.endDate as string;
-
-            const response = await this._adminService.getLoads(page, limit, search, startDate, endDate);
-            res.status(HTTP_STATUS.OK).json(response);
-
-        } catch (error: any) {
-            console.log(error);
-            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: error.message})
-        }
-    }
-
     async fetchDashboardDatas(req: CustomeRequest, res: Response): Promise<void> {
         try {
 
@@ -226,39 +179,6 @@ export class AdminController implements IAdminController {
             res.status(HTTP_STATUS.OK).json(response)
             
         } catch (error) {
-            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(error)
-        }
-    }
-
-    async fetchTrips(req: CustomeRequest, res: Response): Promise<void> {
-        try {
-
-            const page = parseInt(req.query.page as string);
-            const limit = parseInt(req.query.limit as string);
-            const search = req.query.search as string;
-            const status = req.query.status as string;
-
-            const response = await this._adminService.fetchTrips(page, limit, search, status);
-
-            res.status(HTTP_STATUS.OK).json(response)
-            
-        } catch (error) {
-            console.error(error)
-            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(error)
-        }
-    }
-
-    async sendTripAmountToTransporter(req: CustomeRequest, res: Response): Promise<void> {
-        try {
-            
-            const { tripId } = req.body;
-            console.log(tripId)
-            const response = await this._adminService.sendTripAmountToTransporter(tripId)
-
-            res.status(HTTP_STATUS.OK).json(response)
-
-        } catch (error) {
-            console.error(error);
             res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(error)
         }
     }
@@ -297,5 +217,4 @@ export class AdminController implements IAdminController {
             res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(error)
         }
     }
-
 }

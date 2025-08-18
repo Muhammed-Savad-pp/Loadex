@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import Navbar from '../../components/Common/Navbar/Navbar';
 import ProfileSidebar from '../../components/tranporter/ProfileSidebar';
-import { fetchTrips, createChat, updateTripStatus } from '../../services/transporter/transporterApi';
+import { createChat } from '../../services/transporter/transporterApi';
 import { ChevronDown, ChevronUp, MapPin, Calendar, Truck, Loader, Copy, CheckCircle } from 'lucide-react';
 import TripStatusStepper from '../../components/tranporter/TripStatusStepper';
 import ProfileComponent from '../../components/tranporter/ProfileComponent';
 import { useNavigate } from 'react-router-dom';
 import LocationTrackingComponent from '../../components/tranporter/LocationTrackingComponent';
 import toast from 'react-hot-toast';
-
+import { fetchTripsForTransporter, updateTripStatus } from '../../services/trip/tripApi';
 
 
 interface ITripData {
@@ -406,7 +406,7 @@ export default function Trips() {
     const getTrips = async () => {
       try {
         setLoading(true);
-        const response: any = await fetchTrips(filter, page, limit);
+        const response: any = await fetchTripsForTransporter(filter, page, limit);
         setTripDatas(response.trips as ITripData[]);
         setTotalPages(response.totalPages)
       } catch (error) {
@@ -437,7 +437,7 @@ export default function Trips() {
       } else {
         setLoading(true);
         toast.error(response.message)
-        const responses: any = await fetchTrips(filter, page, limit);
+        const responses: any = await fetchTripsForTransporter(filter, page, limit);
         setTripDatas(responses.trips as ITripData[]);
         setTotalPages(responses.totalPages)
       }

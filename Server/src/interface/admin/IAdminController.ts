@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { CustomeRequest } from "../../Middleware/userAuth";
 
 export interface IAdminController {
@@ -12,12 +12,7 @@ export interface IAdminController {
     changeShipperStatus(req: CustomeRequest, res: Response): Promise<void>;
     getRequestedShipper(req:CustomeRequest, res: Response) : Promise<void>;
     changeShipperVerificationStatus(req: CustomeRequest, res: Response): Promise<void>;
-    getRequestedTrucks(req: CustomeRequest, res: Response) : Promise<void>;
-    changeTruckVerificationStatus(req: CustomeRequest, res: Response): Promise<void>;
-    getLoads(req: CustomeRequest, res: Response) : Promise<void>;
     fetchDashboardDatas(req: CustomeRequest, res: Response) : Promise<void>;
-    fetchTrips(req: CustomeRequest, res: Response): Promise<void>;
-    sendTripAmountToTransporter(req: CustomeRequest, res: Response): Promise<void>;
     fetchPaymentHistory(req: CustomeRequest, res: Response): Promise<void>;
     fetchRevenueDatas(req: CustomeRequest, res: Response): Promise<void>;
 }

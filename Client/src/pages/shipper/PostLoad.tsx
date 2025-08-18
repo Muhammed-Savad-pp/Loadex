@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { TruckIcon, MapPinIcon, } from '@heroicons/react/24/outline';
-import { postLoad } from '../../services/shipper/shipperService';
+import { postLoad } from '../../services/load/loadApi';
 import toast from 'react-hot-toast';
 import Navbar from '../../components/Common/Navbar/Navbar';
 import { useNavigate } from 'react-router-dom';

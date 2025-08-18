@@ -1,11 +1,8 @@
-import transporterRepositories from "../../repositories/implementaion/transporterRepository";
 import bcrypt from "bcryptjs";
-import { OtpRepository } from "../../repositories/implementaion/otpRepositories";
 import { IOtp } from "../../models/otpModel";
 import { generateAcessToken, generateRefreshToken, verifyToken } from "../../utils/Token.utils";
 import { ITransporter } from "../../models/TransporterModel";
 import { MailService } from "../../utils/mail";
-import { decode } from "punycode";
 import { HTTP_STATUS } from "../../enums/httpStatus";
 import { ITransporterRepository } from "../../repositories/interface/ITransporterRepository";
 import { ITransporterAuthService } from "../../interface/transporter/ITransporterAuthService";
@@ -18,7 +15,6 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 export const generateOtp = () => {
-
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     return otp;
 }
@@ -37,21 +33,14 @@ export class AuthService implements ITransporterAuthService {
         }
 
         const existingTransporter = await this._transporterRepository.findTransporterByEmail(email)
-
         if(existingTransporter && existingTransporter.isVerified){
-
             return {success: false, message: "userAlreadyExists"}
-            
         }
 
         if(existingTransporter && !existingTransporter.isVerified) {  
-
             const getOtp = await this._otpRepository.findOtpByEmail(email);
-            
             if(getOtp) {
-
                 const currentTime = new Date().getTime();
-                
                 const expirationTime = new Date(getOtp.createdAt).getTime() + 2 * 60 * 1000;
 
                 if(currentTime < expirationTime ) {
@@ -138,9 +127,7 @@ export class AuthService implements ITransporterAuthService {
         const existingTransporter = await this._transporterRepository.findTransporterByEmail(email);
 
         if(!existingTransporter){
-
             return {success: false, message: 'Invalid Crediantional'}
-        
         }
 
         const validPassword = await bcrypt.compare(password, existingTransporter.password)
@@ -151,8 +138,6 @@ export class AuthService implements ITransporterAuthService {
         if(existingTransporter && existingTransporter.isBlocked){
             return {success: false, message: 'The Transporter is blocked'}
         }
-
-        
 
         const transporterData :  Partial<ITransporter> = {
             transporterName: existingTransporter.transporterName,
@@ -166,12 +151,9 @@ export class AuthService implements ITransporterAuthService {
         
         return {success: true, message:"Logged SuccessFully", accessToken, refreshToken}
         
-
     }
 
     async resendOtp(resendOtpData: {email: string}) : Promise<{success: boolean, message: string}> {
-
-        console.log(resendOtpData.email, 'serviceEmail')
 
         const email = resendOtpData.email;
 
@@ -206,7 +188,6 @@ export class AuthService implements ITransporterAuthService {
             const decoded = verifyToken(token);
 
             const transporter = await this._transporterRepository.findTransporterById(decoded.transporterId)
-            console.log(decoded);
 
             if(!transporter) {
                 const error: any = new Error('transporter not found');
@@ -259,9 +240,7 @@ export class AuthService implements ITransporterAuthService {
 
             await this._transporterRepository.updateTransporterById(id, {password: hashedPassword})
             
-
             return {success: true, message: 'Password Changed SuccessFully'}
-
 
         } catch (error) {
             console.log(error);
@@ -287,18 +266,15 @@ export class AuthService implements ITransporterAuthService {
 
             }
 
-
             if(existingTransporter  && existingTransporter.isBlocked) {
                 return {success: false, message: 'The Transporter is blocked'}
             }
-
            
             const { ...data } = existingTransporter
 
             const accessToken = await generateAcessToken(data._id as string, 'transporter');
             const refreshToken = await generateRefreshToken(data._id as string, 'transporter');
 
-            
             return {success: true, message:"Logged SuccessFully", accessToken, refreshToken}
             
         } catch (error) {

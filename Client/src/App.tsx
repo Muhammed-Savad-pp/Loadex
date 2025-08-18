@@ -1,5 +1,4 @@
 import React from 'react';
-
 import { Route, Routes } from 'react-router-dom'
 import './App.css'
 const CommonRoutes = React.lazy(() => import('./Routes/CommonRoutes'));

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../../components/Common/Navbar/Navbar";
 import ProfileSidebar from "../../components/tranporter/ProfileSidebar";
-import { bidCheckoutSession, fetchBids, fetchActiveTruck, updateBid, deleteBid, bidPaymentByWallet } from "../../services/transporter/transporterApi";
+import { bidCheckoutSession, bidPaymentByWallet } from "../../services/transporter/transporterApi";
 import { loadStripe } from "@stripe/stripe-js";
 import toast from "react-hot-toast";
 import { Pencil, X, Trash2, AlertTriangle } from 'lucide-react';
 import WalletPaymentModal from "../../components/tranporter/WalletPaymentModal";
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLISHEBLE_KEY;
+import { fetchActiveTruck } from "../../services/truck/truckApi";
+import { fetchBidsForTransporter, updateBid, deleteBid } from "../../services/bid/bidApi";
 
 
 interface IBids {
@@ -122,7 +124,7 @@ const MyBids: React.FC = () => {
             try {
 
                 setLoading(true)
-                const response: any = await fetchBids(page, limit, activeFilter);
+                const response: any = await fetchBidsForTransporter(page, limit, activeFilter);
                 setBids(response.bidDatas);
                 setTotalPages(response.totalPages);
 
@@ -216,7 +218,7 @@ const MyBids: React.FC = () => {
             const response: any = await bidPaymentByWallet(paymentBidId);
             if (response.success) {
                 toast.success(response.message);
-                const bids: any = await fetchBids(page, limit, activeFilter);
+                const bids: any = await fetchBidsForTransporter(page, limit, activeFilter);
                 setBids(bids.bidDatas);
                 setTotalPages(bids.totalPages);
             } else {
@@ -268,7 +270,7 @@ const MyBids: React.FC = () => {
             const response: any = await updateBid(selectedBid?._id as string, formData.truckId, formData.price)
             if (response.success) {
                 toast.success(response.message);
-                const bids: any = await fetchBids(page, limit, activeFilter);
+                const bids: any = await fetchBidsForTransporter(page, limit, activeFilter);
                 setBids(bids.bidDatas);
                 setTotalPages(bids.totalPages)
             } else {
