@@ -17,5 +17,5 @@ export interface ITruckService {
     updateTruck(updateData: Partial<ITruck>, truckImage?: Express.Multer.File): Promise<{success: boolean, message: string}>
     fetchTrucksForShipper(page: number, limit: number): Promise<{truckData: TruckForShipperDTO[] | null, totalPages: number}>;
     getRequestedTrucksForAdmin(): Promise<RequestedTruckForAdminDTO[]>;
-    changeTruckVerificationStatusByAdmin(id: string, status:ITruck['verificationStatus']):Promise<string>;
+    changeTruckVerificationStatusByAdmin(id: string, status:ITruck['verificationStatus'], rejectReason: string):Promise<string>;
 }

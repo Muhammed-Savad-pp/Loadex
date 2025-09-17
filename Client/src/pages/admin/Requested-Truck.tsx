@@ -7,7 +7,6 @@ import { GiTyre } from "react-icons/gi";
 import { getRequestedTrucksForAdmin, changeTruckVerificationStatusByAdmin } from "../../services/truck/truckApi";
 
 
-
 export interface ITrucks {
     _id: string;
     transporterId?: string,
@@ -36,6 +35,10 @@ const RequestTruck: React.FC = () => {
     const [trucks, setTrucks] = useState<ITrucks[]>([]);
     const [selectedTruck, setSelectedTruck] = useState<ITrucks | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [rejectModal, setRejectModal] = useState<boolean>(false);
+    const [selectedRejectReason, setSelectedRejectReason] = useState<string>('invalid-rc-number');
+
+    console.log(selectedRejectReason), 'selected resona'
 
     useEffect(() => {
         const fetchTransporters = async () => {
@@ -53,23 +56,25 @@ const RequestTruck: React.FC = () => {
         fetchTransporters();
     }, []);
 
-    console.log(trucks, 'trucks')
-
     const handleVerification = async (id: string, status: string) => {
         try {
 
-            const responses: any = await changeTruckVerificationStatusByAdmin(id, status);
-
+            const responses: any = await changeTruckVerificationStatusByAdmin(id, status, selectedRejectReason);
             toast.success(responses.response);
 
             const response: any = await getRequestedTrucksForAdmin()
             setTrucks(response || [])
 
-            setSelectedTruck(null)
+            setSelectedTruck(null);
+            setRejectModal(false);
 
         } catch (error) {
             console.log(error)
         }
+    }
+    
+    const handleReject = () => {
+        handleVerification(selectedTruck?._id as string, 'rejected')
     }
 
     return (
@@ -133,7 +138,7 @@ const RequestTruck: React.FC = () => {
 
             {selectedTruck &&
 
-                <div className="fixed inset-0 z-50 overflow-y-auto">
+                <div className="fixed inset-0 z-40 overflow-y-auto">
                     <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                         <div className="fixed inset-0 transition-opacity" aria-hidden="true">
                             <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
@@ -361,7 +366,6 @@ const RequestTruck: React.FC = () => {
                                                             />
                                                         </div>
                                                     </div>
-
                                                 </div>
                                             </div>
                                         )}
@@ -395,12 +399,9 @@ const RequestTruck: React.FC = () => {
                                                             />
                                                         </div>
                                                     </div>
-
                                                 </div>
                                             </div>
                                         )}
-
-
                                     </div>
                                 </div>
                             </div>
@@ -408,7 +409,10 @@ const RequestTruck: React.FC = () => {
                             {selectedTruck.verificationStatus === 'requested' && (
                                 <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-4 border-t">
                                     <button
-                                        onClick={() => handleVerification(selectedTruck._id, 'rejected')}
+                                        onClick={
+                                            // () => handleVerification(selectedTruck._id, 'rejected')
+                                            () => setRejectModal(true)
+                                        }
                                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-150"
                                     >
                                         <FiX className="mr-2" /> Reject
@@ -426,6 +430,43 @@ const RequestTruck: React.FC = () => {
                 </div>
 
             }
+
+            {rejectModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md mx-4">
+                        {/* Title */}
+                        <h2 className="text-xl font-semibold mb-4 text-gray-800 text-center">
+                            Reject Reason
+                        </h2>
+
+                        {/* Dropdown */}
+                        <select
+                            id="reason"
+                            name="reasonForRejection"
+                            className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-red-400 mb-4"
+                            value={selectedRejectReason}
+                            onChange={(e) => setSelectedRejectReason(e.target.value)}
+                        >
+                            <option value="invalid-rc-number">Invalid RC Number</option>
+                            <option value="provide-valid-RC-book">Provide valid RC Book</option>
+                            <option value="provide-valid-driver-license">Provide valid Driver License</option>
+                        </select>
+
+                        {/* Buttons */}
+                        <div className="flex justify-end space-x-3 mt-4">
+                            <button
+                                className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
+                                onClick={() => setRejectModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button onClick={handleReject} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

@@ -26,7 +26,8 @@ export interface ITruck extends Document {
     available?: boolean,
     createdAt?: Date;
     status?: 'active' | 'in-active' | 'in-transit';
-    rcValidity: Date
+    rcValidity: Date;
+    rejectReason?: string;
 }
 
 const truckSchema: Schema = new Schema({
@@ -169,7 +170,12 @@ const truckSchema: Schema = new Schema({
     rcValidity: {
         type: Date,
         required: true
+    },
+
+    rejectReason: {
+        type: String,
     }
+    
 
 });
 

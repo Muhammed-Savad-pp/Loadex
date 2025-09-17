@@ -32,6 +32,7 @@ interface TruckData {
   status: string;
   truckImage: string;
   rcValidity: string;
+  rejectReason: string
 }
 
 interface Location {
@@ -71,7 +72,8 @@ const MyTrucks: React.FC = () => {
   const [locationSuggestions, setLocationSuggestions] = useState<Location[]>([])
   const [currentLocation, setCurrentLocation] = useState(selectTruckActive?.currentLocation);
   const [isCurrentLocationDropdown, setIsCurrentLocationDropdown] = useState<boolean>(false);
-  const [selectedUpdateTruck, setSelectedUpdateTruck] = useState<TruckData | null>(null)
+  const [selectedUpdateTruck, setSelectedUpdateTruck] = useState<TruckData | null>(null);
+  const [selectedReApplyTruck, setSelectedReApplyTruck] = useState<TruckData | null>(null);
   const [formError, setFormError] = useState<Partial<FormDataType>>();
   const [isOpenEditTruck, setIsOpenEditTruck] = useState<boolean>(false)
   const [formData, setFormData] = useState<FormDataType>({
@@ -88,7 +90,7 @@ const MyTrucks: React.FC = () => {
     typeof formData.licenseImage === 'string' ? formData.licenseImage : null
   );
 
-  console.log(selectTruckActive, 'selected load activate')
+  console.log(trucks, 'selected load activate')
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const limit = 4;
@@ -192,11 +194,9 @@ const MyTrucks: React.FC = () => {
   }
 
   const handleCurrentLocationSearch = (value: string) => {
-
     setCurrentLocation(value)
     debouncedSearch(value)
     setIsCurrentLocationDropdown(true)
-
   }
 
   const validateFrom = (form: FormDataType) => {
@@ -341,9 +341,9 @@ const MyTrucks: React.FC = () => {
                           'bg-green-500 text-white'}`}>
                         {truck.verificationStatus}
                       </span>
-                      {truck.status !== 'in-transit' && (
+                      {truck.status !== 'in-transit' && truck.verificationStatus !== 'rejected' && (
                         <div>
-                          <Pencil className="w-8 h-6 text-blue-700" onClick={() => {setIsOpenEditTruck(true), setSelectedUpdateTruck(truck)}} />
+                          <Pencil className="w-8 h-6 text-blue-700" onClick={() => { setIsOpenEditTruck(true), setSelectedUpdateTruck(truck) }} />
                         </div>
                       )}
                     </div>
@@ -376,6 +376,15 @@ const MyTrucks: React.FC = () => {
                         <span className="font-medium">{truck.currentLocation}</span>
                       </div>
                     </div>
+
+                    {truck.verificationStatus === 'rejected' && (
+                      <div className="bg-red-100 p-2 rounded-lg">
+                        <div className="flex items-center">
+                          <p className="text-sm font-semibold text-gray-700">Reason For Reject: </p>
+                          <span className="ml-1 text-gray-800 font-semibold">{truck.rejectReason}</span>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Owner/Driver info - only showing if verified */}
                     {truck.verificationStatus === "approved" && (
@@ -410,6 +419,12 @@ const MyTrucks: React.FC = () => {
                           className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 text-sm rounded-lg font-medium transition-colors"
                         >
                           Activate Truck
+                        </button>
+                      ) : truck.status === 'in-active' && truck.verificationStatus === 'rejected' ? (
+                        <button
+                          onClick={() => setSelectedReApplyTruck(truck)}
+                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 text-sm rounded-lg font-medium transition-colors">
+                          Re-Apply
                         </button>
                       ) : null}
                     </div>
@@ -477,6 +492,58 @@ const MyTrucks: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {selectedReApplyTruck && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
+            <h2 className="text-lg font-semibold mb-4">Reapply Truck</h2>
+
+            {/* Conditional rendering based on reason */}
+            {selectedReApplyTruck.rejectReason === "invalid-rc-number" && (
+              <div>
+                <label className="block mb-2 text-sm font-medium">Enter RC Number</label>
+                <input
+                  type="text"
+                  className="w-full border rounded p-2 mb-4"
+                  placeholder="Enter valid RC number"
+                />
+                <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+                  Apply
+                </button>
+              </div>
+            )}
+
+            {selectedReApplyTruck.rejectReason === "provide-valid-RC-book" && (
+              <div>
+                <label className="block mb-2 text-sm font-medium">Upload RC Book</label>
+                <input type="file" accept="image/*" className="w-full mb-4" />
+                <button className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
+                  Reapply
+                </button>
+              </div>
+            )}
+
+            {selectedReApplyTruck.rejectReason === "provide-valid-driver-license" && (
+              <div>
+                <label className="block mb-2 text-sm font-medium">Upload Driver License</label>
+                <input type="file" accept="image/*" className="w-full mb-4" />
+                <button className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700">
+                  Reapply
+                </button>
+              </div>
+            )}
+
+            {/* Cancel button */}
+            <button
+              className="w-full mt-4 bg-gray-500 text-white py-2 rounded hover:bg-gray-600"
+              onClick={() => setSelectedReApplyTruck(null)} // close modal
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
 
       {selectTruckActive && (
         <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm backdrop-brightness-70">

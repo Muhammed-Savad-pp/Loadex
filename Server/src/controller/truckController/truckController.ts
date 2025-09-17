@@ -136,9 +136,10 @@ export class TruckController implements ITruckController {
     async changeTruckVerificationStatusByAdmin(req: CustomeRequest, res: Response): Promise<void> {
         try {
 
-            const { id, status } = req.body;
+            const { id, status, rejectReason } = req.body;
 
-            const response = await this._truckService.changeTruckVerificationStatusByAdmin(id, status);
+            console.log(rejectReason, 'reason')
+            const response = await this._truckService.changeTruckVerificationStatusByAdmin(id, status, rejectReason);
             res.status(HTTP_STATUS.OK).json({ response });
 
         } catch (error: any) {

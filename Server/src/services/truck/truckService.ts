@@ -23,8 +23,6 @@ export class TruckSerice implements ITruckService {
     async findTrucks(id: string, status: string, page: number, limit: number): Promise<{ trucks: TruckDTO[] | null; totalPages: number }> {
         try {
 
-            console.log('Truck service')
-
             const skip = (page - 1) * limit;
 
             const projection = {
@@ -45,7 +43,8 @@ export class TruckSerice implements ITruckService {
                 driverLicense: 1,
                 status: 1,
                 truckImage: 1,
-                rcValidity: 1
+                rcValidity: 1,
+                rejectReason: 1
             }
 
             const trucks = await this._truckRepository.find({ transporterId: id, status: status }, projection, skip, limit, { createdAt: -1 });
@@ -93,7 +92,8 @@ export class TruckSerice implements ITruckService {
                         driverLicense: driverLicenseUrl,
                         status: truck.status ?? "inactive",
                         truckImage: trukImageUrl,
-                        rcValidity: truck.rcValidity
+                        rcValidity: truck.rcValidity,
+                        rejectReason: truck.rejectReason,
                     };
                 })
             );
@@ -499,10 +499,16 @@ export class TruckSerice implements ITruckService {
         }
     }
 
-    async changeTruckVerificationStatusByAdmin(id: string, status: ITruck["verificationStatus"]): Promise<string> {
+    async changeTruckVerificationStatusByAdmin(id: string, status: ITruck["verificationStatus"], rejectReason: string): Promise<string> {
         try {
 
-            const truck = await this._truckRepository.updateTruckById(id, { verificationStatus: status });
+            let truck;
+            if(status === 'rejected' && rejectReason) {
+                truck = await this._truckRepository.updateTruckById(id, {verificationStatus: status, rejectReason: rejectReason})
+            } else {
+                truck = await this._truckRepository.updateTruckById(id, { verificationStatus: status });
+            }
+            
             if (status == 'approved') {
                 await this._notificationRepository.createNotification({
                     userId: truck?.transporterId,

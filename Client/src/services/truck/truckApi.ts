@@ -61,9 +61,9 @@ export const getRequestedTrucksForAdmin = async () => {
 
 }
 
-export const changeTruckVerificationStatusByAdmin = async (id: string, status: string) => {
+export const changeTruckVerificationStatusByAdmin = async (id: string, status: string, rejectReason: string) => {
 
-    const response = await apiClient.patch('/trucks/verification-status', { id, status });
+    const response = await apiClient.patch('/trucks/verification-status', { id, status, rejectReason });
     return response.data;
 
 }
