@@ -134,6 +134,49 @@ class ShipperController implements IShipperController {
         }
     }
 
+    async validateRefreshToken(req: Request, res: Response): Promise<void> {
+        try {
+
+            if (!req.cookies.refreshToken) {
+                res.status(HTTP_STATUS.BAD_REQUEST).json({
+                    success: false,
+                    message: 'Refresh token not found'
+                })
+                return;
+            }
+
+            const { accessToken, refreshToken } = await this._shipperService.validateRefreshToken(req.cookies.refreshToken);
+
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                secure: true,
+                maxAge: 2 * 60 * 60 * 1000,
+                sameSite: 'none',
+            });
+
+            res.status(HTTP_STATUS.OK).json({
+                success: true,
+                message: 'token Created',
+                token: accessToken,
+                role: "shipper"
+            })
+
+        } catch (error: any) {
+            if (error.status === 401) {
+                res.status(HTTP_STATUS.UNAUTHORIZED).json({
+                    success: false,
+                    message: error.message
+                })
+                return;
+            }
+
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+                success: false,
+                message: error.message || 'An internal server error occurred'
+            })
+        }
+    }
+
     async getProfileData(req: CustomeRequest, res: Response): Promise<void> {
         try {
 
@@ -517,10 +560,10 @@ class ShipperController implements IShipperController {
 
     async findUnReadNotificationCount(req: CustomeRequest, res: Response): Promise<void> {
         try {
-            
+
             const shipperId = req.user?.id;
             const response = await this._shipperService.findUnReadNotificationCount(shipperId);
-            
+
             res.status(HTTP_STATUS.OK).json(response);
 
         } catch (error) {

@@ -37,9 +37,7 @@ const RequestTruck: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [rejectModal, setRejectModal] = useState<boolean>(false);
     const [selectedRejectReason, setSelectedRejectReason] = useState<string>('invalid-rc-number');
-
-    console.log(selectedRejectReason), 'selected resona'
-
+  
     useEffect(() => {
         const fetchTransporters = async () => {
             try {

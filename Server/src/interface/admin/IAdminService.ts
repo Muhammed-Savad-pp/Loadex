@@ -7,6 +7,7 @@ import { TripForAdminDTO } from "../../dtos/trip/trip.for.transporter.dto";
 
 export interface IAdminService {
     login(email: string, passwrod: string) : Promise<{accessToken?: string, refreshToken?: string, success: boolean, message: string}>;
+    validateRefreshToken(token: string) : Promise<{ accessToken?: string, refreshToken?: string}>
     getTransporter(search: string, page: number, limit: number): Promise<{transporterData: TransporterForAdminDTO[], totalPages: number}>
     updateTransporterBlockandUnblock(id: string) : Promise<string>;
     getRequestedTransporter(): Promise<TransporterForAdminDTO[]>;

@@ -54,5 +54,8 @@ shipperAuth_rote.post('/changePassword', shipperController.changePassword.bind(s
 
 shipperAuth_rote.post('/googleLogin', shipperController.GoogleLogin.bind(shipperController));
 
+shipperAuth_rote.post('/refresh-token', shipperController.validateRefreshToken.bind(shipperController));
+
+
 
 export default shipperAuth_rote;

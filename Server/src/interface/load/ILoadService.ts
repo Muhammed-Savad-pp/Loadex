@@ -1,4 +1,4 @@
-import { LoadForAdminDTO, LoadForShipperDTO, LoadForTransporterDTO } from "../../dtos/load/load.dto";
+import { LoadForAdminDTO, LoadForShipperDTO, LoadForTransporterDTO } from "../../dtos/load/response/load.dto";
 import { ILoad } from "../../models/LoadModel";
 
 export interface ILoadService {

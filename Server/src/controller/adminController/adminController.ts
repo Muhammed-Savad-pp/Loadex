@@ -1,4 +1,4 @@
-import { response, Response } from "express";
+import { Request, response, Response } from "express";
 import { IAdminController } from "../../interface/admin/IAdminController";
 import { CustomeRequest } from "../../Middleware/userAuth";
 import { IAdminService } from "../../interface/admin/IAdminService";
@@ -16,7 +16,7 @@ export class AdminController implements IAdminController {
 
             const { accessToken, refreshToken, success, message } = await this._adminService.login(email, password);
 
-            if( success ) {
+            if (success) {
                 res.cookie('refreshToken', refreshToken, {
                     httpOnly: true,
                     secure: true,
@@ -25,7 +25,7 @@ export class AdminController implements IAdminController {
                 })
             }
 
-          
+
 
             res.status(HTTP_STATUS.OK).json({
                 success: success,
@@ -40,6 +40,49 @@ export class AdminController implements IAdminController {
         }
     }
 
+    async validateRefreshToken(req: Request, res: Response): Promise<void> {
+        try {
+
+            if (!req.cookies.refreshToken) {
+                res.status(HTTP_STATUS.BAD_REQUEST).json({
+                    success: false,
+                    message: 'Refresh token not found'
+                })
+                return;
+            }
+
+            const { accessToken, refreshToken } = await this._adminService.validateRefreshToken(req.cookies.refreshToken);
+
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                secure: true,
+                maxAge: 3 * 24 * 60 * 1000,
+                sameSite: 'none',
+            });
+
+            res.status(HTTP_STATUS.OK).json({
+                success: true,
+                message: 'token Created',
+                token: accessToken,
+                role: "admin"
+            })
+
+        } catch (error: any) {
+            if (error.status === 401) {
+                res.status(HTTP_STATUS.UNAUTHORIZED).json({
+                    success: false,
+                    message: error.message
+                })
+                return;
+            }
+
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+                success: false,
+                message: error.message || 'An internal server error occurred'
+            })
+        }
+    }
+
     async getTransporter(req: CustomeRequest, res: Response): Promise<void> {
         try {
 
@@ -49,7 +92,7 @@ export class AdminController implements IAdminController {
             const response = await this._adminService.getTransporter(search, page, limit);
 
             res.status(HTTP_STATUS.OK).json(response)
-            
+
         } catch (error: any) {
             console.log(error)
             res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: error.message })
@@ -61,14 +104,14 @@ export class AdminController implements IAdminController {
         try {
 
             res.clearCookie('refreshToken');
-            res.json({message: 'Logout SuccessFully'});
+            res.json({ message: 'Logout SuccessFully' });
             return
-            
+
         } catch (error) {
             console.error(error)
-            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: 'Logout Failed'})
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: 'Logout Failed' })
         }
-        
+
     }
 
     async updateTransporterBlockandUnblock(req: CustomeRequest, res: Response): Promise<void> {
@@ -79,15 +122,15 @@ export class AdminController implements IAdminController {
             const response = await this._adminService.updateTransporterBlockandUnblock(id)
 
             res.status(HTTP_STATUS.OK).json(response)
-            
+
         } catch (error) {
             console.log(error)
-        }   
+        }
     }
 
     async getRequestedTransporters(req: CustomeRequest, res: Response): Promise<void> {
         try {
-            
+
             const transporters = await this._adminService.getRequestedTransporter();
             res.status(HTTP_STATUS.OK).json({
                 transporters
@@ -102,21 +145,21 @@ export class AdminController implements IAdminController {
     async changeVerificationStatus(req: CustomeRequest, res: Response): Promise<void> {
         try {
 
-            const { id , status } = req.body
+            const { id, status } = req.body
             const response = await this._adminService.changeVerificationStatus(id, status);
 
             res.status(HTTP_STATUS.OK).json(response);
-            
-            
+
+
         } catch (error: any) {
             console.log(error);
-            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: error.message})
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: error.message })
         }
     }
 
     async getShipper(req: CustomeRequest, res: Response): Promise<void> {
         try {
-            
+
             const search = req.query.search as string;
             const page = parseInt(req.query.page as string);
             const limit = parseInt(req.query.limit as string);
@@ -126,49 +169,49 @@ export class AdminController implements IAdminController {
 
         } catch (error: any) {
             console.error(error);
-            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: error.message})
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: error.message })
         }
     }
 
     async changeShipperStatus(req: CustomeRequest, res: Response): Promise<void> {
         try {
 
-            const {id} = req.body;
-            
+            const { id } = req.body;
+
             const response = await this._adminService.changeShipperStatus(id);
 
             res.status(HTTP_STATUS.OK).json(response)
 
         } catch (error: any) {
             console.error(error);
-            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: error.message})
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: error.message })
         }
     }
 
     async getRequestedShipper(req: CustomeRequest, res: Response): Promise<void> {
         try {
-            
-            const response = await this._adminService.getRequestedShipper();             
+
+            const response = await this._adminService.getRequestedShipper();
             res.status(HTTP_STATUS.OK).json(response)
 
         } catch (error: any) {
             console.error(error);
-            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: error.message})
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: error.message })
         }
     }
 
     async changeShipperVerificationStatus(req: CustomeRequest, res: Response): Promise<void> {
         try {
-            
-            const {id, status } = req.body;
+
+            const { id, status } = req.body;
 
             const response = await this._adminService.changeShipperVerificationStatus(id, status);
             res.status(HTTP_STATUS.OK).json(response)
 
-            
+
         } catch (error: any) {
             console.log(error)
-            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({message: error.message})
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: error.message })
         }
     }
 
@@ -177,7 +220,7 @@ export class AdminController implements IAdminController {
 
             const response = await this._adminService.fetchDashboardDatas();
             res.status(HTTP_STATUS.OK).json(response)
-            
+
         } catch (error) {
             res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(error)
         }
@@ -185,7 +228,7 @@ export class AdminController implements IAdminController {
 
     async fetchPaymentHistory(req: CustomeRequest, res: Response): Promise<void> {
         try {
-            
+
             const searchTerm = req.query.searchTerm as string;
             const paymentStatus = req.query.paymentStatus as string;
             const userType = req.query.userType as string;
@@ -194,9 +237,9 @@ export class AdminController implements IAdminController {
             const limit = parseInt(req.query.limit as string);
 
 
-            const response = await this._adminService.fetchPaymentHistory(searchTerm,paymentStatus, userType, paymentfor, page, limit);
+            const response = await this._adminService.fetchPaymentHistory(searchTerm, paymentStatus, userType, paymentfor, page, limit);
             console.log(response, 'res');
-            
+
             res.status(HTTP_STATUS.OK).json(response)
 
         } catch (error) {
@@ -207,7 +250,7 @@ export class AdminController implements IAdminController {
 
     async fetchRevenueDatas(req: CustomeRequest, res: Response): Promise<void> {
         try {
-            
+
             const response = await this._adminService.fetchRevenueDatas();
 
             res.status(HTTP_STATUS.OK).json(response);

@@ -2,13 +2,13 @@ import bcrypt from "bcryptjs";
 import { generateOtp } from "../transporter/authService";
 import { IOtp } from "../../models/otpModel";
 import { MailService } from "../../utils/mail";
-import { generateAcessToken, generateRefreshToken } from "../../utils/Token.utils";
+import { generateAcessToken, generateRefreshToken, verifyToken } from "../../utils/Token.utils";
 import { IShipper } from "../../models/ShipperModel";
 import { IShipperService } from "../../interface/shipper/IShipperService";
 import { IShipperRepository } from "../../repositories/interface/IShipperRepository";
 import { IOtpRepository } from "../../repositories/interface/IOtpRepository";
 import { getPresignedDownloadUrl, s3 } from "../../config/s3Config";
-import {  PutObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import mongoose, { Mongoose } from "mongoose";
 import Stripe from "stripe";
 import { configDotenv } from "dotenv";
@@ -34,6 +34,7 @@ import { TripForShipperDTO } from "../../dtos/trip/trip.for.transporter.dto";
 import { ChatForShipperDTO } from "../../dtos/chat/chat.dto";
 import { ReviewForShipperDTO } from "../../dtos/reviews/review.dto";
 import { NotificationForShipper } from "../../dtos/notifications/notification.dto";
+import { HTTP_STATUS } from "../../enums/httpStatus";
 
 configDotenv()
 
@@ -218,6 +219,34 @@ export class ShipperService implements IShipperService {
         } catch (error) {
             console.log(error);
             return { success: false, message: 'Shipper not login' }
+        }
+    }
+
+    async validateRefreshToken(token: string): Promise<{ accessToken?: string; refreshToken?: string; }> {
+        try {
+            console.log('genarate refresh token ..........................')
+
+            const decode = verifyToken(token);
+
+            console.log(decode, 'decode..............................')
+
+            const shipper = await this._shipperRepositories.findShipperById(decode.id);
+
+            if (!shipper) {
+                const error: any = new Error('transporter not found');
+                error.status = HTTP_STATUS.NOT_FOUND;
+                throw error;
+            }
+
+            const accessToken = await generateAcessToken(shipper._id as string, 'shipper');
+            const refreshToken = await generateRefreshToken(shipper._id as string, 'shipper');
+
+            console.log('full success...............................')
+            return { accessToken, refreshToken }
+
+        } catch (error) {
+            console.error('error while storing refreshToken', error)
+            throw error
         }
     }
 
@@ -1167,7 +1196,7 @@ export class ShipperService implements IShipperService {
                 bidId: p.bidId?.toString() || '',
                 planId: p.planId?.toString() || '',
                 shipperId: p.shipperId.toString(),
-                paymentType: p.paymentType || '', 
+                paymentType: p.paymentType || '',
                 amount: p.amount || 0,
                 paymentStatus: p.paymentStatus || '',
                 createdAt: p.createdAt || '',

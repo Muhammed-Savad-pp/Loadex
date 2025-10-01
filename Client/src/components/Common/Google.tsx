@@ -15,7 +15,6 @@ const Google: React.FC = () => {
 
 
     const role = location.pathname.includes("transporter") ? "transporter" : "shipper";
-    console.log(role)
 
     const handleSuccess = async( credentialResponse: any) => {
         console.log(credentialResponse, 'dadf');

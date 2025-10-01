@@ -184,10 +184,12 @@ export class AuthService implements ITransporterAuthService {
 
     async validateRefreshToken(token: string) : Promise<{ accessToken?: string, refreshToken?: string}> {
         try {
+
+            console.log('validate refresh token...............................................')
             
             const decoded = verifyToken(token);
-
-            const transporter = await this._transporterRepository.findTransporterById(decoded.transporterId)
+            console.log(decoded, 'adfadfadfadf')
+            const transporter = await this._transporterRepository.findTransporterById(decoded.id)
 
             if(!transporter) {
                 const error: any = new Error('transporter not found');
@@ -198,6 +200,7 @@ export class AuthService implements ITransporterAuthService {
             const accessToken = await generateAcessToken(transporter._id as string, 'transporter');
             const refreshToken = await generateRefreshToken(transporter._id as string, 'transporter');            
 
+            console.log('success')
             return { accessToken: accessToken, refreshToken: refreshToken}
 
         } catch (error) {

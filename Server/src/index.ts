@@ -1,5 +1,6 @@
 import  Express  from "express";
-import mongoose from "mongoose";;
+import mongoose from "mongoose";
+import "reflect-metadata"
 import config from "./config";
 import cors from "cors";
 import morgan from "morgan"
@@ -9,11 +10,9 @@ import shipperAuth_rote from "./routes/shipper/auth";
 import transporter_route from "./routes/transporter/transporter";
 import admin_route from "./routes/admin/adminRoute";
 import shipper_route from "./routes/shipper/shipper";
-import { HTTP_STATUS } from "./enums/httpStatus";
 import runSubscriptionExpiryJob from "./cron-job/subscription";
 import runBidExpiredAndRefund from "./cron-job/bidRefund";
 import http from 'http'
-import { Server } from "socket.io";
 import { setupSocket } from "./sockets/chatSocket";
 import runCheckLoadExpired from "./cron-job/loadExpired";
 import { logger, morganStream } from "./Middleware/logger";
@@ -21,6 +20,7 @@ import truck_route from "./routes/truck/truckRoute";
 import load_route from "./routes/load/loadRoute";
 import bid_route from "./routes/bid/bidRoutes";
 import trip_route from "./routes/trip/tripRoutes";
+import admin_auth_route from "./routes/admin/adminAuthRoute"
 
 const app = Express();
 
@@ -52,6 +52,7 @@ app.use('/api/shipper/auth', shipperAuth_rote)
 app.use('/api/transporter', transporter_route);
 app.use('/api/shipper', shipper_route);
 app.use('/api/admin', admin_route);
+app.use('/api/admin/auth', admin_auth_route)
 app.use('/api/trucks', truck_route);
 app.use('/api/loads', load_route);
 app.use('/api/bid', bid_route);

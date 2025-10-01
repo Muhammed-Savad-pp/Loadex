@@ -3,7 +3,7 @@ import { ILoadService } from "../../interface/load/ILoadService";
 import { ILoad } from "../../models/LoadModel";
 import { ILoadRepository } from "../../repositories/interface/ILoadRepository";
 import { IShipperRepository } from "../../repositories/interface/IShipperRepository";
-import { LoadForAdminDTO, LoadForShipperDTO, LoadForTransporterDTO } from "../../dtos/load/load.dto";
+import { LoadForAdminDTO, LoadForShipperDTO, LoadForTransporterDTO } from "../../dtos/load/response/load.dto";
 
 export class LoadService implements ILoadService {
 
@@ -16,6 +16,18 @@ export class LoadService implements ILoadService {
         try {
             const { pickupLocation, dropLocation, material, quantity, scheduledDate, length, truckType,
                 transportationRent, height, breadth, descriptions, pickupCoordinates, dropCoordinates } = formData;
+
+            if(transportationRent && Number(transportationRent) < 1) {
+                return { success: false, message: 'Transportation Rent must be greater than 0'}
+            }
+
+            if(quantity && Number(quantity) < 1) {
+                return { success: false, message: 'quantity must be greater than 0'}
+            }
+
+            if(Number(length) < 1 || Number(height) < 1 || Number(breadth) < 1) {
+                return { success: false, message: 'Negative value not accept'}
+            }
 
             const shipper = await this._shipperRepositories.findById(shipperId)
 
@@ -155,7 +167,7 @@ export class LoadService implements ILoadService {
     async updateLoad(formData: Partial<ILoad>): Promise<{ success: boolean; message: string; updateData?: LoadForShipperDTO; }> {
         try {
 
-            const { pickupCoordinates, dropCoordinates, _id, shipperId, pickupLocation, dropLocation, material, quantity, scheduledDate,
+            const { pickupCoordinates, dropCoordinates, pickupLocation, dropLocation, material, quantity, scheduledDate,
                 length, truckType, transportationRent, height, breadth, descriptions
             } = formData;
 

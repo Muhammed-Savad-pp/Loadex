@@ -12,7 +12,7 @@ export const s3 = new S3Client({
         accessKeyId: config.awsAccessKeyId,
         secretAccessKey: config.awsSecretAccessKey,
         
-    }
+    } 
 })
 
 export const getPresignedDownloadUrl = async (key : string): Promise<string | undefined> => {

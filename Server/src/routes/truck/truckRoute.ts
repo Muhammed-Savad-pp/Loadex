@@ -7,6 +7,8 @@ import { checkRole } from "../../Middleware/checkRole";
 import transporterRepository from "../../repositories/implementaion/transporterRepository";
 import multer from "multer";
 import notificationRepository from "../../repositories/implementaion/notificationRepository";
+import { validateDto } from "../../Middleware/validate-dto";
+import { createTruckDto } from "../../dtos/truck/request/truck.dto";
 
 const storage = multer.memoryStorage();
 const upload = multer({storage})
@@ -22,7 +24,7 @@ const truckService = new TruckSerice(
 const truckController = new TruckController(truckService)
 
 truck_route.get('/', authenticateToken, checkRole('transporter'), truckController.findTrucks.bind(truckController));
-truck_route.post('/truck', authenticateToken, checkRole('transporter'), upload.fields([{name: 'rcBook'}, {name: 'driverLicense'}, {name: 'truckImage'}]),  truckController.registerTruck.bind(truckController));
+truck_route.post('/truck',authenticateToken, checkRole('transporter'), upload.fields([{name: 'rcBook'}, {name: 'driverLicense'}, {name: 'truckImage'}]), validateDto(createTruckDto),  truckController.registerTruck.bind(truckController));
 truck_route.put('/activation/truck', authenticateToken, checkRole('transporter'), (req, res, next) => {
     req.body.driverLicense = req.body.driverLicense || ''; 
     next();

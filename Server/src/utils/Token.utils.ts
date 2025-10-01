@@ -11,7 +11,9 @@ export const generateAcessToken = async (id: string, role: string) => {
         throw new Error('acessToken not working')
     }
 
-    const respone = await jwt.sign( {id, role}, secret, {expiresIn: '2h'})
+    console.log('create acce3ss token');
+    
+    const respone = await jwt.sign( {id, role}, secret, {expiresIn: '1m'})
 
     return respone
 }
@@ -23,7 +25,7 @@ export const generateRefreshToken = async (id: string, role: string ) => {
         throw new Error('Refresh token not working')
     }
 
-    const respone = await jwt.sign({id, role}, secret, {expiresIn: '3d'})
+    const respone = await jwt.sign({id, role}, secret, {expiresIn: '2m'})
 
     console.log('refreshToken',respone);
 

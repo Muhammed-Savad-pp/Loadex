@@ -93,7 +93,6 @@ const SignUp = () => {
       if (role === 'transporter') {
 
         const response: any = await transporterLoginRequest(email, password)
-        console.log('accessToken', response.accessToken);
 
         if (response.success) {
 

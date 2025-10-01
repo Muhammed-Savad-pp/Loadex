@@ -9,6 +9,7 @@ export interface IShipperController {
     GoogleLogin(req: Request, res: Response): Promise<void>;
     forgotPassword(req: Request, res: Response) : Promise<void>;
     Logout(req: Request, res: Response): Promise<void>;
+    validateRefreshToken(req: Request, res: Response): Promise<void>;
     getProfileData(req: CustomeRequest, res: Response): Promise<void>;
     registerKyc(req: CustomeRequest, res: Response): Promise<void>;
     getVerificationstatus(req: CustomeRequest, res: Response) : Promise<void>;

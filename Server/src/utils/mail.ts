@@ -5,7 +5,7 @@ dotenv.config();
 
 
 export class MailService {
-    private transporter; // its default. its not depending anyone
+    private transporter; 
 
     constructor(){
         this.transporter = nodemailer.createTransport({

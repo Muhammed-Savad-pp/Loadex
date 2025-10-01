@@ -1,8 +1,8 @@
 import config from "../../config";
 import { getPresignedDownloadUrl, s3 } from "../../config/s3Config";
-import { TruckForShipperDTO } from "../../dtos/truck/truck.for.shipper.dto";
-import { TruckDTO } from "../../dtos/truck/truck.for.transporter.dto";
-import { RequestedTruckForAdminDTO } from "../../dtos/truck/truck.forAdmin.dto";
+import { TruckForShipperDTO } from "../../dtos/truck/response/truck.for.shipper.dto";
+import { TruckDTO } from "../../dtos/truck/response/truck.for.transporter.dto";
+import { RequestedTruckForAdminDTO } from "../../dtos/truck/response/truck.forAdmin.dto";
 import { HTTP_STATUS } from "../../enums/httpStatus";
 import { ITruckService } from "../../interface/truck/ITruckService";
 import { ITruck } from "../../models/TruckModel";

@@ -41,5 +41,6 @@ export interface IShipperService {
     fetchPaymentHistory(shipperId: string, status: string, type: string, date: string, page: number, limit: number, search: string): Promise<{paymentData:ShipperPaymentDTO[], totalPages: number, totalEarnings: number, bidPayments: number, subscriptionPayment: number, pendingAmount: number}>;
     checkAndRefundExpiredBids(): Promise<{success: boolean}>
     expireInActiveLoads(): Promise<void>
-    findUnReadNotificationCount(shipperId: string): Promise<number | undefined>
+    findUnReadNotificationCount(shipperId: string): Promise<number | undefined>;
+    validateRefreshToken(token: string): Promise<{accessToken?: string, refreshToken?: string}>
 }

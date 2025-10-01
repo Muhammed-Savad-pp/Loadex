@@ -1,6 +1,6 @@
 import { IAdminService } from "../../interface/admin/IAdminService";
 import { configDotenv } from "dotenv";
-import { generateAcessToken, generateRefreshToken } from "../../utils/Token.utils";
+import { generateAcessToken, generateRefreshToken, verifyToken } from "../../utils/Token.utils";
 import { ITransporter } from "../../models/TransporterModel";
 import { ITransporterRepository } from "../../repositories/interface/ITransporterRepository";
 import { HTTP_STATUS } from "../../enums/httpStatus";
@@ -51,6 +51,29 @@ export class AdminService implements IAdminService {
         } catch (error) {
             console.log(error)
             throw new Error(error instanceof Error ? error.message : 'Unknow Error')
+        }
+    }
+
+    async validateRefreshToken(token: string): Promise<{ accessToken?: string; refreshToken?: string; }> {
+        try {
+
+            console.log('validate refresh token...............................................');
+
+            console.log('token.............', token)
+
+            const decoded = verifyToken(token);
+            console.log(decoded, 'adfadfadfadf')
+            // const admin = await this._transporterRepository.findTransporterById(decoded.id)
+
+            const accessToken = await generateAcessToken(decoded.id as string, 'admin');
+            const refreshToken = await generateRefreshToken(decoded.id as string, 'admin');            
+
+            console.log('success')
+            return { accessToken: accessToken, refreshToken: refreshToken}
+            
+        } catch (error) {
+            console.error('error while storing refreshToken', error)
+            throw error
         }
     }
 
@@ -489,7 +512,7 @@ export class AdminService implements IAdminService {
                             transactionType: "debit",
                             paymentStatus: "success",
                             createdAt: { $gte: start, $lte: end },
-                        },  
+                        },
                     },
                     {
                         $group: {

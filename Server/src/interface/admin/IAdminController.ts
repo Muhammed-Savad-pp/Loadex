@@ -1,8 +1,9 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { CustomeRequest } from "../../Middleware/userAuth";
 
 export interface IAdminController {
     login(req: CustomeRequest, res: Response) : Promise<void>;
+    validateRefreshToken(req: Request, res: Response): Promise<void>
     getTransporter(req: CustomeRequest, res: Response) : Promise<void>;
     logout(req:CustomeRequest, res: Response) : Promise<void>;
     updateTransporterBlockandUnblock(req: CustomeRequest, res: Response) : Promise<void>;

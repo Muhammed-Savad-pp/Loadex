@@ -4,6 +4,7 @@ import { getTransporterProfile, transporterKYCSubmit, updateProfile } from "../.
 import Navbar from "../../components/Common/Navbar/Navbar";
 import { FaUser, FaEnvelope, FaPhone } from "react-icons/fa";
 import toast from "react-hot-toast";
+import profileImage from '../../assets/307ce493-b254-4b2d-8ba4-d12c080d6651.jpg'
 
 
 interface TransporterData {
@@ -149,7 +150,6 @@ const Profile = () => {
 
 
     const handleFileChange = (type: 'front' | 'back') => (e: React.ChangeEvent<HTMLInputElement>) => {
-        console.log('adfsdf');
 
         const file = e.target.files?.[0] || null;
         if (file) {
@@ -166,14 +166,6 @@ const Profile = () => {
             [type === 'front' ? 'aadhaarFront' : 'aadhaarBack']: file
         }));
     };
-
-    console.log(kycData, 'kyc data');
-    console.log(previews, 'preview image');
-
-
-
-    // Cleanup preview URLs when component unmounts
-
 
     const validation = (panNumber: string) => {
 
@@ -223,10 +215,6 @@ const Profile = () => {
         if (kycData.aadhaarBack) {
             formData.append('aadhaarBack', kycData.aadhaarBack);
         }
-
-        // for (const pair of formData.entries()) {
-        //     console.log(pair[0], pair[1]);
-        // }
 
         try {
             const response: any = await transporterKYCSubmit(formData);
@@ -329,7 +317,7 @@ const Profile = () => {
                                         <img src={transporterData.profileImage} alt="ProfileImage" className="w-24 h-24 rounded-full mb-4 bg-sky-200" />
                                     ) :
                                         <img
-                                            src="/api/placeholder/100/100"
+                                            src={profileImage}
                                             alt="Profile"
                                             className="w-24 h-24 rounded-full bg-sky-200 mb-4"
                                         />
