@@ -309,7 +309,7 @@ export class ShipperService implements IShipperService {
             let aadhaarBackKey: string | undefined;
 
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
-                const key = `${folder}/shipper/${Date.now()}_${file.originalname}`
+                const key = `loadex/${folder}/shipper/${Date.now()}_${file.originalname}`
                 const s3Params = {
                     Bucket: config.awsBucketName,
                     Key: key,
@@ -524,7 +524,7 @@ export class ShipperService implements IShipperService {
         try {
             let profileImageKey: string | undefined
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
-                const key = `${folder}/shipper/${Date.now()}_${file.originalname}`
+                const key = `loadex/${folder}/shipper/${Date.now()}_${file.originalname}`
                 const s3Params = {
                     Bucket: config.awsBucketName,
                     Key: key,

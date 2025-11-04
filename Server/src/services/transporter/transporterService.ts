@@ -90,7 +90,7 @@ export class TransporterService implements ITransporterService {
             let aadhaarBackUrl: string | undefined
             const uploadToS3 = async (file: Express.Multer.File, folder: string): Promise<string> => {
 
-                const key = `${folder}/transporter/${Date.now()}_${file.originalname}`;
+                const key = `loadex/${folder}/transporter/${Date.now()}_${file.originalname}`;
                 const command = new PutObjectCommand({
                     Bucket: config.awsBucketName,
                     Key: key,
@@ -241,7 +241,7 @@ export class TransporterService implements ITransporterService {
         try {
             let profileImagekey: string | undefined;
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
-                const key = `${folder}/transporter/${Date.now()}_${file.originalname}`
+                const key = `loadex/${folder}/transporter/${Date.now()}_${file.originalname}`
                 const s3Params = {
                     Bucket: config.awsBucketName,
                     Key: key,

@@ -151,7 +151,7 @@ export class TruckSerice implements ITruckService {
             let truckImageKey: string | undefined;
 
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
-                const key = `${folder}/transporter/${Date.now()}_${file.originalname}`
+                const key = `loadex/${folder}/transporter/${Date.now()}_${file.originalname}`
                 const s3Params = {
                     Bucket: config.awsBucketName,
                     Key: key,
@@ -239,7 +239,7 @@ export class TruckSerice implements ITruckService {
 
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
 
-                const key = `${folder}/transporter/${Date.now()}_${file.originalname}`
+                const key = `loadex/${folder}/transporter/${Date.now()}_${file.originalname}`
 
                 const s3Params = {
                     Bucket: config.awsBucketName,
@@ -345,7 +345,7 @@ export class TruckSerice implements ITruckService {
             const uploadToS3 = async (file: Express.Multer.File, folder: string) => {
                 const s3Params = {
                     Bucket: config.awsBucketName,
-                    Key: `${folder}/transporter/${Date.now()}_${file.originalname}`,
+                    Key: `loadex/${folder}/transporter/${Date.now()}_${file.originalname}`,
                     Body: file.buffer,
                     ContentType: file.mimetype
                 };
